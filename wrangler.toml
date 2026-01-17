@@ -1,15 +1,14 @@
 name = "miniorg"
 compatibility_date = "2025-01-01"
-pages_build_output_dir = ".vercel/output/static"
 
 # Compatibility flags for Node.js APIs
 compatibility_flags = ["nodejs_compat"]
 
 # Configuration pour Workers
-main = ".worker-next/index.mjs"
+main = ".open-next/worker.js"
 
 [assets]
-directory = ".worker-next/assets"
+directory = ".open-next/assets"
 
 # D1 Database binding
 [[d1_databases]]
