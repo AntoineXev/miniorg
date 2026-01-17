@@ -384,3 +384,4 @@ Estimated cost for 10,000 active users/month: $0.00
 - ✅ **Secure**: HTTPS, JWT, Row-level security
 - ✅ **Free**: Jusqu'à 10k+ utilisateurs actifs
 - ✅ **Simple**: Un seul déploiement, pas de serveurs
+
