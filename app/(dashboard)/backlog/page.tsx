@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Header } from "@/components/layout/header";
 import { BacklogGroups } from "@/components/backlog/backlog-groups";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
@@ -89,34 +90,36 @@ export default function BacklogPage() {
 
   return (
     <>
-      <div className="container mx-auto p-6 max-w-4xl pb-20">
-        <div className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight">Backlog</h1>
-          <p className="text-muted-foreground mt-1">
-            All your tasks, organized by deadline
-          </p>
+      <div className="flex flex-col h-full">
+        <Header 
+          title="Backlog" 
+          subtitle="All your tasks, organized by deadline"
+        />
+        
+        <div className="flex-1 overflow-auto">
+          <div className="container mx-auto p-6 max-w-4xl pb-20">
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading tasks...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  No tasks yet. Press{" "}
+                  <kbd className="px-2 py-1 bg-secondary rounded text-xs">⌘K</kbd> to
+                  create your first task.
+                </p>
+              </div>
+            ) : (
+              <BacklogGroups
+                tasks={tasks}
+                onToggleComplete={handleToggleComplete}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            )}
+          </div>
         </div>
-
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading tasks...</p>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              No tasks yet. Press{" "}
-              <kbd className="px-2 py-1 bg-secondary rounded text-xs">⌘K</kbd> to
-              create your first task.
-            </p>
-          </div>
-        ) : (
-          <BacklogGroups
-            tasks={tasks}
-            onToggleComplete={handleToggleComplete}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        )}
       </div>
 
       {/* Footer hint */}

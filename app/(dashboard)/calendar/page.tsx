@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfToday, isSameDay, parseISO, isWeekend } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/layout/header";
 import { TaskCard } from "@/components/tasks/task-card";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
@@ -204,48 +205,34 @@ export default function CalendarPage() {
     <>
       <div className="flex flex-col h-full bg-background">
         {/* Header avec navigation */}
-        <div className="border-b bg-card/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <h1 className="text-2xl font-semibold tracking-tight">Calendar</h1>
-                <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg p-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePrevWeek}
-                    className="h-8 w-8 p-0 hover:bg-background"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleToday}
-                    className="h-8 px-4 text-xs font-semibold hover:bg-background"
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleNextWeek}
-                    className="h-8 w-8 p-0 hover:bg-background"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CalendarIcon className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {format(startDate, "MMMM yyyy")}
-                </span>
-              </div>
-            </div>
+        <Header title="Calendar">
+          <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePrevWeek}
+              className="h-8 w-8 p-0 hover:bg-background"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToday}
+              className="h-8 px-4 text-xs font-semibold hover:bg-background"
+            >
+              Today
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNextWeek}
+              className="h-8 w-8 p-0 hover:bg-background"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
+        </Header>
 
         {/* Grid de jours */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden">
