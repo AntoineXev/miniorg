@@ -161,12 +161,14 @@ Si vous voulez le déploiement automatique à chaque push GitHub :
 3. Sélectionnez votre repo GitHub
 4. Configuration :
    - Framework preset: **Next.js**
-   - Build command: `npm run pages:build`
+   - Build command: `npm install --legacy-peer-deps && npm run pages:build`
    - Build output directory: `.vercel/output/static`
 5. Dans "Environment variables", ajoutez toutes vos variables (Étape 4)
 6. Dans "Functions" > "D1 database bindings" :
    - Variable name: `DB`
    - D1 database: Sélectionnez `miniorg-production`
+
+**Note** : On utilise `npm install --legacy-peer-deps` pour gérer les peer dependencies conflictuelles.
 
 **Avantage** : Chaque push sur `main` déploie automatiquement !
 

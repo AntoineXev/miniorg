@@ -12,9 +12,11 @@ Si vous déployez via le Dashboard Cloudflare (au lieu de Wrangler CLI), suivez 
 - **Framework preset** : Next.js
 
 ### Build settings
-- **Build command** : `npm run pages:build`
+- **Build command** : `npm install --legacy-peer-deps && npm run pages:build`
 - **Build output directory** : `.vercel/output/static`
 - **Root directory** : `/` (racine du projet)
+
+**Note importante** : On utilise `npm install --legacy-peer-deps` au lieu de `npm ci` car nous avons des dépendances avec des peer dependencies conflictuelles (@cloudflare/next-on-pages avec Next.js 14).
 
 ### Environment variables (Build)
 
