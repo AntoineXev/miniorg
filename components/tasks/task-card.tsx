@@ -156,7 +156,7 @@ export function TaskCard({
               {/* Badge durée */}
               <Badge 
                 variant="secondary" 
-                className="text-[10px] px-1.5 py-0 h-5 bg-muted/50 text-muted-foreground font-medium shrink-0"
+                className="text-[10px] px-1.5 py-0 h-5 bg-muted/10 text-muted-foreground font-medium shrink-0"
               >
                 {formatDuration(durationMinutes)}
               </Badge>
