@@ -2,6 +2,16 @@
 
 ## [Unreleased] - 2026-01-17
 
+### 🐛 Fixed - Deployment Issues
+
+#### Build Dependencies (Latest)
+- Moved `@cloudflare/workers-types` from devDependencies to dependencies
+  - Required during TypeScript compilation in Cloudflare Pages build
+  - Fixes: `Cannot find module '@cloudflare/workers-types'` error
+- Added `eslint.ignoreDuringBuilds: true` to `next.config.js`
+  - ESLint should be run locally before deployment
+  - Fixes: `Failed to load config "next/core-web-vitals"` error during build
+
 ### 🚀 Added - Cloudflare Pages Support
 
 #### Important Notes
