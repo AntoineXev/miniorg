@@ -21,12 +21,12 @@ database_id = "4bc4d83f-391b-45bb-af6a-51310ecfc020"
 [vars]
 NODE_ENV = "production"
 
-# Note: Pour configurer les secrets:
+# Configuration des secrets pour NextAuth v5:
+# Pour Workers: wrangler secret put SECRET_NAME
 # Pour Pages: wrangler pages secret put SECRET_NAME --project-name=miniorg
-# Pour Workers (futur): wrangler secret put SECRET_NAME
 # 
 # Secrets nécessaires:
-# - NEXTAUTH_SECRET
+# - AUTH_SECRET (utilisé par NextAuth v5)
+# - AUTH_URL (URL complète de votre app, e.g., https://miniorg.your-domain.workers.dev)
 # - GOOGLE_CLIENT_ID
 # - GOOGLE_CLIENT_SECRET
-# - NEXTAUTH_URL
