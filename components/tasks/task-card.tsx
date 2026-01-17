@@ -24,6 +24,7 @@ export type TaskCardProps = {
   onEdit?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
   showTime?: boolean;
+  estimatedMinutes?: number;
 };
 
 export function TaskCard({
@@ -32,8 +33,22 @@ export function TaskCard({
   onEdit,
   onDelete,
   showTime = false,
+  estimatedMinutes = 30,
 }: TaskCardProps) {
   const isCompleted = task.status === "done";
+
+  // Formater la durée
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes}min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h${mins}`;
+  };
 
   const getDeadlineDisplay = () => {
     // Case 1: Specific scheduled date
@@ -127,37 +142,20 @@ export function TaskCard({
             <div className="flex items-start justify-between gap-2">
               <h3
                 className={cn(
-                  "font-medium text-sm",
+                  "font-medium text-sm flex-1",
                   isCompleted && "line-through text-muted-foreground"
                 )}
               >
                 {task.title}
               </h3>
 
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                {onEdit && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(task.id);
-                    }}
-                    className="p-1 hover:bg-secondary rounded"
-                  >
-                    <Pencil className="h-3 w-3 text-muted-foreground" />
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(task.id);
-                    }}
-                    className="p-1 hover:bg-destructive/10 rounded"
-                  >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </button>
-                )}
-              </div>
+              {/* Badge durée */}
+              <Badge 
+                variant="secondary" 
+                className="text-[10px] px-1.5 py-0 h-5 bg-muted/50 text-muted-foreground font-medium shrink-0"
+              >
+                {formatDuration(estimatedMinutes)}
+              </Badge>
             </div>
 
             {task.description && (

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ListTodo } from "lucide-react";
+import { ListTodo, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
+  { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Backlog", href: "/backlog", icon: ListTodo },
 ];
 

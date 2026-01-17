@@ -12,9 +12,12 @@ import { format } from "date-fns";
 
 type QuickAddTaskProps = {
   onTaskCreated?: () => void;
+  prefilledDate?: Date;
+  triggerOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
+export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpenChange }: QuickAddTaskProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
@@ -24,17 +27,38 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Gérer l'ouverture externe (depuis le bouton Add task d'une colonne)
+  useEffect(() => {
+    if (triggerOpen) {
+      setOpen(true);
+      if (prefilledDate) {
+        setUseSpecificDate(true);
+        setSpecificDate(format(prefilledDate, "yyyy-MM-dd"));
+      }
+      onOpenChange?.(true);
+    }
+  }, [triggerOpen, prefilledDate, onOpenChange]);
+
+  // Gérer les changements d'état open
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+    if (!newOpen) {
+      resetForm();
+    }
+  };
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === "k" && (e.metaKey || e.ctrlKey))) {
         e.preventDefault();
-        setOpen((open) => !open);
+        handleOpenChange(!open);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [open]);
 
   const resetForm = () => {
     setTitle("");
@@ -66,7 +90,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
 
       if (response.ok) {
         resetForm();
-        setOpen(false);
+        handleOpenChange(false);
         onTaskCreated?.();
       }
     } catch (error) {
@@ -81,21 +105,21 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
       handleSubmit();
     }
     if (e.key === "Escape") {
-      setOpen(false);
+      handleOpenChange(false);
     }
   };
 
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
+        onClick={() => handleOpenChange(true)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40"
         size="icon"
       >
         <Plus className="h-6 w-6" />
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent hideClose className="sm:max-w-[600px] p-0 gap-0 border-0 shadow-2xl">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
