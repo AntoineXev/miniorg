@@ -1,0 +1,12 @@
+# Local development environment variables for Wrangler
+# This file should NOT be committed to version control
+# Copy this file to .dev.vars and fill in your values
+
+# NextAuth
+NEXTAUTH_SECRET=your-local-secret-key-here
+NEXTAUTH_URL=http://localhost:8788
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Note: In local dev with Wrangler, the DB binding is automatically provided
+# You don't need to set DATABASE_URL here

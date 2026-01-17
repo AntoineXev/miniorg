@@ -1,0 +1,19 @@
+name = "miniorg"
+compatibility_date = "2024-01-17"
+pages_build_output_dir = ".vercel/output/static"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "miniorg-production"
+database_id = "4bc4d83f-391b-45bb-af6a-51310ecfc020"  # À remplacer après avoir créé la DB avec: wrangler d1 create miniorg-production
+
+# Environment variables (secrets should be set via wrangler secret put)
+[vars]
+NODE_ENV = "production"
+
+# Note: Pour configurer les secrets après création de la DB:
+# wrangler secret put NEXTAUTH_SECRET
+# wrangler secret put GOOGLE_CLIENT_ID
+# wrangler secret put GOOGLE_CLIENT_SECRET
+# wrangler secret put NEXTAUTH_URL --value "https://miniorg.pages.dev"
