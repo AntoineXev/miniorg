@@ -1,0 +1,12 @@
+---
+name: reusable-code
+description: This is a new rule
+---
+
+# Overview
+
+Try to think about the nicest, more flexible and reusable architecture for the task (components, ...). 
+
+Never use mutliple compoenents in a single file.
+
+Always try to make reusable components, and check before writing any component if a component cannot be reused
