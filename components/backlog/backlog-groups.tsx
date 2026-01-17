@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TaskCard } from "@/components/tasks/task-card";
+import { DraggableTaskWrapper } from "@/components/backlog/draggable-task-wrapper";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTaskDeadlineGroup, deadlineTypeLabels, type DeadlineGroup } from "@/lib/task-utils";
@@ -67,7 +68,7 @@ export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete }: Bac
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       {groupOrder.map((group) => {
         const tasksInGroup = groupedTasks[group] || [];
         if (tasksInGroup.length === 0) return null;
@@ -75,10 +76,10 @@ export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete }: Bac
         const isExpanded = expandedGroups.has(group);
 
         return (
-          <div key={group} className="border rounded-lg overflow-hidden">
+          <div key={group} className="border-boverflow-hidden bg-background">
             <button
               onClick={() => toggleGroup(group)}
-              className="w-full flex items-center justify-between p-4 bg-card hover:bg-secondary/50 transition-colors"
+              className="w-full flex items-center justify-between px-4 pt-3 pb-2 hover:bg-secondary/50 transition-colors"
             >
               <div className="flex items-center gap-2">
                 {isExpanded ? (
@@ -115,12 +116,14 @@ export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete }: Bac
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                       >
-                        <TaskCard
-                          task={task}
-                          onToggleComplete={onToggleComplete}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                        />
+                        <DraggableTaskWrapper task={task}>
+                          <TaskCard
+                            task={task}
+                            onToggleComplete={onToggleComplete}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                          />
+                        </DraggableTaskWrapper>
                       </motion.div>
                     ))}
                   </div>

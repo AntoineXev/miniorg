@@ -10,6 +10,7 @@ import { TaskCard } from "@/components/tasks/task-card";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { cn } from "@/lib/utils";
+import { emitTaskUpdate, onTaskUpdate } from "@/lib/task-events";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview";
@@ -85,6 +86,13 @@ export default function CalendarPage() {
     fetchTasks();
   }, []);
 
+  // Listen for task updates from other components (e.g., backlog operations)
+  useEffect(() => {
+    return onTaskUpdate(() => {
+      fetchTasks();
+    });
+  }, []);
+
   const handleToggleComplete = async (taskId: string, completed: boolean) => {
     try {
       const response = await fetch("/api/tasks", {
@@ -98,25 +106,36 @@ export default function CalendarPage() {
 
       if (response.ok) {
         fetchTasks();
+        emitTaskUpdate();
       }
     } catch (error) {
       console.error("Error updating task:", error);
     }
   };
 
-  const handleTaskDrop = async (taskId: string, newDate: Date) => {
+  const handleTaskDrop = async (taskId: string, newDate: Date, source?: string) => {
     try {
+      // Si la tâche vient du backlog, on change aussi son statut
+      const updateData: any = {
+        id: taskId,
+        scheduledDate: newDate.toISOString(),
+      };
+      
+      // Si la source est le backlog, changer le statut en "planned"
+      if (source === "backlog") {
+        updateData.status = "planned";
+      }
+
       const response = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: taskId,
-          scheduledDate: newDate.toISOString(),
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
         fetchTasks();
+        // Émettre un événement pour notifier les autres composants
+        emitTaskUpdate();
       }
     } catch (error) {
       console.error("Error updating task date:", error);
@@ -133,6 +152,7 @@ export default function CalendarPage() {
 
       if (response.ok) {
         fetchTasks();
+        emitTaskUpdate();
       }
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -289,7 +309,7 @@ type DayColumnProps = {
   onEdit: (taskId: string) => void;
   onDelete: (taskId: string) => void;
   onAddTask: () => void;
-  onTaskDrop: (taskId: string, newDate: Date) => void;
+  onTaskDrop: (taskId: string, newDate: Date, source?: string) => void;
   isLast: boolean;
 };
 
@@ -310,10 +330,11 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onAddTask, onTaskD
         setIsDraggedOver(false);
         const taskId = source.data.taskId as string;
         const taskStatus = source.data.taskStatus as string;
+        const sourceLocation = source.data.source as string | undefined;
         
         // Ne permettre le drop que pour les tâches non complétées
         if (taskStatus !== "done" && taskId) {
-          onTaskDrop(taskId, day.date);
+          onTaskDrop(taskId, day.date, sourceLocation);
         }
       },
     });
@@ -429,6 +450,7 @@ function DraggableTask({ task, onToggleComplete, onEdit, onDelete }: DraggableTa
           taskId: task.id,
           taskTitle: task.title,
           taskStatus: task.status,
+          taskDuration: task.duration || 30,
         }),
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),
