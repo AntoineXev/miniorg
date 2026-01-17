@@ -4,7 +4,15 @@
 
 ### 🐛 Fixed - Deployment Issues
 
-#### Runtime Configuration (Latest)
+#### Middleware Edge Runtime Compatibility (Latest)
+- Replaced `auth()` with `getToken()` from `next-auth/jwt` in middleware
+  - `auth()` uses `async_hooks` which is not available in Cloudflare Workers
+  - `getToken()` is fully Edge Runtime compatible
+  - Fixes: `No such module "__next-on-pages-dist__/functions/async_hooks"` error
+- Added protection for `/calendar` route in addition to `/backlog`
+- Middleware size reduced from 97.3 kB to 38.1 kB
+
+#### Runtime Configuration
 - Added `nodejs_compat` compatibility flag to `wrangler.toml`
   - Required for Node.js APIs used by Next.js and dependencies
   - Fixes: `Node.JS Compatibility Error: no nodejs_compat compatibility flag set`

@@ -43,6 +43,27 @@ database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 **Important**: Copiez le `database_id` et mettez-le à jour dans `wrangler.toml`.
 
+### 2.1 Vérifier la configuration wrangler.toml
+
+Assurez-vous que votre `wrangler.toml` contient bien :
+
+```toml
+name = "miniorg"
+compatibility_date = "2024-01-17"
+pages_build_output_dir = ".vercel/output/static"
+
+# Compatibility flags for Node.js APIs (IMPORTANT!)
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "miniorg-production"
+database_id = "votre-database-id-ici"
+```
+
+⚠️ **Le flag `nodejs_compat` est essentiel** - sans lui, vous aurez l'erreur `Node.JS Compatibility Error` au runtime.
+
 ## Étape 3: Migrer le schéma de base de données
 
 Exécutez le script de migration :
@@ -167,6 +188,10 @@ Si vous voulez le déploiement automatique à chaque push GitHub :
 6. Dans "Functions" > "D1 database bindings" :
    - Variable name: `DB`
    - D1 database: Sélectionnez `miniorg-production`
+7. **IMPORTANT** - Dans "Settings" > "Functions" > "Compatibility flags" :
+   - Ajoutez `nodejs_compat` dans la liste des flags
+   - Ce flag est **essentiel** pour que Next.js fonctionne correctement
+   - Sans ce flag, vous aurez l'erreur `Node.JS Compatibility Error` au runtime
 
 **Note** : On utilise `npm install --legacy-peer-deps` pour gérer les peer dependencies conflictuelles.
 

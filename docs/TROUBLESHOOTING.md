@@ -190,6 +190,100 @@ wrangler pages deploy .vercel/output/static --project-name=miniorg
 
 ---
 
+## Erreur : "No such module async_hooks"
+
+### Symptôme
+```
+Error: No such module "__next-on-pages-dist__/functions/async_hooks".
+  imported from "__next-on-pages-dist__/functions/middleware.func.js"
+```
+
+L'application se déploie mais crash avec une erreur 500 mentionnant `async_hooks`.
+
+### Cause
+Le module `async_hooks` est un module Node.js natif qui **n'est pas disponible** dans l'Edge Runtime de Cloudflare, même avec le flag `nodejs_compat`. Cette erreur se produit généralement quand :
+- Le middleware utilise `auth()` de NextAuth v5, qui utilise `async_hooks` en interne
+- D'autres bibliothèques utilisent des APIs Node.js non supportées
+
+### Solution
+
+**Dans le middleware** : Utilisez `getToken()` au lieu de `auth()` :
+
+```typescript
+// ❌ MAUVAIS - auth() utilise async_hooks
+import { auth } from "@/lib/auth";
+
+export async function middleware(request: NextRequest) {
+  const session = await auth();
+  // ...
+}
+
+// ✅ BON - getToken() est compatible Edge Runtime
+import { getToken } from "next-auth/jwt";
+
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+  const isAuthenticated = !!token;
+  // ...
+}
+```
+
+**Note importante** : Dans les routes API ou les Server Components (pas le middleware), vous **pouvez** utiliser `auth()` car elles s'exécutent dans l'Edge Runtime avec plus de capacités.
+
+---
+
+## Erreur : "Node.JS Compatibility Error: no nodejs_compat compatibility flag set"
+
+### Symptôme
+```
+Node.JS Compatibility Error
+no nodejs_compat compatibility flag set
+```
+
+L'application se déploie correctement mais crash au runtime avec cette erreur.
+
+### Cause
+Cloudflare Pages a besoin du flag de compatibilité `nodejs_compat` pour supporter les APIs Node.js utilisées par Next.js et ses dépendances.
+
+### Solution
+
+**Méthode 1 : Via wrangler.toml (RECOMMANDÉ)** :
+
+Vérifiez que votre `wrangler.toml` contient :
+```toml
+name = "miniorg"
+compatibility_date = "2024-01-17"
+pages_build_output_dir = ".vercel/output/static"
+
+# Compatibility flags for Node.js APIs (IMPORTANT!)
+compatibility_flags = ["nodejs_compat"]
+```
+
+Puis commit et push pour redéployer :
+```bash
+git add wrangler.toml
+git commit -m "fix: add nodejs_compat compatibility flag"
+git push
+```
+
+**Méthode 2 : Via le Dashboard Cloudflare** :
+
+1. Allez sur https://dash.cloudflare.com
+2. Pages > miniorg > Settings > Functions
+3. Scroll jusqu'à "Compatibility flags"
+4. Cliquez sur "Add flag"
+5. Ajoutez : `nodejs_compat`
+6. Sauvegardez
+7. Redéployez votre application
+
+**Vérification** :
+Après le déploiement, visitez votre site. L'erreur ne devrait plus apparaître.
+
+---
+
 ## Erreur : Edge Runtime incompatibility
 
 ### Symptôme
@@ -308,6 +402,7 @@ Quand quelque chose ne fonctionne pas :
 - [ ] Les dépendances sont installées : `npm install --legacy-peer-deps`
 - [ ] Le build local fonctionne : `npm run pages:build`
 - [ ] Le `database_id` est correct dans `wrangler.toml`
+- [ ] Le flag `nodejs_compat` est présent dans `wrangler.toml`
 - [ ] Les 4 secrets sont configurés (NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, etc.)
 - [ ] Le binding D1 est configuré (variable `DB`)
 - [ ] Google OAuth redirect URIs sont corrects
