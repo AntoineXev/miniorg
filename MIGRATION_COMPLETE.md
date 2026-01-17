@@ -225,3 +225,4 @@ Suivez les étapes ci-dessus dans l'ordre, et vous aurez une app en production e
 ---
 
 **Note** : Tous les fichiers de migration ont été créés et tous les TODOs ont été complétés. Le code est prêt pour la production !
+
