@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfToday, isSameDay, parseISO, isWeekend } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucide-react";
@@ -431,74 +431,78 @@ type DraggableTaskProps = {
   onDelete: (taskId: string) => void;
 };
 
-function DraggableTask({ task, onToggleComplete, onEdit, onDelete }: DraggableTaskProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<HTMLDivElement>(null);
-  const isCompleted = task.status === "done";
+const DraggableTask = forwardRef<HTMLDivElement, DraggableTaskProps>(
+  ({ task, onToggleComplete, onEdit, onDelete }, ref) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const dragRef = useRef<HTMLDivElement>(null);
+    const isCompleted = task.status === "done";
 
-  useEffect(() => {
-    const el = dragRef.current;
-    if (!el) return;
+    useEffect(() => {
+      const el = dragRef.current;
+      if (!el) return;
 
-    // Ne pas permettre le drag pour les tâches complétées
-    if (isCompleted) return;
+      // Ne pas permettre le drag pour les tâches complétées
+      if (isCompleted) return;
 
-    return combine(
-      draggable({
-        element: el,
-        getInitialData: () => ({
-          taskId: task.id,
-          taskTitle: task.title,
-          taskStatus: task.status,
-          taskDuration: task.duration || 30,
-        }),
-        onDragStart: () => setIsDragging(true),
-        onDrop: () => setIsDragging(false),
-        onGenerateDragPreview: ({ nativeSetDragImage }) => {
-          setCustomNativeDragPreview({
-            nativeSetDragImage,
-            getOffset: pointerOutsideOfPreview({
-              x: '16px',
-              y: '8px',
-            }),
-            render: ({ container }) => {
-              const preview = document.createElement('div');
-              preview.className = 'bg-card border-2 border-primary rounded-lg p-3 shadow-xl max-w-xs';
-              preview.innerHTML = `
-                <div class="text-sm font-medium text-foreground">
-                  ${task.title}
-                </div>
-              `;
-              container.appendChild(preview);
-            },
-          });
-        },
-      })
+      return combine(
+        draggable({
+          element: el,
+          getInitialData: () => ({
+            taskId: task.id,
+            taskTitle: task.title,
+            taskStatus: task.status,
+            taskDuration: task.duration || 30,
+          }),
+          onDragStart: () => setIsDragging(true),
+          onDrop: () => setIsDragging(false),
+          onGenerateDragPreview: ({ nativeSetDragImage }) => {
+            setCustomNativeDragPreview({
+              nativeSetDragImage,
+              getOffset: pointerOutsideOfPreview({
+                x: '16px',
+                y: '8px',
+              }),
+              render: ({ container }) => {
+                const preview = document.createElement('div');
+                preview.className = 'bg-card border-2 border-primary rounded-lg p-3 shadow-xl max-w-xs';
+                preview.innerHTML = `
+                  <div class="text-sm font-medium text-foreground">
+                    ${task.title}
+                  </div>
+                `;
+                container.appendChild(preview);
+              },
+            });
+          },
+        })
+      );
+    }, [task.id, task.title, task.status, isCompleted]);
+
+    return (
+      <motion.div
+        ref={dragRef}
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.2 }}
+        className={cn(
+          "transition-all duration-300",
+          task.status === "done" && "opacity-40 grayscale",
+          !isCompleted && "cursor-grab active:cursor-grabbing",
+          isDragging && "opacity-50 scale-95"
+        )}
+      >
+        <TaskCard
+          task={task}
+          onToggleComplete={onToggleComplete}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          showTime={false}
+        />
+      </motion.div>
     );
-  }, [task.id, task.title, task.status, isCompleted]);
+  }
+);
 
-  return (
-    <motion.div
-      ref={dragRef}
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.2 }}
-      className={cn(
-        "transition-all duration-300",
-        task.status === "done" && "opacity-40 grayscale",
-        !isCompleted && "cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-50 scale-95"
-      )}
-    >
-      <TaskCard
-        task={task}
-        onToggleComplete={onToggleComplete}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        showTime={false}
-      />
-    </motion.div>
-  );
-}
+DraggableTask.displayName = 'DraggableTask';
