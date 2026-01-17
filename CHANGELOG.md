@@ -4,7 +4,12 @@
 
 ### 🐛 Fixed - Deployment Issues
 
-#### Build Dependencies (Latest)
+#### Runtime Configuration (Latest)
+- Added `nodejs_compat` compatibility flag to `wrangler.toml`
+  - Required for Node.js APIs used by Next.js and dependencies
+  - Fixes: `Node.JS Compatibility Error: no nodejs_compat compatibility flag set`
+
+#### Build Dependencies
 - Moved `@cloudflare/workers-types` from devDependencies to dependencies
   - Required during TypeScript compilation in Cloudflare Pages build
   - Fixes: `Cannot find module '@cloudflare/workers-types'` error
