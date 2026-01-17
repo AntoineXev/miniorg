@@ -119,6 +119,69 @@ Si vous **connectez votre repo GitHub via le Dashboard Cloudflare** :
 
 Pas besoin de GitHub Actions !
 
+## Edge Runtime Limitations
+
+### Modules Node.js NON disponibles (même avec nodejs_compat)
+
+Certains modules Node.js natifs ne sont **jamais** disponibles dans l'Edge Runtime :
+
+```typescript
+// ❌ INTERDITS dans Edge Runtime
+import fs from 'fs'                    // File system
+import path from 'path'                // Path (certaines fonctions)
+import { AsyncLocalStorage } from 'async_hooks'  // Async hooks
+import os from 'os'                    // Operating system
+import child_process from 'child_process'        // Process spawning
+```
+
+### Ce qui EST disponible
+
+```typescript
+// ✅ AUTORISÉS dans Edge Runtime
+import crypto from 'crypto'            // Crypto (Web Crypto API)
+fetch()                                // Fetch API
+Headers, Request, Response             // Web APIs
+URL, URLSearchParams                   // URL APIs
+FormData, Blob                         // Form/File APIs
+```
+
+### Impact sur NextAuth / Auth.js
+
+**Dans le middleware** :
+```typescript
+// ❌ MAUVAIS - auth() utilise async_hooks en interne
+import { auth } from "@/lib/auth"
+const session = await auth()
+
+// ✅ BON - getToken() est compatible Edge
+import { getToken } from "next-auth/jwt"
+const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+```
+
+**Dans les API Routes et Server Components** :
+```typescript
+// ✅ AUTORISÉ - Plus de capacités que le middleware
+import { auth } from "@/lib/auth"
+const session = await auth()  // Fonctionne dans les routes API et RSC
+```
+
+### nodejs_compat : Ce qu'il active
+
+Le flag `nodejs_compat` active **certaines** APIs Node.js, mais pas toutes :
+
+**Activé par nodejs_compat** :
+- ✅ `Buffer`
+- ✅ `process.env`
+- ✅ `util` (certaines fonctions)
+- ✅ Streams basiques
+- ✅ `crypto` (via Web Crypto)
+
+**Toujours BLOQUÉ** :
+- ❌ `fs`, `path`, `os`
+- ❌ `async_hooks`
+- ❌ `child_process`
+- ❌ `cluster`, `worker_threads`
+
 ## Résumé
 
 - ✅ **Cloudflare Pages** = Bon choix pour Next.js
