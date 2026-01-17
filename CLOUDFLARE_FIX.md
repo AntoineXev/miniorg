@@ -27,7 +27,12 @@ Mise à jour vers Next.js 16+ et React 19+ pour une meilleure compatibilité ave
 Fichier avec `legacy-peer-deps=true` pour gérer les conflits de dépendances.
 
 ### 7. Script de build optimisé
-Nouveau script `build:cloudflare` dans `package.json`:
+Nouveau script `build:pages` dans `package.json` (attendu par Cloudflare):
+```bash
+npm run build:pages
+```
+
+Alias `build:cloudflare` disponible également:
 ```bash
 npm run build:cloudflare
 ```
@@ -36,6 +41,8 @@ npm run build:cloudflare
 
 ### 1. Construire localement (optionnel)
 ```bash
+npm run build:pages
+# ou
 npm run build:cloudflare
 ```
 
@@ -45,7 +52,7 @@ npm run build:cloudflare
 1. Allez dans Pages > Créer un projet
 2. Connectez votre repo Git
 3. Configurez les paramètres:
-   - **Build command**: `npm run build:cloudflare`
+   - **Build command**: `npm run build:pages`
    - **Build output directory**: `.vercel/output/static`
    - **Root directory**: `/`
 4. Ajoutez les variables d'environnement:

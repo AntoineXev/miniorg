@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:pages": "next build && npx @cloudflare/next-on-pages",
     "build:cloudflare": "next build && npx @cloudflare/next-on-pages",
     "start": "next start",
     "lint": "next lint",
@@ -13,7 +14,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "pages:build": "npx @cloudflare/next-on-pages",
-    "pages:deploy": "npm run build:cloudflare && wrangler pages deploy .vercel/output/static",
+    "pages:deploy": "npm run build:pages && wrangler pages deploy .vercel/output/static",
     "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-17 --d1=DB"
   },
   "dependencies": {
