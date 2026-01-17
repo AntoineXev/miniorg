@@ -47,8 +47,8 @@ npm install
 Create a `.env` file in the root directory:
 ```env
 DATABASE_URL="file:./dev.db"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
+AUTH_URL="http://localhost:3000"
+AUTH_SECRET="your-secret-key-here"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ```
@@ -149,36 +149,35 @@ Copiez le `database_id` affiché et mettez-le à jour dans `wrangler.toml`.
 
 4. **Configurer les secrets**
 ```bash
-wrangler secret put NEXTAUTH_SECRET
+wrangler secret put AUTH_SECRET
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put NEXTAUTH_URL
+wrangler secret put AUTH_URL
 ```
 
 5. **Build et déployer**
 ```bash
-npm run pages:build
-wrangler pages deploy .vercel/output/static --project-name=miniorg
+npm run build
+npm run deploy
 ```
 
 6. **Configurer Google OAuth**
 Ajoutez l'URI de redirection dans [Google Cloud Console](https://console.cloud.google.com/):
 ```
-https://miniorg.pages.dev/api/auth/callback/google
+https://miniorg.your-subdomain.workers.dev/api/auth/callback/google
 ```
 
 #### Documentation complète
 
 - 📘 [Guide de déploiement complet](./docs/deployment/DEPLOYMENT.md)
 - 🔐 [Configuration Google OAuth](./docs/guides/GOOGLE_OAUTH_SETUP.md)
-- 🎛️ [Configuration via Dashboard Cloudflare](./docs/deployment/CLOUDFLARE_DASHBOARD_SETUP.md)
 - 📚 [Toute la documentation](./docs/README.md)
 
 #### Vérification pré-déploiement
 
-Avant de déployer, vérifiez que tout est prêt :
+Avant de déployer, vérifiez votre configuration :
 ```bash
-./scripts/verify-deployment-ready.sh
+npm run build
 ```
 
 ### Alternative : Autres plateformes

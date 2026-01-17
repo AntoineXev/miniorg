@@ -23,7 +23,6 @@ NODE_ENV = "production"
 
 # Configuration des secrets pour NextAuth v5:
 # Pour Workers: wrangler secret put SECRET_NAME
-# Pour Pages: wrangler pages secret put SECRET_NAME --project-name=miniorg
 # 
 # Secrets nécessaires:
 # - AUTH_SECRET (utilisé par NextAuth v5)

@@ -16,8 +16,11 @@ export function getPrismaClient(d1Database: D1Database): PrismaClient {
   
   if (!cached) {
     const adapter = new PrismaD1(d1Database)
-    // @ts-expect-error - PrismaClient adapter option is not in types but works at runtime
-    cached = new PrismaClient({ adapter })
+    // In Prisma 7, adapter is now a supported option
+    cached = new PrismaClient({ 
+      adapter,
+      // No datasourceUrl needed when using adapter
+    })
     prismaClientCache.set(d1Database, cached)
   }
   
@@ -29,7 +32,7 @@ export function getPrismaClient(d1Database: D1Database): PrismaClient {
  * Works in both Edge Runtime and local development
  */
 export function getDB(): D1Database {
-  // In production (Cloudflare Pages), use the binding
+  // In production (Cloudflare Workers), use the binding
   if (typeof process !== 'undefined' && process.env.DB) {
     return process.env.DB as unknown as D1Database
   }

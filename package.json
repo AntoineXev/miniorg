@@ -4,17 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:pages": "next build && npx @cloudflare/next-on-pages",
-    "build:worker": "opennextjs-cloudflare build",
+    "build": "opennextjs-cloudflare build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "pages:deploy": "npm run build:pages && wrangler pages deploy .vercel/output/static",
-    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-17 --d1=DB",
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy"
   },

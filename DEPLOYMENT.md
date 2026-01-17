@@ -1,6 +1,14 @@
-# Guide de déploiement sur Cloudflare Pages + D1
+# Guide de déploiement sur Cloudflare Workers avec OpenNext
 
-Ce guide vous accompagne pas à pas pour déployer MiniOrg sur Cloudflare.
+Ce guide vous accompagne pas à pas pour déployer MiniOrg sur Cloudflare Workers en utilisant **@opennextjs/cloudflare**.
+
+## 🎯 Pourquoi Workers + OpenNext ?
+
+✅ **Node.js Runtime** : Accès complet aux APIs Node.js (vs Edge Runtime limité)  
+✅ **Meilleure compatibilité** : Next.js 15+ entièrement supporté  
+✅ **Moins de contraintes** : Pas besoin de forcer `edge` runtime partout  
+✅ **Plus stable** : Moins de workarounds nécessaires  
+✅ **Better-auth & Prisma** : Fonctionnent sans problème  
 
 ## Prérequis
 
@@ -45,14 +53,14 @@ database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 ### 2.1 Vérifier la configuration wrangler.toml
 
-Assurez-vous que votre `wrangler.toml` contient bien :
+Votre `wrangler.toml` devrait ressembler à :
 
 ```toml
 name = "miniorg"
-compatibility_date = "2024-01-17"
-pages_build_output_dir = ".vercel/output/static"
+compatibility_date = "2025-01-01"
+main = ".worker-next/index.mjs"
 
-# Compatibility flags for Node.js APIs (IMPORTANT!)
+# Compatibility flags for Node.js APIs
 compatibility_flags = ["nodejs_compat"]
 
 # D1 Database binding
@@ -60,61 +68,59 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "miniorg-production"
 database_id = "votre-database-id-ici"
+
+# Assets binding for static files
+[[assets]]
+binding = "ASSETS"
+directory = ".worker-next/assets"
+
+[vars]
+NODE_ENV = "production"
 ```
 
-⚠️ **Le flag `nodejs_compat` est essentiel** - sans lui, vous aurez l'erreur `Node.JS Compatibility Error` au runtime.
+⚠️ **Le flag `nodejs_compat` est essentiel** pour le support complet de Node.js.
 
 ## Étape 3: Migrer le schéma de base de données
 
-Exécutez le script de migration :
+### 3.1 Combiner les migrations
+
+```bash
+cat prisma/migrations/*/migration.sql > prisma/combined-migration.sql
+```
+
+### 3.2 Appliquer sur D1
+
+```bash
+wrangler d1 execute miniorg-production --file=prisma/combined-migration.sql
+```
+
+Ou utilisez le script automatisé :
 
 ```bash
 ./scripts/migrate-to-d1.sh miniorg-production
 ```
 
-Ou manuellement :
-
-```bash
-# Combiner les migrations
-cat prisma/migrations/*/migration.sql > prisma/combined-migration.sql
-
-# Appliquer sur D1
-wrangler d1 execute miniorg-production --file=prisma/combined-migration.sql
-```
-
 ## Étape 4: Configurer les variables d'environnement
 
-### 4.1 Secrets (sensibles)
-
-**Important** : Pour Cloudflare Pages, les secrets se configurent différemment que pour Workers.
-
-#### Méthode 1 : Via le Dashboard Cloudflare (RECOMMANDÉ)
-
-1. Allez sur https://dash.cloudflare.com
-2. Pages > miniorg > Settings > Environment variables
-3. Ajoutez (cliquez "Add variable") :
-   - `NEXTAUTH_SECRET` = votre secret (ex: résultat de `openssl rand -base64 32`)
-   - `GOOGLE_CLIENT_ID` = votre Google Client ID
-   - `GOOGLE_CLIENT_SECRET` = votre Google Client Secret
-   - `NEXTAUTH_URL` = `https://miniorg.pages.dev` (à mettre à jour après déploiement)
-4. Sélectionnez "Encrypt" pour chaque secret sensible
-5. Sauvegardez
-
-#### Méthode 2 : Via CLI (après avoir créé le projet Pages)
+Les **secrets** (variables sensibles) se configurent via Wrangler :
 
 ```bash
-# Pour Pages, utilisez "wrangler pages secret" (pas juste "wrangler secret")
-wrangler pages secret put NEXTAUTH_SECRET --project-name=miniorg
-wrangler pages secret put GOOGLE_CLIENT_ID --project-name=miniorg
-wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name=miniorg
-wrangler pages secret put NEXTAUTH_URL --project-name=miniorg
+# Générer un secret pour NEXTAUTH_SECRET
+openssl rand -base64 32
+
+# Configurer les secrets
+wrangler secret put NEXTAUTH_SECRET
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put NEXTAUTH_URL
 ```
 
-**Note** : Ces commandes ne fonctionnent qu'APRÈS avoir créé le projet Pages avec le premier déploiement.
+Quand vous exécutez `wrangler secret put NEXTAUTH_URL`, entrez votre URL de Worker :
+```
+https://miniorg.YOUR-SUBDOMAIN.workers.dev
+```
 
-### 4.2 Variables publiques
-
-Les variables non-sensibles sont déjà dans `wrangler.toml`.
+**Note** : Les secrets sont différents des variables publiques dans `[vars]`.
 
 ## Étape 5: Configuration Google OAuth
 
@@ -123,142 +129,316 @@ Ajoutez les URIs de redirection dans [Google Cloud Console](https://console.clou
 1. Allez dans "APIs & Services" > "Credentials"
 2. Sélectionnez votre OAuth 2.0 Client
 3. Ajoutez dans "Authorized redirect URIs":
-   - `https://miniorg.pages.dev/api/auth/callback/google`
+   - `https://miniorg.YOUR-SUBDOMAIN.workers.dev/api/auth/callback/google`
    - `https://VOTRE-DOMAINE-CUSTOM.com/api/auth/callback/google` (si domaine custom)
 
 ## Étape 6: Build et déploiement
 
-### 6.1 Build pour Cloudflare Pages
+### 6.1 Installer les dépendances
 
 ```bash
-npm run pages:build
+npm install
 ```
 
-Cette commande utilise `@cloudflare/next-on-pages` pour adapter votre application Next.js.
+Cela installera `@opennextjs/cloudflare` automatiquement.
 
-### 6.2 Tester localement (optionnel mais recommandé)
+### 6.2 Build avec OpenNext
 
 ```bash
-npm run pages:dev
+npm run build:worker
 ```
 
-Visitez `http://localhost:8788` pour tester.
+Cette commande :
+1. Build Next.js normalement (`next build`)
+2. Transforme le build pour Cloudflare Workers avec OpenNext
+3. Crée le dossier `.worker-next/` avec le Worker optimisé
 
-### 6.3 Déployer en production
+### 6.3 Tester localement (optionnel mais recommandé)
 
-**PREMIÈRE fois** - Créer le projet :
 ```bash
-wrangler pages deploy .vercel/output/static --project-name=miniorg
+npm run preview
 ```
 
-Cela créera le projet Pages. Notez l'URL fournie (ex: `https://miniorg.pages.dev`).
+Cela lance Wrangler en mode dev. Visitez `http://localhost:8787` pour tester.
 
-**Déploiements suivants** :
+**Note** : En local, la base D1 distante sera utilisée par défaut.
+
+### 6.4 Déployer en production
+
 ```bash
-wrangler pages deploy .vercel/output/static --project-name=miniorg
+npm run deploy
 ```
 
-### 6.4 Configurer les secrets (APRÈS le premier déploiement)
+Ou manuellement :
 
-**Via Dashboard** (recommandé) :
-1. Cloudflare Dashboard > Pages > miniorg > Settings > Environment variables
-2. Ajoutez toutes les variables (voir Étape 4)
-3. Mettez `NEXTAUTH_URL` avec l'URL réelle : `https://miniorg.pages.dev`
-
-**Ou via CLI** :
 ```bash
-wrangler pages secret put NEXTAUTH_URL --project-name=miniorg
-# Entrez l'URL: https://miniorg.pages.dev
+wrangler deploy
 ```
 
-## Étape 7: Configuration du projet Cloudflare Pages
+Cela déploiera votre Worker. Notez l'URL fournie (ex: `https://miniorg.YOUR-SUBDOMAIN.workers.dev`).
 
-### Via le Dashboard (optionnel mais recommandé pour CI/CD)
+### 6.5 Vérifier les secrets après déploiement
 
-Si vous voulez le déploiement automatique à chaque push GitHub :
+```bash
+# Lister les secrets configurés
+wrangler secret list
 
-1. Allez sur [dashboard Cloudflare](https://dash.cloudflare.com) > Pages
-2. "Create a project" > "Connect to Git"
-3. Sélectionnez votre repo GitHub
-4. Configuration :
-   - Framework preset: **Next.js**
-   - Build command: `npm install --legacy-peer-deps && npm run pages:build`
-   - Build output directory: `.vercel/output/static`
-5. Dans "Environment variables", ajoutez toutes vos variables (Étape 4)
-6. Dans "Functions" > "D1 database bindings" :
-   - Variable name: `DB`
-   - D1 database: Sélectionnez `miniorg-production`
-7. **IMPORTANT** - Dans "Settings" > "Functions" > "Compatibility flags" :
-   - Ajoutez `nodejs_compat` dans la liste des flags
-   - Ce flag est **essentiel** pour que Next.js fonctionne correctement
-   - Sans ce flag, vous aurez l'erreur `Node.JS Compatibility Error` au runtime
+# Vérifier que vous avez :
+# - NEXTAUTH_SECRET
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - NEXTAUTH_URL
+```
 
-**Note** : On utilise `npm install --legacy-peer-deps` pour gérer les peer dependencies conflictuelles.
+Si un secret manque, ajoutez-le :
 
-**Avantage** : Chaque push sur `main` déploie automatiquement !
+```bash
+wrangler secret put NOM_DU_SECRET
+```
 
-## Vérification
+## Étape 7: Configuration d'un domaine custom (optionnel)
+
+### Via le Dashboard Cloudflare
+
+1. Allez sur [dashboard Cloudflare](https://dash.cloudflare.com) > Workers & Pages
+2. Sélectionnez votre Worker `miniorg`
+3. Allez dans "Settings" > "Triggers" > "Custom Domains"
+4. Cliquez "Add Custom Domain"
+5. Entrez votre domaine (ex: `app.votredomaine.com`)
+6. Cloudflare configurera automatiquement le DNS
+
+### Mettre à jour NEXTAUTH_URL
+
+Une fois le domaine configuré :
+
+```bash
+wrangler secret put NEXTAUTH_URL
+# Entrez: https://app.votredomaine.com
+```
+
+### Mettre à jour Google OAuth
+
+N'oubliez pas d'ajouter le nouveau domaine dans Google Cloud Console :
+- `https://app.votredomaine.com/api/auth/callback/google`
+
+## Étape 8: CI/CD avec GitHub Actions (optionnel)
+
+Créez `.github/workflows/deploy.yml` :
+
+```yaml
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build with OpenNext
+        run: npm run build:worker
+        
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+```
+
+Configurez `CLOUDFLARE_API_TOKEN` dans GitHub Secrets :
+1. Cloudflare Dashboard > Mon profil > API Tokens
+2. "Create Token" > "Edit Cloudflare Workers"
+3. Copiez le token
+4. GitHub repo > Settings > Secrets > New repository secret
+5. Nom: `CLOUDFLARE_API_TOKEN`, Valeur: votre token
+
+## Vérification post-déploiement
 
 Testez ces fonctionnalités :
 
+- [ ] Page d'accueil charge correctement
 - [ ] Authentification Google fonctionne
 - [ ] Création de tâches
 - [ ] Modification de tâches
 - [ ] Suppression de tâches
 - [ ] Création d'événements calendrier
-- [ ] Drag & drop
+- [ ] Drag & drop dans le backlog
 - [ ] Tags
+- [ ] Middleware de redirection fonctionne
 
 ## Commandes utiles
 
 ```bash
-# Lister les bases D1
-wrangler d1 list
+# Build pour Workers
+npm run build:worker
+
+# Test local avec Wrangler
+npm run preview
+
+# Déployer en production
+npm run deploy
+
+# Voir les logs en temps réel
+wrangler tail
 
 # Exécuter une requête SQL sur D1
 wrangler d1 execute miniorg-production --command="SELECT * FROM User LIMIT 5"
 
-# Voir les logs en temps réel
-wrangler pages deployment tail
-
-# Lister les secrets configurés
+# Lister les secrets
 wrangler secret list
 
 # Supprimer un secret
 wrangler secret delete SECRET_NAME
+
+# Voir les détails du Worker déployé
+wrangler deployments list
 ```
+
+## Structure du build OpenNext
+
+Après `npm run build:worker`, vous verrez :
+
+```
+.worker-next/
+├── index.mjs           # Point d'entrée du Worker
+├── assets/             # Assets statiques (CSS, JS, images)
+├── server/             # Code serveur Next.js transformé
+└── ...
+```
+
+Ce dossier est optimisé pour Cloudflare Workers et contient tout ce dont vous avez besoin.
+
+## Différences avec Pages (@cloudflare/next-on-pages)
+
+| Feature | Pages (next-on-pages) | Workers (OpenNext) |
+|---------|----------------------|-------------------|
+| Runtime | Edge Runtime uniquement | Node.js Runtime |
+| APIs Node.js | Limitées | Complètes (selon workerd) |
+| Next.js 15+ | Support partiel | Support complet |
+| Contraintes | Beaucoup (edge runtime) | Peu |
+| Configuration | `.vercel/output/static` | `.worker-next/` |
+| Build command | `@cloudflare/next-on-pages` | `@opennextjs/cloudflare` |
 
 ## Dépannage
 
 ### Erreur "DB binding not found"
 
-Vérifiez que le `database_id` dans `wrangler.toml` est correct.
+**Cause** : Le binding D1 n'est pas correctement configuré.
+
+**Solution** :
+1. Vérifiez que `wrangler.toml` a le bon `database_id`
+2. Vérifiez que la DB existe : `wrangler d1 list`
+3. Re-déployez : `npm run deploy`
 
 ### Erreur d'authentification Google
 
-1. Vérifiez que les redirect URIs sont corrects dans Google Console
-2. Vérifiez que `NEXTAUTH_URL` correspond à votre URL de déploiement
-3. Vérifiez que `NEXTAUTH_SECRET` est bien configuré
+**Cause** : Configuration OAuth incorrecte.
 
-### Erreur de build
+**Solution** :
+1. Vérifiez les redirect URIs dans Google Console
+2. Vérifiez que `NEXTAUTH_URL` correspond exactement à votre URL
+3. Vérifiez que tous les secrets sont configurés : `wrangler secret list`
 
-1. Assurez-vous que `@cloudflare/next-on-pages` est installé
-2. Vérifiez que toutes les routes API ont `export const runtime = 'edge'`
-3. Vérifiez les logs : `wrangler pages deployment tail`
+### Erreur "Module not found" ou build échoue
 
-## Limites du tier gratuit
+**Cause** : Dépendance incompatible ou manquante.
 
-- ✅ 500 builds/mois
+**Solution** :
+1. Vérifiez que `@opennextjs/cloudflare` est installé : `npm list @opennextjs/cloudflare`
+2. Nettoyez et réinstallez : `rm -rf node_modules .next && npm install`
+3. Re-buildez : `npm run build:worker`
+
+### Worker trop volumineux
+
+**Cause** : Le Worker dépasse la limite de 10 MiB (plan payant) ou 3 MiB (gratuit).
+
+**Solution** :
+1. Vérifiez la taille compressée après build (c'est celle qui compte)
+2. Supprimez les dépendances inutilisées
+3. Utilisez le code splitting de Next.js
+4. Passez au plan Workers Paid si nécessaire (10 MiB limit)
+
+### Logs et debugging
+
+```bash
+# Voir les logs en temps réel
+wrangler tail
+
+# Voir les logs d'un déploiement spécifique
+wrangler tail --filter <DEPLOYMENT_ID>
+
+# Debug local avec inspection
+wrangler dev --local --inspect
+```
+
+## Limites du tier gratuit Workers
+
+- ✅ **100,000 requêtes/jour**
+- ✅ **10ms CPU time par requête**
 - ✅ Bande passante illimitée
-- ✅ 100,000 requêtes/jour Workers
 - ✅ 5M lectures D1/jour
 - ✅ 100,000 écritures D1/jour
+- ⚠️ 3 MiB de taille Worker (10 MiB sur plan payant)
 
 Largement suffisant pour un usage personnel ou petit projet !
+
+## Avantages Workers vs Pages
+
+### ✅ Workers avec OpenNext
+- Runtime Node.js complet
+- Meilleure compatibilité Next.js
+- Moins de workarounds
+- Support ISR, PPR, etc.
+- Better-auth fonctionne parfaitement
+
+### ⚠️ Pages avec next-on-pages
+- Edge Runtime uniquement
+- Limitations sur les packages NPM
+- Nécessite `export const runtime = 'edge'` partout
+- Support Next.js incomplet
+
+## Performance Tips
+
+1. **Utilisez le cache Cloudflare** : Les assets statiques sont automatiquement cachés
+2. **Optimisez les images** : `unoptimized: true` est déjà configuré
+3. **Réduisez les bundles** : Évitez les grosses librairies si possible
+4. **Utilisez ISR** : Pour les pages qui changent peu
+5. **Monitoring** : Utilisez Cloudflare Analytics pour suivre les performances
 
 ## Support
 
 Pour toute question :
-- Documentation Cloudflare Pages : https://developers.cloudflare.com/pages/
-- Documentation D1 : https://developers.cloudflare.com/d1/
-- Documentation next-on-pages : https://github.com/cloudflare/next-on-pages
+- **Documentation OpenNext Cloudflare** : https://opennext.js.org/cloudflare
+- **Documentation Cloudflare Workers** : https://developers.cloudflare.com/workers/
+- **Documentation D1** : https://developers.cloudflare.com/d1/
+- **Issues OpenNext** : https://github.com/opennextjs/opennextjs-cloudflare
+
+## Migration depuis Pages
+
+Si vous migrez depuis `@cloudflare/next-on-pages` :
+
+1. ✅ Désinstallez `@cloudflare/next-on-pages`
+2. ✅ Installez `@opennextjs/cloudflare`
+3. ✅ Mettez à jour `wrangler.toml` (voir Étape 2.1)
+4. ✅ Mettez à jour les scripts dans `package.json`
+5. ✅ (Optionnel) Supprimez `export const runtime = 'edge'` des routes
+6. ✅ Buildez et déployez : `npm run build:worker && npm run deploy`
+
+C'est tout ! Votre app devrait fonctionner beaucoup mieux. 🚀
+
+---
+
+**Dernière mise à jour** : Janvier 2026  
+**Version OpenNext** : 1.1.1  
+**Version Next.js** : 16.1.3

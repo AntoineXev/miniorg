@@ -98,7 +98,7 @@
 1. Appliquer migration D1 : `wrangler d1 execute miniorg-production --file=prisma/combined-migration.sql`
 2. Mettre à jour secrets : `wrangler secret put AUTH_SECRET`, etc.
 3. Mettre à jour Google OAuth redirect URIs
-4. Build : `npm run build:worker`
+4. Build : `npm run build`
 5. Deploy : `npm run deploy`
 
 **Guide complet** : Voir `MIGRATION_GUIDE.md`
@@ -113,36 +113,17 @@
 - Replaced `auth()` with `getToken()` from `next-auth/jwt` in middleware
   - `auth()` uses `async_hooks` which is not available in Cloudflare Workers
   - `getToken()` is fully Edge Runtime compatible
-  - Fixes: `No such module "__next-on-pages-dist__/functions/async_hooks"` error
 - Added protection for `/calendar` route in addition to `/backlog`
 - Middleware size reduced from 97.3 kB to 38.1 kB
 
 #### Runtime Configuration
 - Added `nodejs_compat` compatibility flag to `wrangler.toml`
   - Required for Node.js APIs used by Next.js and dependencies
-  - Fixes: `Node.JS Compatibility Error: no nodejs_compat compatibility flag set`
-
-#### Build Dependencies
-- Moved `@cloudflare/workers-types` from devDependencies to dependencies
-  - Required during TypeScript compilation in Cloudflare Pages build
-  - Fixes: `Cannot find module '@cloudflare/workers-types'` error
-- Added `eslint.ignoreDuringBuilds: true` to `next.config.js`
-  - ESLint should be run locally before deployment
-  - Fixes: `Failed to load config "next/core-web-vitals"` error during build
-
-### 🚀 Added - Cloudflare Pages Support
-
-#### Important Notes
-- ✅ Using **Cloudflare Pages** (not Workers directly)
-- ✅ Pages includes Workers functionality for API routes automatically
-- ✅ Secrets managed via `wrangler pages secret` or Dashboard (not `wrangler secret`)
-- ✅ GitHub Actions workflow removed (Cloudflare Dashboard handles CI/CD natively)
 
 #### Infrastructure
-- Added `@cloudflare/next-on-pages` for Next.js to Cloudflare Pages adapter
+- Added `@opennextjs/cloudflare` for Next.js to Cloudflare Workers adapter
 - Added `wrangler` CLI for Cloudflare deployment
 - Added `wrangler.toml` configuration file for D1 database binding
-- ~~Removed GitHub Actions workflow~~ (Cloudflare Dashboard handles CI/CD natively)
 
 #### Database
 - Added `lib/prisma-edge.ts` with D1 adapter for Edge Runtime
@@ -164,9 +145,9 @@
 #### Configuration
 - Modified `next.config.js` - Added Cloudflare-specific optimizations
 - Modified `package.json` - Added deployment scripts:
-  - `pages:build` - Build for Cloudflare Pages
-  - `pages:deploy` - Build and deploy
-  - `pages:dev` - Local Cloudflare development
+  - `build` - Build for Cloudflare Workers
+  - `deploy` - Build and deploy
+  - `preview` - Local preview
 - Updated `.gitignore` for Cloudflare artifacts
 
 #### Scripts
@@ -174,16 +155,9 @@
 - Added `scripts/verify-deployment-ready.sh` - Pre-deployment verification
 
 #### Documentation
-- Added `DEPLOYMENT.md` - Complete deployment guide (corrected for Pages)
-- Added `MIGRATION_COMPLETE.md` - Migration summary
-- Added `QUICK_REFERENCE.md` - Quick command reference (corrected for Pages)
+- Added `DEPLOYMENT.md` - Complete deployment guide for Workers
 - Added `docs/GOOGLE_OAUTH_SETUP.md` - OAuth configuration guide
-- Added `docs/PAGES_VS_WORKERS.md` - Clarification on Pages vs Workers
-- Added `docs/CLOUDFLARE_DASHBOARD_SETUP.md` - Dashboard deployment guide
-- Added `docs/POST_DEPLOYMENT_TESTS.md` - 25 post-deployment tests
-- Added `docs/LOCAL_DEVELOPMENT.md` - Local development guide
-- Added `docs/INDEX.md` - Documentation index
-- Updated `README.md` - Added Cloudflare deployment section
+- Updated `README.md` - Added Cloudflare Workers deployment section
 
 #### Templates
 - Added `env.example` - Environment variables template
@@ -203,8 +177,8 @@
 
 #### Development Workflow
 - Dev mode: `npm run dev` (Next.js + SQLite) - unchanged
-- New: `npm run pages:build` for Cloudflare build
-- New: `npm run pages:dev` for local Cloudflare testing
+- New: `npm run build` for Cloudflare build
+- New: `npm run preview` for local Cloudflare testing
 
 ### 📝 Technical Details
 
@@ -266,10 +240,11 @@ None - the app remains fully compatible with:
 
 ```json
 {
+  "dependencies": {
+    "@opennextjs/cloudflare": "^1.14.9"
+  },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
-    "wrangler": "^4.59.2",
-    "vercel": "latest"
+    "wrangler": "^4.59.2"
   }
 }
 ```
@@ -298,19 +273,16 @@ Total: 25 tests
 
 ```
 docs/
-├── DEPLOYMENT.md                 # Main deployment guide
-├── GOOGLE_OAUTH_SETUP.md        # OAuth configuration
-├── CLOUDFLARE_DASHBOARD_SETUP.md # Dashboard deployment
-├── POST_DEPLOYMENT_TESTS.md      # Testing checklist
-└── LOCAL_DEVELOPMENT.md          # Local dev guide
+├── deployment/
+│   └── DEPLOYMENT.md             # Main deployment guide
+└── guides/
+    └── GOOGLE_OAUTH_SETUP.md    # OAuth configuration
 
 scripts/
-├── migrate-to-d1.sh             # DB migration
-└── verify-deployment-ready.sh    # Pre-flight checks
+└── migrate-to-d1.sh             # DB migration
 
 Root level:
-├── MIGRATION_COMPLETE.md         # Summary for user
-├── QUICK_REFERENCE.md            # Command reference
+├── DEPLOYMENT.md                 # Main deployment guide (copy)
 └── CHANGELOG.md                  # This file
 ```
 

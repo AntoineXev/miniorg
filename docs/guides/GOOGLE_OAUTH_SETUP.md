@@ -149,9 +149,9 @@ Après déploiement :
 - Application : `http://localhost:3000`
 - Callback : `http://localhost:3000/api/auth/callback/google`
 
-### Production Cloudflare Pages
-- Application : `https://miniorg.pages.dev`
-- Callback : `https://miniorg.pages.dev/api/auth/callback/google`
+### Production Cloudflare Workers
+- Application : `https://miniorg.your-subdomain.workers.dev`
+- Callback : `https://miniorg.your-subdomain.workers.dev/api/auth/callback/google`
 
 ### Avec domaine custom
 - Application : `https://votre-domaine.com`
@@ -159,11 +159,11 @@ Après déploiement :
 
 ## Note sur les domaines custom
 
-Si vous configurez un domaine custom dans Cloudflare :
+Si vous configurez un domaine custom :
 
-1. Ajoutez le domaine dans Cloudflare Pages settings
+1. Ajoutez le domaine dans Cloudflare Workers settings
 2. Ajoutez les URIs avec ce domaine dans Google Console
-3. Mettez à jour `NEXTAUTH_URL` :
+3. Mettez à jour `AUTH_URL` :
    ```bash
    wrangler secret put NEXTAUTH_URL
    # Entrez: https://votre-domaine.com
