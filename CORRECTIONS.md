@@ -95,11 +95,31 @@ Pas besoin de :
 
 - ❌ Supprimé : `.github/workflows/deploy.yml`
 - ✅ Créé : `docs/PAGES_VS_WORKERS.md`
+- ✅ Créé : `docs/TROUBLESHOOTING.md`
 - ✏️ Corrigé : `DEPLOYMENT.md`
 - ✏️ Corrigé : `QUICK_REFERENCE.md`
 - ✏️ Corrigé : `START_HERE.md`
 - ✏️ Corrigé : `CHANGELOG.md`
 - ✏️ Corrigé : `docs/INDEX.md`
+- ✏️ Corrigé : `docs/CLOUDFLARE_DASHBOARD_SETUP.md`
+- ♻️ Regénéré : `package-lock.json` (avec --legacy-peer-deps)
+
+## 4. 🔧 Correction de l'erreur build Cloudflare
+
+**Votre erreur** : 
+```
+npm error `npm ci` can only install packages when your 
+package.json and package-lock.json are in sync
+```
+
+**✅ Solution appliquée** :
+1. Regénéré `package-lock.json` avec `--legacy-peer-deps`
+2. Mis à jour la commande de build dans la documentation :
+   - Build command : `npm install --legacy-peer-deps && npm run pages:build`
+
+**Nouveau fichier créé** : `docs/TROUBLESHOOTING.md` avec toutes les erreurs communes et leurs solutions
+
+---
 
 ## Merci pour vos remarques ! 🙏
 

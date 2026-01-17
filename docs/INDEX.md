@@ -99,6 +99,7 @@ wrangler d1 execute [db] --command="SELECT COUNT(*) FROM Task"  # Métriques DB
 | Document | Description | Durée | Priorité |
 |----------|-------------|-------|----------|
 | [`POST_DEPLOYMENT_TESTS.md`](POST_DEPLOYMENT_TESTS.md) | 25 tests de validation | 20 min | ⭐⭐⭐ |
+| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Résolution d'erreurs communes | 10 min | ⭐⭐⭐ |
 | `scripts/verify-deployment-ready.sh` | Vérification automatique | 1 min | ⭐⭐⭐ |
 
 ### 📊 Référence
