@@ -2,11 +2,11 @@ name = "miniorg"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = ".vercel/output/static"
 
-# Configuration pour Workers (à utiliser quand OpenNext sera fixé)
-# main = ".worker-next/index.mjs"
-# [[assets]]
-# binding = "ASSETS"
-# directory = ".worker-next/assets"
+# Configuration pour Workers
+main = ".worker-next/index.mjs"
+
+[assets]
+directory = ".worker-next/assets"
 
 # Compatibility flags for Node.js APIs
 compatibility_flags = ["nodejs_compat"]
