@@ -38,3 +38,11 @@ next-env.d.ts
 # prisma
 /prisma/dev.db
 /prisma/dev.db-journal
+/prisma/combined-migration.sql
+/prisma/data-export.sql
+
+# cloudflare
+.wrangler/
+.dev.vars
+wrangler.toml.backup
+

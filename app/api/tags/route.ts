@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
+
+// Enable Edge Runtime for Cloudflare Workers
+export const runtime = 'edge';
 
 // GET /api/tags - Fetch all tags for authenticated user
 export async function GET(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,6 +33,7 @@ export async function GET(request: NextRequest) {
 // POST /api/tags - Create a new tag
 export async function POST(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

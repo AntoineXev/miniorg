@@ -10,7 +10,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:deploy": "npm run pages:build && wrangler pages deploy",
+    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-17 --d1=DB"
   },
   "dependencies": {
     "next": "^14.1.0",

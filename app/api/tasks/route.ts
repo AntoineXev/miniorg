@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { z } from "zod";
+
+// Enable Edge Runtime for Cloudflare Workers
+export const runtime = 'edge';
 
 // Schema for task creation/update
 const taskSchema = z.object({
@@ -18,6 +21,7 @@ const taskSchema = z.object({
 // GET /api/tasks - Fetch all tasks for authenticated user
 export async function GET(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,6 +71,7 @@ export async function GET(request: NextRequest) {
 // POST /api/tasks - Create a new task
 export async function POST(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -105,6 +110,7 @@ export async function POST(request: NextRequest) {
 // PATCH /api/tasks/:id - Update a task
 export async function PATCH(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -166,6 +172,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/tasks/:id - Delete a task
 export async function DELETE(request: NextRequest) {
   try {
+    const prisma = getPrisma();
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

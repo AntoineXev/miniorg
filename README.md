@@ -110,25 +110,71 @@ miniorg/
 
 ## Deployment
 
-### Cloudflare Workers
+### Cloudflare Workers + D1
 
-1. Install Wrangler CLI:
+**⚡ Le projet est maintenant prêt pour le déploiement sur Cloudflare !**
+
+#### Quick Start
+
+1. **Installer Wrangler CLI** (si pas déjà fait)
 ```bash
 npm install -g wrangler
+wrangler login
 ```
 
-2. Set up D1 database:
+2. **Créer la base D1**
 ```bash
-wrangler d1 create miniorg-db
+wrangler d1 create miniorg-production
 ```
+Copiez le `database_id` affiché et mettez-le à jour dans `wrangler.toml`.
 
-3. Update `wrangler.toml` with your D1 database ID
-
-4. Deploy:
+3. **Migrer le schéma**
 ```bash
-npm run build
-wrangler deploy
+./scripts/migrate-to-d1.sh miniorg-production
 ```
+
+4. **Configurer les secrets**
+```bash
+wrangler secret put NEXTAUTH_SECRET
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put NEXTAUTH_URL
+```
+
+5. **Build et déployer**
+```bash
+npm run pages:build
+wrangler pages deploy .vercel/output/static --project-name=miniorg
+```
+
+6. **Configurer Google OAuth**
+Ajoutez l'URI de redirection dans [Google Cloud Console](https://console.cloud.google.com/):
+```
+https://miniorg.pages.dev/api/auth/callback/google
+```
+
+#### Documentation complète
+
+- 📘 [Guide de déploiement complet](./DEPLOYMENT.md)
+- 🔐 [Configuration Google OAuth](./docs/GOOGLE_OAUTH_SETUP.md)
+- 🎛️ [Configuration via Dashboard Cloudflare](./docs/CLOUDFLARE_DASHBOARD_SETUP.md)
+
+#### Vérification pré-déploiement
+
+Avant de déployer, vérifiez que tout est prêt :
+```bash
+./scripts/verify-deployment-ready.sh
+```
+
+### Alternative : Autres plateformes
+
+Bien que le projet soit optimisé pour Cloudflare, vous pouvez aussi le déployer sur :
+- Vercel (avec PostgreSQL ou autre DB)
+- Railway
+- Render
+- Fly.io
+
+Note : Ces plateformes nécessiteront quelques ajustements (retirer `runtime = 'edge'` des API routes).
 
 ## Roadmap
 
