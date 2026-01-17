@@ -1,6 +1,6 @@
 # MiniOrg - Life Planner
 
-A minimal, clean life planner inspired by Sunsama, built with Next.js and designed for modern professionals who want to stay organized without the complexity.
+A minimal, clean life planner, built with Next.js and designed for modern professionals who want to stay organized without the complexity.
 
 ## Features
 
