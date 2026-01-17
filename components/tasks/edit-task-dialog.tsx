@@ -17,6 +17,7 @@ type Task = {
   status: string;
   scheduledDate?: Date | null;
   deadlineType?: string | null;
+  duration?: number | null; // Duration in minutes
   completedAt?: Date | null;
   tags?: Array<{ id: string; name: string; color: string }>;
 };
@@ -41,6 +42,7 @@ export function EditTaskDialog({
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
   const [specificDate, setSpecificDate] = useState<string>("");
   const [useSpecificDate, setUseSpecificDate] = useState(false);
+  const [duration, setDuration] = useState<string>("30"); // Duration in minutes as string for input
   const [showMore, setShowMore] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,6 +52,7 @@ export function EditTaskDialog({
     if (task) {
       setTitle(task.title || "");
       setDescription(task.description || "");
+      setDuration(task.duration?.toString() || "30");
       
       if (task.scheduledDate) {
         setUseSpecificDate(true);
@@ -82,6 +85,7 @@ export function EditTaskDialog({
           description: description.trim() || null,
           deadlineType: useSpecificDate ? null : (deadlineType || null),
           scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : null,
+          duration: duration ? parseInt(duration, 10) : null,
         }),
       });
 
@@ -241,6 +245,26 @@ export function EditTaskDialog({
                     </Button>
                   </>
                 )}
+
+                {/* Duration selector */}
+                <div className="flex items-center gap-1.5 ml-2 border-l pl-3">
+                  <Select value={duration} onValueChange={setDuration}>
+                    <SelectTrigger className="h-8 text-sm border-0 focus:ring-0 w-auto">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="45">45 min</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="90">1.5 hours</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                      <SelectItem value="180">3 hours</SelectItem>
+                      <SelectItem value="240">4 hours</SelectItem>
+                      <SelectItem value="480">8 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Right side - Show more */}

@@ -7,6 +7,7 @@ A minimal, clean life planner inspired by Sunsama, built with Next.js and design
 - 🎯 **Today View** - Plan your day with time-specific task scheduling
 - 📋 **Smart Backlog** - Automatic grouping by deadline (Overdue, Next 3 Days, Week, Month, Quarter, Year, No Date)
 - 📅 **Calendar View** - Week-based kanban board to visualize your schedule
+- 🎯 **Drag & Drop** - Move incomplete tasks between days in the calendar view
 - ⚡ **Quick Add** - Keyboard shortcut (⌘K / Ctrl+K) for rapid task creation
 - ✨ **Beautiful UI** - Clean, minimal design with smooth animations
 - 🔐 **Secure Auth** - Google OAuth authentication
@@ -82,7 +83,8 @@ Press `⌘K` (Mac) or `Ctrl+K` (Windows/Linux) anywhere in the app to quickly ad
 ### View Your Week
 1. Go to **Calendar** view
 2. See your tasks organized by day
-3. Completed tasks show at the bottom of each day column
+3. **Drag & Drop** incomplete tasks to reschedule them to different days
+4. Completed tasks show at the bottom of each day column (cannot be dragged)
 
 ## Project Structure
 
@@ -130,7 +132,7 @@ wrangler deploy
 
 ## Roadmap
 
-- [ ] Drag-and-drop task scheduling with Pragmatic DnD
+- [x] Drag-and-drop task scheduling with Pragmatic DnD
 - [ ] Time picker for precise scheduling
 - [ ] Markdown editor for task descriptions (Novel)
 - [ ] Recurring tasks

@@ -67,6 +67,7 @@ model Task {
   scheduledDate DateTime?
   deadlineType  String?
   deadlineSetAt DateTime?
+  duration      Int?      // Duration in minutes
   order         Int       @default(0)
   completedAt   DateTime?
   userId        String

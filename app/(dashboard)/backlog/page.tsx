@@ -13,6 +13,7 @@ type Task = {
   scheduledDate?: Date | null;
   deadlineType?: string | null;
   deadlineSetAt?: Date | null;
+  duration?: number | null; // Duration in minutes
   completedAt?: Date | null;
   tags?: Array<{ id: string; name: string; color: string }>;
   createdAt: Date;

@@ -11,6 +11,7 @@ const taskSchema = z.object({
   scheduledDate: z.string().datetime().optional(),
   deadlineType: z.enum(["next_3_days", "next_week", "next_month", "next_quarter", "next_year", "no_date"]).optional(),
   deadlineSetAt: z.string().datetime().optional(),
+  duration: z.number().int().min(1).optional(), // Duration in minutes
   tagIds: z.array(z.string()).optional(),
 });
 

@@ -17,6 +17,7 @@ export type TaskCardProps = {
     scheduledDate?: Date | null;
     deadlineType?: string | null;
     deadlineSetAt?: Date | null;
+    duration?: number | null; // Duration in minutes
     completedAt?: Date | null;
     tags?: Array<{ id: string; name: string; color: string }>;
   };
@@ -33,9 +34,12 @@ export function TaskCard({
   onEdit,
   onDelete,
   showTime = false,
-  estimatedMinutes = 30,
+  estimatedMinutes,
 }: TaskCardProps) {
   const isCompleted = task.status === "done";
+  
+  // Use task.duration if available, otherwise use estimatedMinutes, default to 30
+  const durationMinutes = task.duration ?? estimatedMinutes ?? 30;
 
   // Formater la durée
   const formatDuration = (minutes: number) => {
@@ -154,7 +158,7 @@ export function TaskCard({
                 variant="secondary" 
                 className="text-[10px] px-1.5 py-0 h-5 bg-muted/50 text-muted-foreground font-medium shrink-0"
               >
-                {formatDuration(estimatedMinutes)}
+                {formatDuration(durationMinutes)}
               </Badge>
             </div>
 

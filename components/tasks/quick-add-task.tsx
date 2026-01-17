@@ -23,6 +23,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
   const [specificDate, setSpecificDate] = useState<string>("");
   const [useSpecificDate, setUseSpecificDate] = useState(false);
+  const [duration, setDuration] = useState<string>("30"); // Duration in minutes
   const [showMore, setShowMore] = useState(false);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +66,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
     setDeadlineType("next_3_days");
     setSpecificDate("");
     setUseSpecificDate(false);
+    setDuration("30");
     setShowMore(false);
     setDescription("");
   };
@@ -84,6 +86,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
           description: description.trim() || undefined,
           deadlineType: useSpecificDate ? undefined : deadlineType,
           scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
+          duration: duration ? parseInt(duration, 10) : undefined,
           status: "backlog",
         }),
       });
@@ -227,6 +230,26 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
                     </Button>
                   </>
                 )}
+
+                {/* Duration selector */}
+                <div className="flex items-center gap-1.5 ml-2 border-l pl-3">
+                  <Select value={duration} onValueChange={setDuration}>
+                    <SelectTrigger className="h-8 text-sm border-0 focus:ring-0 w-auto">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="45">45 min</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="90">1.5 hours</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                      <SelectItem value="180">3 hours</SelectItem>
+                      <SelectItem value="240">4 hours</SelectItem>
+                      <SelectItem value="480">8 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Right side - Show more */}
