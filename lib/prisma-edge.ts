@@ -1,12 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaD1 } from '@prisma/adapter-d1'
-
-// Type for Cloudflare D1 database
-declare global {
-  interface CloudflareEnv {
-    DB: D1Database
-  }
-}
+import type { D1Database } from '@cloudflare/workers-types'
 
 // Cache for Prisma client instances per request
 const prismaClientCache = new WeakMap<D1Database, PrismaClient>()
@@ -22,7 +16,8 @@ export function getPrismaClient(d1Database: D1Database): PrismaClient {
   
   if (!cached) {
     const adapter = new PrismaD1(d1Database)
-    cached = new PrismaClient({ adapter })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cached = new PrismaClient({ adapter } as any)
     prismaClientCache.set(d1Database, cached)
   }
   

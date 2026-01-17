@@ -15,7 +15,8 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 // Use this in API routes to automatically detect environment
 export function getPrisma(): PrismaClient {
   // For Edge Runtime with D1, use the edge client
-  if (typeof EdgeRuntime !== 'undefined' && process.env.DB) {
+  // EdgeRuntime is a global variable only available in Cloudflare Workers
+  if (typeof (globalThis as any).EdgeRuntime !== 'undefined' && process.env.DB) {
     // Dynamic import to avoid bundling issues
     const { getPrismaClient, getDB } = require('./prisma-edge')
     return getPrismaClient(getDB())
@@ -24,4 +25,3 @@ export function getPrisma(): PrismaClient {
   // For Node.js runtime (local dev), use standard client
   return prisma
 }
-
