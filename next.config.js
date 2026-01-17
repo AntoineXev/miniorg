@@ -5,7 +5,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
-  // Cloudflare Pages configuration
+  // Cloudflare Workers configuration with OpenNext
   images: {
     unoptimized: true, // Cloudflare has its own image optimization
   },

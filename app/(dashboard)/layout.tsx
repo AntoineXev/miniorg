@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Calendar, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Force dynamic rendering to avoid pre-rendering issues with auth
+export const dynamic = 'force-dynamic';
+
 type RightSidebarPanel = "timeline" | "backlog" | null;
 
 export default function DashboardLayout({

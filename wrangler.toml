@@ -2,6 +2,12 @@ name = "miniorg"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = ".vercel/output/static"
 
+# Configuration pour Workers (à utiliser quand OpenNext sera fixé)
+# main = ".worker-next/index.mjs"
+# [[assets]]
+# binding = "ASSETS"
+# directory = ".worker-next/assets"
+
 # Compatibility flags for Node.js APIs
 compatibility_flags = ["nodejs_compat"]
 
@@ -9,14 +15,18 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "miniorg-production"
-database_id = "4bc4d83f-391b-45bb-af6a-51310ecfc020"  # À remplacer après avoir créé la DB avec: wrangler d1 create miniorg-production
+database_id = "4bc4d83f-391b-45bb-af6a-51310ecfc020"
 
 # Environment variables (secrets should be set via wrangler secret put)
 [vars]
 NODE_ENV = "production"
 
-# Note: Pour configurer les secrets après création de la DB:
-# wrangler secret put NEXTAUTH_SECRET
-# wrangler secret put GOOGLE_CLIENT_ID
-# wrangler secret put GOOGLE_CLIENT_SECRET
-# wrangler secret put NEXTAUTH_URL --value "https://miniorg.pages.dev"
+# Note: Pour configurer les secrets:
+# Pour Pages: wrangler pages secret put SECRET_NAME --project-name=miniorg
+# Pour Workers (futur): wrangler secret put SECRET_NAME
+# 
+# Secrets nécessaires:
+# - NEXTAUTH_SECRET
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - NEXTAUTH_URL

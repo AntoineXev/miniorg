@@ -1,29 +1,25 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getSession } from "@/lib/auth-middleware";
+import { auth } from "@/lib/auth"
+import { NextResponse } from "next/server"
 
-export async function middleware(request: NextRequest) {
-  // Use JWT-based getSession - fully Edge Runtime compatible
-  const session = await getSession(request);
-
-  const isAuthenticated = !!session?.user;
+export default auth((req) => {
+  const isAuthenticated = !!req.auth
+  const pathname = req.nextUrl.pathname
 
   // Protect backlog and calendar routes
-  if (request.nextUrl.pathname.startsWith("/backlog") || 
-      request.nextUrl.pathname.startsWith("/calendar")) {
+  if (pathname.startsWith("/backlog") || pathname.startsWith("/calendar")) {
     if (!isAuthenticated) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/login", req.url))
     }
   }
 
-  // Redirect to backlog if already logged in and trying to access login
-  if (request.nextUrl.pathname === "/login" && isAuthenticated) {
-    return NextResponse.redirect(new URL("/backlog", request.url));
+  // Redirect to backlog if already logged in
+  if (pathname === "/login" && isAuthenticated) {
+    return NextResponse.redirect(new URL("/backlog", req.url))
   }
 
-  return NextResponse.next();
-}
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-};
+}

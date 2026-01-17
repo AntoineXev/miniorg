@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, getUserFromSession } from "@/lib/auth-better";
+import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { z } from "zod";
-
-// Enable Edge Runtime for Cloudflare Workers
-export const runtime = 'edge';
 
 // Schema for calendar event creation/update
 const calendarEventSchema = z.object({
@@ -22,11 +19,13 @@ const calendarEventSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
     const taskId = searchParams.get("taskId");
 
     const where: any = {
-      userId: user.id,
+      userId,
     };
 
     // Filter by date range
@@ -79,11 +78,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const json = await request.json();
     const body = calendarEventSchema.parse(json);
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
         ...body,
         startTime: new Date(body.startTime),
         endTime: new Date(body.endTime),
-        userId: user.id,
+        userId,
       },
       include: {
         task: {
@@ -118,11 +119,13 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const json = await request.json();
     const { id, ...updates } = json;
@@ -133,7 +136,7 @@ export async function PATCH(request: NextRequest) {
 
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId },
     });
 
     if (!existingEvent) {
@@ -175,11 +178,13 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -190,7 +195,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId },
     });
 
     if (!existingEvent) {

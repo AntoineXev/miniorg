@@ -1,14 +1,11 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
+import { signIn } from "@/lib/auth-client";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const handleGoogleSignIn = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/backlog",
-    });
+    await signIn("google", { callbackUrl: "/backlog" });
   };
 
   return (

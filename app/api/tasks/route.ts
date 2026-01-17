@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, getUserFromSession } from "@/lib/auth-better";
+import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { z } from "zod";
-
-// Enable Edge Runtime for Cloudflare Workers
-export const runtime = 'edge';
 
 // Schema for task creation/update
 const taskSchema = z.object({
@@ -22,18 +19,20 @@ const taskSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const scheduledDate = searchParams.get("scheduledDate");
 
     const where: any = {
-      userId: user.id,
+      userId,
     };
 
     if (status) {
@@ -73,11 +72,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const json = await request.json();
     const body = taskSchema.parse(json);
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     const task = await prisma.task.create({
       data: {
         ...taskData,
-        userId: user.id,
+        userId,
         scheduledDate: body.scheduledDate ? new Date(body.scheduledDate) : null,
         deadlineSetAt: body.deadlineSetAt ? new Date(body.deadlineSetAt) : body.deadlineType ? new Date() : null,
         tags: tagIds ? {
@@ -113,11 +114,13 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const json = await request.json();
     const { id, ...updates } = json;
@@ -128,7 +131,7 @@ export async function PATCH(request: NextRequest) {
 
     // Verify task belongs to user
     const existingTask = await prisma.task.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId },
     });
 
     if (!existingTask) {
@@ -176,11 +179,13 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getSession(request);
-    const user = getUserFromSession(session);
-    if (!user?.id) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -191,7 +196,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify task belongs to user
     const existingTask = await prisma.task.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId },
     });
 
     if (!existingTask) {

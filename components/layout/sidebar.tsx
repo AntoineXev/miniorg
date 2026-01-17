@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ListTodo, Calendar, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
-import { useSession } from "@/lib/auth-client";
-import { authClient } from "@/lib/auth-client";
+import { useSession, signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -23,12 +22,8 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
   const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          window.location.href = "/login";
-        },
-      },
+    await signOut({
+      callbackUrl: "/login",
     });
   };
 

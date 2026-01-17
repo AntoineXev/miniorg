@@ -1,8 +1,4 @@
-import { createAuthClient } from "better-auth/react";
+"use client"
 
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-});
-
-// Export hooks
-export const { useSession, signIn, signOut } = authClient;
+export { useSession } from "next-auth/react"
+export { signIn, signOut } from "next-auth/react"

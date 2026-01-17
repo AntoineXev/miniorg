@@ -104,9 +104,23 @@ miniorg/
 │   ├── prisma.ts        # Prisma client
 │   ├── auth.ts          # NextAuth configuration
 │   └── task-utils.ts    # Task utility functions
-└── prisma/
-    └── schema.prisma    # Database schema
+├── prisma/
+│   └── schema.prisma    # Database schema
+└── docs/                # 📚 Documentation
+    ├── README.md        # Documentation index
+    ├── architecture/    # Architecture documentation
+    ├── deployment/      # Deployment guides
+    ├── migration/       # Migration history
+    └── guides/          # User guides
 ```
+
+## 📚 Documentation
+
+Pour une documentation complète, consultez le [dossier docs](./docs/README.md) qui contient :
+- 🏗️ Documentation d'architecture
+- 🚀 Guides de déploiement
+- 🔄 Historique des migrations
+- 📖 Guides utilisateurs et références
 
 ## Deployment
 
@@ -155,9 +169,10 @@ https://miniorg.pages.dev/api/auth/callback/google
 
 #### Documentation complète
 
-- 📘 [Guide de déploiement complet](./DEPLOYMENT.md)
-- 🔐 [Configuration Google OAuth](./docs/GOOGLE_OAUTH_SETUP.md)
-- 🎛️ [Configuration via Dashboard Cloudflare](./docs/CLOUDFLARE_DASHBOARD_SETUP.md)
+- 📘 [Guide de déploiement complet](./docs/deployment/DEPLOYMENT.md)
+- 🔐 [Configuration Google OAuth](./docs/guides/GOOGLE_OAUTH_SETUP.md)
+- 🎛️ [Configuration via Dashboard Cloudflare](./docs/deployment/CLOUDFLARE_DASHBOARD_SETUP.md)
+- 📚 [Toute la documentation](./docs/README.md)
 
 #### Vérification pré-déploiement
 

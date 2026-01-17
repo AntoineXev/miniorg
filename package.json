@@ -6,22 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "build:pages": "next build && npx @cloudflare/next-on-pages",
-    "build:cloudflare": "next build && npx @cloudflare/next-on-pages",
+    "build:worker": "opennextjs-cloudflare build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "pages:build": "npx @cloudflare/next-on-pages",
     "pages:deploy": "npm run build:pages && wrangler pages deploy .vercel/output/static",
-    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-17 --d1=DB"
+    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-17 --d1=DB",
+    "preview": "opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.1.0",
     "@atlaskit/pragmatic-drag-and-drop-react-drop-indicator": "^1.0.0",
-    "@cloudflare/next-on-pages": "^1.13.16",
+    "@auth/prisma-adapter": "^2.11.1",
     "@cloudflare/workers-types": "^4.20260117.0",
+    "@opennextjs/cloudflare": "^1.14.9",
     "@prisma/adapter-d1": "^5.8.0",
     "@prisma/client": "^5.8.0",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -35,7 +37,6 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.16",
-    "better-auth": "^1.4.14",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.0.0",
@@ -43,6 +44,7 @@
     "jose": "^6.1.3",
     "lucide-react": "^0.309.0",
     "next": "^16.1.3",
+    "next-auth": "^5.0.0-beta.30",
     "novel": "^0.1.22",
     "postcss": "^8.4.32",
     "prisma": "^5.8.0",
@@ -57,6 +59,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "esbuild": "^0.24.2",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",
     "wrangler": "^4.59.2"

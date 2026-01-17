@@ -17,6 +17,7 @@ model User {
   emailVerified DateTime?
   image         String?
   accounts      Account[]
+  sessions      Session[]
   tasks         Task[]
   tags          Tag[]
   calendarEvents CalendarEvent[]
@@ -41,6 +42,14 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
