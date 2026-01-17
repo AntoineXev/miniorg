@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth-better";
+import { getSession } from "@/lib/auth-middleware";
 
 export async function middleware(request: NextRequest) {
-  // Use Better Auth getSession - fully Edge Runtime compatible
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  // Use JWT-based getSession - fully Edge Runtime compatible
+  const session = await getSession(request);
 
   const isAuthenticated = !!session?.user;
 

@@ -1,5 +1,5 @@
 name = "miniorg"
-compatibility_date = "2024-01-17"
+compatibility_date = "2025-01-01"
 pages_build_output_dir = ".vercel/output/static"
 
 # Compatibility flags for Node.js APIs

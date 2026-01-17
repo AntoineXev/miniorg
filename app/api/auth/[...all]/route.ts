@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth-better";
+import { auth } from "@/lib/auth-server";
 import { toNextJsHandler } from "better-auth/next-js";
 
 // Enable Edge Runtime for Cloudflare Workers
