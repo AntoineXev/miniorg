@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth-edge";
+import { getSession, getUserFromSession } from "@/lib/auth-better";
 import { getPrisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -22,8 +22,9 @@ const taskSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getServerSession(request);
-    if (!session?.user?.id) {
+    const session = await getSession(request);
+    const user = getUserFromSession(session);
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     const scheduledDate = searchParams.get("scheduledDate");
 
     const where: any = {
-      userId: session.user.id,
+      userId: user.id,
     };
 
     if (status) {
@@ -72,8 +73,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getServerSession(request);
-    if (!session?.user?.id) {
+    const session = await getSession(request);
+    const user = getUserFromSession(session);
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
     const task = await prisma.task.create({
       data: {
         ...taskData,
-        userId: session.user.id,
+        userId: user.id,
         scheduledDate: body.scheduledDate ? new Date(body.scheduledDate) : null,
         deadlineSetAt: body.deadlineSetAt ? new Date(body.deadlineSetAt) : body.deadlineType ? new Date() : null,
         tags: tagIds ? {
@@ -111,8 +113,9 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getServerSession(request);
-    if (!session?.user?.id) {
+    const session = await getSession(request);
+    const user = getUserFromSession(session);
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -125,7 +128,7 @@ export async function PATCH(request: NextRequest) {
 
     // Verify task belongs to user
     const existingTask = await prisma.task.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
     });
 
     if (!existingTask) {
@@ -173,8 +176,9 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getServerSession(request);
-    if (!session?.user?.id) {
+    const session = await getSession(request);
+    const user = getUserFromSession(session);
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -187,7 +191,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify task belongs to user
     const existingTask = await prisma.task.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
     });
 
     if (!existingTask) {

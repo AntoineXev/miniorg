@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ListTodo, Calendar, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +21,16 @@ type SidebarProps = {
 export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
+
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          window.location.href = "/login";
+        },
+      },
+    });
+  };
 
   return (
     <div 
@@ -96,7 +107,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={handleSignOut}
               className="h-8 w-8 p-0 shrink-0"
               title="Sign out"
             >

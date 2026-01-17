@@ -26,7 +26,10 @@ Mise à jour vers Next.js 16+ et React 19+ pour une meilleure compatibilité ave
 ### 6. Ajout de `.npmrc`
 Fichier avec `legacy-peer-deps=true` pour gérer les conflits de dépendances.
 
-### 7. Script de build optimisé
+### 7. Déplacement des dépendances de build
+TypeScript, Prisma, Vercel et les types sont déplacés vers `dependencies` (au lieu de `devDependencies`) car ils sont nécessaires pour le build sur Cloudflare Pages.
+
+### 8. Script de build optimisé
 Nouveau script `build:pages` dans `package.json` (attendu par Cloudflare):
 ```bash
 npm run build:pages

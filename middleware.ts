@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth-better";
 
 export async function middleware(request: NextRequest) {
-  // Use getToken instead of auth() - it's Edge Runtime compatible
-  const token = await getToken({ 
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+  // Use Better Auth getSession - fully Edge Runtime compatible
+  const session = await auth.api.getSession({
+    headers: request.headers,
   });
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = !!session?.user;
 
   // Protect backlog and calendar routes
   if (request.nextUrl.pathname.startsWith("/backlog") || 

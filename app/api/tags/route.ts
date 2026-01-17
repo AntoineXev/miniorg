@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth-edge";
+import { getSession, getUserFromSession } from "@/lib/auth-better";
 import { getPrisma } from "@/lib/prisma";
 
 // Enable Edge Runtime for Cloudflare Workers
@@ -9,14 +9,15 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getServerSession(request);
-    if (!session?.user?.id) {
+    const session = await getSession(request);
+    const user = getUserFromSession(session);
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const tags = await prisma.tag.findMany({
       where: {
-        userId: session.user.id,
+        userId: user.id,
       },
       orderBy: {
         name: "asc",
@@ -34,8 +35,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const prisma = getPrisma();
-    const session = await getServerSession(request);
-    if (!session?.user?.id) {
+    const session = await getSession(request);
+    const user = getUserFromSession(session);
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         color: color || "#E17C4F",
-        userId: session.user.id,
+        userId: user.id,
       },
     });
 
