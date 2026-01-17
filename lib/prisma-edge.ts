@@ -16,8 +16,8 @@ export function getPrismaClient(d1Database: D1Database): PrismaClient {
   
   if (!cached) {
     const adapter = new PrismaD1(d1Database)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cached = new PrismaClient({ adapter } as any)
+    // @ts-expect-error - PrismaClient adapter option is not in types but works at runtime
+    cached = new PrismaClient({ adapter })
     prismaClientCache.set(d1Database, cached)
   }
   
