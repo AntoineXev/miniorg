@@ -1,4 +1,5 @@
 name = "miniorg"
+account_id = "3676fa8d525890e7ddf8e55650e6c144"
 compatibility_date = "2025-01-01"
 
 # Compatibility flags for Node.js APIs
@@ -29,3 +30,18 @@ NODE_ENV = "production"
 # - AUTH_URL (URL complète de votre app, e.g., https://miniorg.your-domain.workers.dev)
 # - GOOGLE_CLIENT_ID
 # - GOOGLE_CLIENT_SECRET
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
