@@ -24,6 +24,7 @@ export function getPrisma(d1Database?: D1Database): PrismaClient {
     const context = getCloudflareContext();
 
     if (getCloudflareContext()) {
+      //@ts-ignore
       db = context.env.DB as D1Database
 
     } 
