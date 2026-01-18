@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Calendar, ChevronRight, X } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/task-utils";
 import { format } from "date-fns";
+import { useApiClient } from "@/lib/api-client";
 
 type QuickAddTaskProps = {
   onTaskCreated?: () => void;
@@ -27,6 +28,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
   const [showMore, setShowMore] = useState(false);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const api = useApiClient();
 
   // Gérer l'ouverture externe (depuis le bouton Add task d'une colonne)
   useEffect(() => {
@@ -77,30 +79,27 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
 
     setIsSubmitting(true);
 
-    try {
-      const response = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          deadlineType: useSpecificDate ? undefined : deadlineType,
-          scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
-          duration: duration ? parseInt(duration, 10) : undefined,
-          status: "backlog",
-        }),
-      });
+    const data = await api.post<{ id: string }>(
+      "/api/tasks",
+      {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        deadlineType: useSpecificDate ? undefined : deadlineType,
+        scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
+        duration: duration ? parseInt(duration, 10) : undefined,
+        status: "backlog",
+      },
+      "Tâche créée",
+      { errorMessage: "Erreur lors de la création" }
+    );
 
-      if (response.ok) {
-        resetForm();
-        handleOpenChange(false);
-        onTaskCreated?.();
-      }
-    } catch (error) {
-      console.error("Error creating task:", error);
-    } finally {
-      setIsSubmitting(false);
+    if (data) {
+      resetForm();
+      handleOpenChange(false);
+      onTaskCreated?.();
     }
+
+    setIsSubmitting(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

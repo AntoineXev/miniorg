@@ -1,0 +1,48 @@
+name = "miniorg"
+account_id = "3676fa8d525890e7ddf8e55650e6c144"
+compatibility_date = "2025-09-01"
+
+# Compatibility flags for Node.js APIs (including node:fs support)
+compatibility_flags = ["nodejs_compat"]
+
+# Configuration pour Workers
+main = ".open-next/worker.js"
+
+[assets]
+directory = ".open-next/assets"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "miniorg-production"
+database_id = "4bc4d83f-391b-45bb-af6a-51310ecfc020"
+migrations_dir = "prisma/migrations"
+
+# Environment variables (secrets should be set via wrangler secret put)
+[vars]
+NODE_ENV = "production"
+NEXTAUTH_URL = "https://miniorg.antoine-hervet.workers.dev"
+
+# Configuration des secrets pour NextAuth v5:
+# Pour Workers: wrangler secret put SECRET_NAME
+# 
+# Secrets nécessaires:
+# - AUTH_SECRET (utilisé par NextAuth v5)
+# - AUTH_URL (URL complète de votre app, e.g., https://miniorg.your-domain.workers.dev)
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1

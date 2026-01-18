@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const scheduledDate = searchParams.get("scheduledDate");
@@ -71,7 +70,6 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
     const json = await request.json();
     const body = taskSchema.parse(json);
 
@@ -98,7 +96,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.errors }, { status: 400 });
     }
     console.error("Error creating task:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
 

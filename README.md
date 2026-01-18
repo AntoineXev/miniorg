@@ -17,7 +17,7 @@ A minimal, clean life planner, built with Next.js and designed for modern profes
 ## Tech Stack
 
 - **Framework:** Next.js 14 (App Router) with TypeScript
-- **Database:** Prisma + SQLite (dev) → D1 (production)
+- **Database:** Prisma 7 + Cloudflare D1
 - **Auth:** NextAuth.js v5 with Google OAuth
 - **UI:** shadcn/ui + Tailwind CSS
 - **Animations:** Framer Motion
@@ -28,7 +28,9 @@ A minimal, clean life planner, built with Next.js and designed for modern profes
 ### Prerequisites
 
 - Node.js 18+ installed
+- Wrangler CLI installed (`npm install -g wrangler`)
 - Google OAuth credentials ([Get them here](https://console.cloud.google.com/))
+- Cloudflare account (for D1 database)
 
 ### Installation
 
@@ -43,27 +45,55 @@ cd miniorg
 npm install
 ```
 
-3. Set up environment variables:
-Create a `.env` file in the root directory:
+3. Set up D1 database (local development):
+```bash
+# Create a local D1 database (or use production database ID from Cloudflare Dashboard)
+wrangler d1 create miniorg-local
+```
+
+4. Update `wrangler.toml` with your D1 database ID (for local, you can use the database_id from the command output or leave it empty for local dev)
+
+5. Set up environment variables:
+Create a `.dev.vars` file in the root directory (for local development):
 ```env
-DATABASE_URL="file:./dev.db"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
+AUTH_SECRET="your-secret-key-here"
+AUTH_URL="http://localhost:8788"
 ```
 
-4. Initialize the database:
+6. Generate Prisma client:
 ```bash
-npx prisma migrate dev --name init
+npm run db:generate
 ```
 
-5. Run the development server:
+7. Create and apply database migrations:
 ```bash
+# Create a new migration based on your schema
+npm run db:migrate:d1:create <migration_name>
+
+# Apply migration to local D1 database
+npm run db:migrate:d1:apply
+
+# Or apply to remote D1 database
+npm run db:migrate:d1:apply:remote
+```
+
+8. Generate TypeScript types for Cloudflare bindings:
+```bash
+npm run db:types
+```
+
+9. Run the development server:
+```bash
+# Using OpenNext Cloudflare for local development
 npm run dev
+
+# Or using Wrangler for Cloudflare Workers environment
+wrangler dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your app.
+Open [http://localhost:3000](http://localhost:3000) (or the port shown by wrangler) to see your app.
 
 ## Usage
 
@@ -108,23 +138,62 @@ miniorg/
     └── schema.prisma    # Database schema
 ```
 
+## Database Management
+
+### Prisma Schema
+
+The database schema is defined in `prisma/schema.prisma`. To modify it:
+
+1. Edit `prisma/schema.prisma`
+2. Generate Prisma client: `npm run db:generate`
+3. Create a migration: `npm run db:migrate:d1:create <migration_name>`
+4. Review the generated SQL in `migrations/` directory
+5. Apply migration: `npm run db:migrate:d1:apply` (local) or `npm run db:migrate:d1:apply:remote` (production)
+
+### Local Development with D1
+
+For local development, D1 is automatically available when using `wrangler dev`. The database state is stored locally and persists between runs.
+
 ## Deployment
 
 ### Cloudflare Workers
 
-1. Install Wrangler CLI:
+1. Ensure Wrangler CLI is installed:
 ```bash
 npm install -g wrangler
 ```
 
-2. Set up D1 database:
+2. Log in to Cloudflare:
 ```bash
-wrangler d1 create miniorg-db
+wrangler login
 ```
 
-3. Update `wrangler.toml` with your D1 database ID
+3. Set up D1 database (if not already created):
+```bash
+wrangler d1 create miniorg-production
+```
 
-4. Deploy:
+4. Update `wrangler.toml` with your D1 database ID (already configured in this repo)
+
+5. Apply migrations to production database:
+```bash
+npm run db:migrate:d1:apply:remote
+```
+
+6. Set environment secrets (required for NextAuth):
+```bash
+wrangler secret put AUTH_SECRET
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put AUTH_URL  # Your production URL, e.g., https://miniorg.your-domain.workers.dev
+```
+
+7. Generate TypeScript types for bindings:
+```bash
+npm run db:types
+```
+
+8. Build and deploy:
 ```bash
 npm run build
 wrangler deploy
