@@ -6,7 +6,7 @@
     "dev": "npm run build:cloudflare && opennextjs-cloudflare preview",
     "dev:fast": "next dev",
     "build": "prisma generate && next build",
-    "build:cloudflare": "opennextjs-cloudflare build",
+    "build:cloudflare": "prisma generate && opennextjs-cloudflare build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
