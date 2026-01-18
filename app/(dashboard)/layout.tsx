@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
+import { useRouter } from "next/navigation";
 
 type RightSidebarPanel = "timeline" | "backlog" | null;
 
@@ -18,6 +19,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const { pushInfo } = useToast();
   const hasRedirected = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     // Vérifie si la session est chargée et si l'utilisateur n'est pas authentifié
@@ -32,10 +34,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         "Pour des raisons de sécurité vous avez été déconnecté"
       );
       
-      // Force une navigation serveur complète (compatible Cloudflare Workers)
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 500);
+      router.push("/login");
     }
   }, [status, session, pushInfo]);
 
