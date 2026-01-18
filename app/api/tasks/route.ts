@@ -72,6 +72,7 @@ export async function POST(request: NextRequest, env: CloudflareEnv) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     console.log("auth passed");
+    //@ts-ignore
     const adapter = new PrismaD1(env.DB);
     const prisma = new PrismaClient({ adapter });
     const json = await request.json();
