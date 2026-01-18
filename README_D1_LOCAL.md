@@ -33,9 +33,18 @@ wrangler d1 execute DB --local --file=./prisma/d1-schema.sql
 
 ### 3. Démarrer le serveur de développement
 
+Le serveur de développement utilise `opennextjs-cloudflare preview` pour simuler l'environnement Cloudflare avec les bindings D1 :
+
 ```bash
 npm run dev
 ```
+
+Cela va :
+1. Builder l'application pour Cloudflare (`npm run build:cloudflare`)
+2. Lancer le preview avec Wrangler (`opennextjs-cloudflare preview`)
+3. Fournir automatiquement le binding D1 local depuis `wrangler.toml`
+
+**Note:** Pour un développement frontend rapide sans base de données, utilisez `npm run dev:fast` (qui utilise `next dev` directement).
 
 ## Commandes utiles
 
@@ -75,9 +84,9 @@ wrangler d1 execute DB --local --file=./prisma/d1-schema.sql
 
 ## Architecture
 
-- **Développement local** : Wrangler D1 local (SQLite)
-- **Production** : Cloudflare D1
-- **Adaptateur** : `@prisma/adapter-d1` pour les deux environnements
+- **Développement local** : Wrangler D1 local (SQLite) → `@prisma/adapter-d1` via `opennextjs-cloudflare preview`
+- **Production** : Cloudflare D1 → `@prisma/adapter-d1` via Cloudflare Workers
+- **Adaptateur** : `@prisma/adapter-d1` pour les deux environnements (même code, même API)
 
 ## Fichiers importants
 
