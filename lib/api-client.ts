@@ -111,17 +111,17 @@ export async function apiClient<T = unknown>(
 export async function apiClientWithToast<T = unknown>(
   url: string,
   options: ApiClientOptions & {
-    pushToast?: (variant: "success" | "error", title: string, description?: string) => void;
+    pushSuccess?: (title: string, description?: string) => void;
+    pushError?: (title: string, description?: string) => void;
   } = {}
 ): Promise<T | null> {
-  const { pushToast, successMessage, errorMessage, ...apiOptions } = options;
+  const { pushSuccess, pushError, successMessage, errorMessage, ...apiOptions } = options;
 
   const { data, error } = await apiClient<T>(url, apiOptions);
 
   if (error) {
-    if (pushToast) {
-      pushToast(
-        "error",
+    if (pushError) {
+      pushError(
         errorMessage || "Erreur",
         error.status > 0
           ? `Erreur ${error.status}: ${error.message}`
@@ -131,8 +131,8 @@ export async function apiClientWithToast<T = unknown>(
     return null;
   }
 
-  if (data && successMessage && pushToast) {
-    pushToast("success", successMessage);
+  if (data && successMessage && pushSuccess) {
+    pushSuccess(successMessage);
   }
 
   return data;
@@ -147,11 +147,11 @@ export async function apiClientWithToast<T = unknown>(
  * const data = await api.post("/api/tasks", { title: "New task" }, "Tâche créée");
  */
 export function useApiClient() {
-  const { pushToast } = useToast();
+  const { pushSuccess, pushError } = useToast();
 
   return {
     get: <T = unknown>(url: string, options?: Omit<ApiClientOptions, "method" | "body">) =>
-      apiClientWithToast<T>(url, { ...options, method: "GET", pushToast }),
+      apiClientWithToast<T>(url, { ...options, method: "GET", pushSuccess, pushError }),
 
     post: <T = unknown>(
       url: string,
@@ -164,7 +164,8 @@ export function useApiClient() {
         method: "POST",
         body,
         successMessage,
-        pushToast,
+        pushSuccess,
+        pushError,
       }),
 
     patch: <T = unknown>(
@@ -178,7 +179,8 @@ export function useApiClient() {
         method: "PATCH",
         body,
         successMessage,
-        pushToast,
+        pushSuccess,
+        pushError,
       }),
 
     delete: <T = unknown>(
@@ -190,7 +192,8 @@ export function useApiClient() {
         ...options,
         method: "DELETE",
         successMessage,
-        pushToast,
+        pushSuccess,
+        pushError,
       }),
 
     put: <T = unknown>(
@@ -204,7 +207,8 @@ export function useApiClient() {
         method: "PUT",
         body,
         successMessage,
-        pushToast,
+        pushSuccess,
+        pushError,
       }),
   };
 }
