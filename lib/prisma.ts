@@ -11,7 +11,7 @@ const globalForPrisma = globalThis as unknown as {
  * For Prisma 7, an adapter is always required
  */
 function createPrismaClient() {
-  // Check if we're in Cloudflare Workers (Edge Runtime)
+  // Check if we're in Cloudflare Workers (Edge Runtime) with real D1 binding
   if (typeof (globalThis as any).EdgeRuntime !== 'undefined' && process.env.DB) {
     const adapter = new PrismaD1(process.env.DB as unknown as D1Database)
     return new PrismaClient({
@@ -20,37 +20,15 @@ function createPrismaClient() {
     })
   }
   
-  // For local development and build time, create a dummy adapter
-  // This won't actually be used during build, only at runtime
-  if (typeof window === 'undefined') {
-    // Server-side: create a minimal D1-like object for build compatibility
-    const dummyD1 = {
-      prepare: (sql: string) => ({
-        bind: (...args: any[]) => ({
-          all: async () => ({ results: [], success: true }),
-          run: async () => ({ success: true, meta: {} }),
-          first: async () => null,
-          // stmt.raw() is called by Prisma adapter with { columnNames: true }
-          raw: async (options?: { columnNames?: boolean }) => {
-            // Return format: [columnNames, ...rows]
-            return [[], []];
-          },
-        }),
-      }),
-      dump: async () => new ArrayBuffer(0),
-      batch: async () => [],
-      exec: async () => ({ count: 0, duration: 0 }),
-    } as unknown as D1Database
-    
-    const adapter = new PrismaD1(dummyD1)
-    return new PrismaClient({
-      adapter,
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    })
+  // For local development, use libSQL/SQLite
+  if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
+    // Import dynamically to avoid bundling issues
+    const { createDevPrismaClient } = require('./prisma-dev')
+    return createDevPrismaClient()
   }
   
-  // Fallback - should never reach here
-  throw new Error('Cannot create Prisma client: no valid adapter configuration')
+  // Fallback - should never reach here in normal operation
+  throw new Error('Cannot create Prisma client: no valid adapter configuration. Make sure DB binding is available in production.')
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
@@ -68,6 +46,6 @@ export function getPrisma(): PrismaClient {
     return new PrismaClient({ adapter })
   }
   
-  // For Node.js runtime, use global instance
+  // For local dev, use the global instance which uses libSQL
   return prisma
 }
