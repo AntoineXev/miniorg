@@ -59,7 +59,7 @@ Create a `.dev.vars` file in the root directory (for local development):
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 AUTH_SECRET="your-secret-key-here"
-AUTH_URL="http://localhost:8788"
+NEXTAUTH_URL="http://localhost:8788"
 ```
 
 6. Generate Prisma client:
@@ -185,7 +185,7 @@ npm run db:migrate:d1:apply:remote
 wrangler secret put AUTH_SECRET
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put AUTH_URL  # Your production URL, e.g., https://miniorg.your-domain.workers.dev
+# Note: NEXTAUTH_URL is already set in wrangler.toml [vars] section
 ```
 
 7. Generate TypeScript types for bindings:

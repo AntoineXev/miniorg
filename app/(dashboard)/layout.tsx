@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TimelineSidebar } from "@/components/calendar/timeline-sidebar";
 import { BacklogSidebar } from "@/components/backlog/backlog-sidebar";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
+import { useRouter } from "next/navigation";
 
 type RightSidebarPanel = "timeline" | "backlog" | null;
 
@@ -17,26 +17,26 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activePanel, setActivePanel] = useState<RightSidebarPanel>("timeline");
   const { data: session, status } = useSession();
-  const router = useRouter();
   const { pushInfo } = useToast();
+  const hasRedirected = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     // Vérifie si la session est chargée et si l'utilisateur n'est pas authentifié
     if (status === "loading") return; // Attend que la session soit chargée
     
-    if (status === "unauthenticated" || !session?.user) {
+    if ((status === "unauthenticated" || !session?.user) && !hasRedirected.current) {
+      hasRedirected.current = true;
+      
       // Affiche le toast avant la redirection
       pushInfo(
         "Déconnecté",
         "Pour des raisons de sécurité vous avez été déconnecté"
       );
       
-      // Redirige après un court délai pour que le toast soit visible
-      setTimeout(() => {
-        router.push("/login");
-      }, 100);
+      router.push("/login");
     }
-  }, [status, session, router, pushInfo]);
+  }, [status, session, pushInfo]);
 
   // Affiche un écran de chargement pendant la vérification
   if (status === "loading") {

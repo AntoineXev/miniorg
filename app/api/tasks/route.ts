@@ -6,7 +6,7 @@ import { z } from "zod";
 // Schema for task creation/update
 const taskSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   status: z.enum(["backlog", "planned", "done"]).optional(),
   scheduledDate: z.string().datetime().optional(),
   deadlineType: z.enum(["next_3_days", "next_week", "next_month", "next_quarter", "next_year", "no_date"]).optional(),

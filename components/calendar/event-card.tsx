@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { isPast } from "date-fns";
 import { calculateDuration } from "@/lib/calendar-utils";
+import { Calendar } from "lucide-react";
 
 export type CalendarEvent = {
   id: string;
@@ -75,7 +76,7 @@ export function EventCard({
     >
       <div
         className={cn(
-          "relative px-2 py-1.5 rounded cursor-pointer transition-all duration-200 h-full flex",
+          "relative px-2 py-1.5 rounded cursor-pointer transition-all duration-200 h-full flex items-center gap-1.5",
           "border border-solid",
           isPastEvent && "opacity-50"
         )}
@@ -85,10 +86,20 @@ export function EventCard({
         }}
         onClick={() => onClick?.(event.id)}
       >
-        {/* Juste le titre */}
+        {/* Badge pour les événements externes */}
+        {event.source !== 'miniorg' && (
+          <div title={`From ${event.source}`} className="flex-shrink-0">
+            <Calendar 
+              className="h-3 w-3" 
+              style={{ color: eventColor }}
+            />
+          </div>
+        )}
+        
+        {/* Titre */}
         <p
           className={cn(
-            "text-xs font-medium leading-tight truncate",
+            "text-xs font-medium leading-tight truncate flex-1",
             compact && "text-[11px]"
           )}
           style={{ color: eventColor }}

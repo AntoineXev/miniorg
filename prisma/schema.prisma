@@ -11,18 +11,19 @@ datasource db {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String          @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  tasks         Task[]
-  tags          Tag[]
-  calendarEvents CalendarEvent[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String               @unique
+  emailVerified       DateTime?
+  image               String?
+  accounts            Account[]
+  sessions            Session[]
+  tasks               Task[]
+  tags                Tag[]
+  calendarEvents      CalendarEvent[]
+  calendarConnections CalendarConnection[] @relation("UserCalendarConnections")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model Account {
@@ -61,22 +62,22 @@ model VerificationToken {
 }
 
 model Task {
-  id            String          @id @default(cuid())
-  title         String
-  description   String?
-  status        String          @default("backlog")
-  scheduledDate DateTime?
-  deadlineType  String?
-  deadlineSetAt DateTime?
-  duration      Int?            // Duration in minutes
-  order         Int             @default(0)
-  completedAt   DateTime?
-  userId        String
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags          Tag[]           @relation("TaskTags")
+  id             String          @id @default(cuid())
+  title          String
+  description    String?
+  status         String          @default("backlog")
+  scheduledDate  DateTime?
+  deadlineType   String?
+  deadlineSetAt  DateTime?
+  duration       Int?            // Duration in minutes
+  order          Int             @default(0)
+  completedAt    DateTime?
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags           Tag[]           @relation("TaskTags")
   calendarEvents CalendarEvent[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([userId, status])
   @@index([scheduledDate])
@@ -95,22 +96,53 @@ model Tag {
 }
 
 model CalendarEvent {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  taskId      String?
-  task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  color       String?
-  isCompleted Boolean   @default(false)
-  source      String    @default("miniorg") // "miniorg" | "google" | "outlook"
-  externalId  String?   // For future sync with external calendars
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String              @id @default(cuid())
+  title        String
+  description  String?
+  startTime    DateTime
+  endTime      DateTime
+  taskId       String?
+  task         Task?               @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  color        String?
+  isCompleted  Boolean             @default(false)
+  source       String              @default("miniorg") // "miniorg" | "google" | "outlook"
+  externalId   String?             // ID de l'event chez le provider
+  connectionId String?             // Lien vers CalendarConnection
+  connection   CalendarConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  lastSyncedAt DateTime?           // Dernière fois que l'event a été synced
+  syncStatus   String?             // "synced" | "pending" | "error"
+  syncError    String?             // Message d'erreur si sync échoue
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
+  @@unique([externalId, connectionId])
   @@index([userId, startTime])
   @@index([taskId])
+  @@index([externalId])
+  @@index([connectionId])
+}
+
+model CalendarConnection {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation("UserCalendarConnections", fields: [userId], references: [id], onDelete: Cascade)
+  provider          String          // "google" | "outlook" | "apple"
+  providerAccountId String          // ID du compte chez le provider
+  name              String          // Nom du calendrier (ex: "Work Calendar")
+  calendarId        String          // ID du calendrier chez le provider
+  accessToken       String?         // Token d'accès
+  refreshToken      String?         // Token de refresh
+  expiresAt         DateTime?       // Expiration du token
+  isActive          Boolean         @default(true) // Calendrier visible dans la timeline
+  isExportTarget    Boolean         @default(false) // Calendrier d'export par défaut
+  lastSyncAt        DateTime?       // Dernière sync réussie
+  syncToken         String?         // Token de sync incrémentale (Google)
+  calendarEvents    CalendarEvent[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([userId, provider, calendarId])
+  @@index([userId, isActive])
 }
