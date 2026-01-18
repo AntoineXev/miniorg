@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { GoogleCalendarAdapter } from '@/lib/calendar/google-adapter';
+import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 
 // GET /api/auth/google-calendar/callback - Callback OAuth Google Calendar
 export async function GET(request: NextRequest) {

@@ -23,7 +23,7 @@ export async function ensureValidToken(connectionId: string): Promise<string> {
     }
 
     // Pour éviter une référence circulaire, on crée l'adapter directement
-    const { GoogleCalendarAdapter } = await import('./google-adapter');
+    const { GoogleCalendarAdapter } = await import('./google');
     const adapter = new GoogleCalendarAdapter();
 
     try {

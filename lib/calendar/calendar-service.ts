@@ -1,5 +1,5 @@
 import { CalendarAdapter, CalendarProvider } from './types';
-import { GoogleCalendarAdapter } from './google-adapter';
+import { GoogleCalendarAdapter } from './google';
 import { prisma } from '@/lib/prisma';
 import { ensureValidToken } from './token-manager';
 
