@@ -16,7 +16,7 @@ export function getPrismaClient(d1Database: D1Database): PrismaClient {
   
   if (!cached) {
     const adapter = new PrismaD1(d1Database)
-    // In Prisma 7, adapter is now a supported option
+    // Prisma 6 supports adapters for D1
     cached = new PrismaClient({ 
       adapter,
       // No datasourceUrl needed when using adapter
