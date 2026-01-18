@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getPrisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/server/prisma";
 import { z } from "zod";
 
 // Schema for calendar event creation/update

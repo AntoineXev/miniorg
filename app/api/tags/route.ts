@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getPrisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/server/prisma";
 
 // GET /api/tags - Fetch all tags for authenticated user
 export async function GET(request: NextRequest) {
