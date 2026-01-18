@@ -25,11 +25,16 @@ function createPrismaClient() {
   if (typeof window === 'undefined') {
     // Server-side: create a minimal D1-like object for build compatibility
     const dummyD1 = {
-      prepare: () => ({
-        bind: () => ({
+      prepare: (sql: string) => ({
+        bind: (...args: any[]) => ({
           all: async () => ({ results: [], success: true }),
-          run: async () => ({ success: true }),
+          run: async () => ({ success: true, meta: {} }),
           first: async () => null,
+          // stmt.raw() is called by Prisma adapter with { columnNames: true }
+          raw: async (options?: { columnNames?: boolean }) => {
+            // Return format: [columnNames, ...rows]
+            return [[], []];
+          },
         }),
       }),
       dump: async () => new ArrayBuffer(0),
