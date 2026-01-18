@@ -5,8 +5,14 @@ import type { NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const session = await auth();
 
-  // Protect backlog route
-  if (request.nextUrl.pathname.startsWith("/backlog")) {
+  // Liste des routes protégées (dashboard)
+  const protectedRoutes = ["/backlog", "/calendar", "/today"];
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  // Protect dashboard routes
+  if (isProtectedRoute) {
     if (!session) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
