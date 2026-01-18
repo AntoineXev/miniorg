@@ -109,6 +109,12 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
 
     const events = (response.items || [])
       .filter((item) => item.status !== 'cancelled')
+      .filter((item) => {
+        // Exclure les événements workingLocation (Bureau/Maison) et outOfOffice
+        // Conserver les événements default, focusTime, birthday, fromGmail, etc.
+        const eventType = item.eventType || 'default';
+        return eventType !== 'workingLocation' && eventType !== 'outOfOffice';
+      })
       .map((item) => {
         const startTime = item.start?.dateTime
           ? new Date(item.start.dateTime)

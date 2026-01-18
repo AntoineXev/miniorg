@@ -154,6 +154,25 @@ export interface GoogleEvent {
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
   attendees?: Array<{ email: string }>;
+  eventType?: 'default' | 'outOfOffice' | 'focusTime' | 'workingLocation' | 'birthday' | 'fromGmail';
+  workingLocationProperties?: {
+    type?: 'homeOffice' | 'officeLocation' | 'customLocation';
+    homeOffice?: any;
+    officeLocation?: {
+      buildingId?: string;
+      floorId?: string;
+      floorSectionId?: string;
+      deskId?: string;
+      label?: string;
+    };
+    customLocation?: {
+      label?: string;
+    };
+  };
+  outOfOfficeProperties?: {
+    autoDeclineMode?: string;
+    declineMessage?: string;
+  };
 }
 
 export interface GoogleEventInsert {
