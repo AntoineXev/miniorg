@@ -661,7 +661,7 @@ function DraggableEvent({
         const canvas = document.createElement('canvas');
         canvas.width = 1;
         canvas.height = 1;
-        nativeSetDragImage(canvas, 0, 0);
+        nativeSetDragImage?.(canvas, 0, 0);
       },
       onDragStart: ({ location }) => {
         setIsDragging(true);
