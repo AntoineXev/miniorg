@@ -242,7 +242,7 @@ export function EventDetailDialog({
 
           {/* Actions */}
           <div className="flex flex-col gap-2 pt-4 border-t">
-            {/* Convert to Task button */}
+            {/* Convert to Task button - works for both miniorg and external events */}
             {canConvertToTask && (
               <Button
                 variant="outline"
@@ -252,11 +252,11 @@ export function EventDetailDialog({
               >
                 {isConverting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <ArrowRight className="mr-2 h-4 w-4" />
-                Convert to Task
+                {isExternal ? "Create Task from Event" : "Convert to Task"}
               </Button>
             )}
 
-            {/* Toggle Complete */}
+            {/* Toggle Complete - only for miniorg events */}
             {!isExternal && (
               <Button
                 variant={event.isCompleted ? "outline" : "default"}
@@ -270,7 +270,7 @@ export function EventDetailDialog({
               </Button>
             )}
 
-            {/* Delete */}
+            {/* Delete - only for miniorg events */}
             {!isExternal && (
               <Button
                 variant="destructive"

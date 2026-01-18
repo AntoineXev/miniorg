@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { CalendarService } from "@/lib/calendar/calendar-service";
 
 // Schema for calendar event creation/update
 const calendarEventSchema = z.object({

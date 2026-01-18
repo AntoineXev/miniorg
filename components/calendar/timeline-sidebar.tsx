@@ -68,11 +68,23 @@ export function TimelineSidebar({
   const snapInterval = 5; // Snap to 5 minute intervals
   const timeSlots = getTimeSlots(startHour, endHour, slotInterval, currentDate);
 
-  // Fetch events
+  // Fetch events with calendar sync
   const fetchEvents = async () => {
     try {
       const startDate = startOfDay(currentDate).toISOString();
       const endDate = endOfDay(currentDate).toISOString();
+      
+      // Sync calendars first
+      try {
+        await fetch('/api/calendar-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate, endDate }),
+        });
+      } catch (syncError) {
+        console.error('Calendar sync error:', syncError);
+        // Continue to fetch events even if sync fails
+      }
       
       const response = await fetch(`/api/calendar-events?startDate=${startDate}&endDate=${endDate}`);
       if (response.ok) {

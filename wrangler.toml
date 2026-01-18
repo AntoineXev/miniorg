@@ -21,7 +21,6 @@ migrations_dir = "prisma/migrations"
 # Environment variables (secrets should be set via wrangler secret put)
 [vars]
 NODE_ENV = "production"
-NEXTAUTH_URL = "https://miniorg.antoine-hervet.workers.dev"
 
 # Configuration des secrets pour NextAuth v5:
 # Pour Workers: wrangler secret put SECRET_NAME
