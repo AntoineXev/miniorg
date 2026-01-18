@@ -10,10 +10,17 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
   private oauth2Client;
 
   constructor() {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('Google OAuth credentials not configured');
+    }
+    
     this.oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_CALENDAR_REDIRECT_URI
+      clientId,
+      clientSecret,
+      // Note: redirect_uri will be passed dynamically in getToken
     );
   }
 
@@ -31,19 +38,27 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
     code: string,
     redirectUri: string
   ): Promise<TokenSet> {
-    // Le redirectUri doit être passé via les options getToken
-    const { tokens } = await this.oauth2Client.getToken({
+    const result = await this.oauth2Client.getToken({
       code,
       redirect_uri: redirectUri,
     });
 
-    if (!tokens.access_token) {
-      throw new Error('No access token received');
+    // Parse tokens if it's a string (sometimes googleapis returns stringified JSON)
+    let tokens = result.tokens;
+    if (typeof tokens === 'string') {
+      tokens = JSON.parse(tokens);
+    }
+
+    const accessToken = tokens.access_token?.toString().trim();
+    const refreshToken = tokens.refresh_token?.toString().trim();
+
+    if (!accessToken) {
+      throw new Error('No access token received. Check Google Console OAuth configuration and scopes.');
     }
 
     return {
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token || undefined,
+      accessToken,
+      refreshToken: refreshToken || undefined,
       expiresAt: new Date(tokens.expiry_date || Date.now() + 3600 * 1000),
       scope: tokens.scope || '',
     };
@@ -56,15 +71,21 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
 
     const { credentials } = await this.oauth2Client.refreshAccessToken();
 
-    if (!credentials.access_token) {
+    // Parse credentials if it's a string
+    let creds = credentials;
+    if (typeof creds === 'string') {
+      creds = JSON.parse(creds);
+    }
+
+    if (!creds.access_token) {
       throw new Error('Failed to refresh access token');
     }
 
     return {
-      accessToken: credentials.access_token,
-      refreshToken: credentials.refresh_token || refreshToken || undefined,
-      expiresAt: new Date(credentials.expiry_date || Date.now() + 3600 * 1000),
-      scope: credentials.scope || '',
+      accessToken: creds.access_token,
+      refreshToken: creds.refresh_token || refreshToken || undefined,
+      expiresAt: new Date(creds.expiry_date || Date.now() + 3600 * 1000),
+      scope: creds.scope || '',
     };
   }
 
@@ -73,12 +94,18 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
     const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
 
     const response = await calendar.calendarList.list();
+    
+    // Parse response.data if it's a string
+    let data = response.data;
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
 
-    return (response.data.items || []).map((item) => ({
+    return (data.items || []).map((item: any) => ({
       id: item.id!,
       name: item.summary || 'Unnamed Calendar',
-      description: item.description,
-      backgroundColor: item.backgroundColor,
+      description: item.description || undefined,
+      backgroundColor: item.backgroundColor || undefined,
       accessRole: item.accessRole || 'reader',
     }));
   }
@@ -109,10 +136,16 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
     }
 
     const response = await calendar.events.list(params);
-
-    const events = (response.data.items || [])
-      .filter((item) => item.status !== 'cancelled') // Filtrer les événements annulés
-      .map((item) => {
+    
+    // Parse response.data if it's a string
+    let data = response.data;
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
+    
+    const events = (data.items || [])
+      .filter((item: any) => item.status !== 'cancelled')
+      .map((item: any) => {
         const startTime = item.start?.dateTime
           ? new Date(item.start.dateTime)
           : item.start?.date
@@ -128,20 +161,20 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
         return {
           id: item.id!,
           title: item.summary || 'Untitled Event',
-          description: item.description,
+          description: item.description || undefined,
           startTime,
           endTime,
-          location: item.location,
-          color: item.colorId,
+          location: item.location || undefined,
+          color: item.colorId || undefined,
           isAllDay: !!item.start?.date,
-          status: item.status,
-          attendees: item.attendees?.map((a) => a.email!),
+          status: item.status || undefined,
+          attendees: item.attendees?.map((a: any) => a.email!),
         };
       });
 
     return {
       events,
-      nextSyncToken: response.data.nextSyncToken,
+      nextSyncToken: data.nextSyncToken || undefined,
     };
   }
 
@@ -170,18 +203,22 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
       },
     });
 
-    const item = response.data;
+    // Parse response.data if it's a string
+    let data = response.data;
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
 
     return {
-      id: item.id!,
-      title: item.summary || event.title,
-      description: item.description || event.description,
+      id: data.id!,
+      title: data.summary || event.title,
+      description: data.description || event.description,
       startTime: event.startTime,
       endTime: event.endTime,
-      location: item.location,
-      color: item.colorId,
+      location: data.location || undefined,
+      color: data.colorId || undefined,
       isAllDay: event.isAllDay,
-      status: item.status,
+      status: data.status || undefined,
       attendees: event.attendees,
     };
   }
@@ -224,30 +261,35 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
       requestBody,
     });
 
-    const item = response.data;
-    const startTime = item.start?.dateTime
-      ? new Date(item.start.dateTime)
-      : item.start?.date
-      ? new Date(item.start.date)
+    // Parse response.data if it's a string
+    let data = response.data;
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
+
+    const startTime = data.start?.dateTime
+      ? new Date(data.start.dateTime)
+      : data.start?.date
+      ? new Date(data.start.date)
       : new Date();
 
-    const endTime = item.end?.dateTime
-      ? new Date(item.end.dateTime)
-      : item.end?.date
-      ? new Date(item.end.date)
+    const endTime = data.end?.dateTime
+      ? new Date(data.end.dateTime)
+      : data.end?.date
+      ? new Date(data.end.date)
       : new Date();
 
     return {
-      id: item.id!,
-      title: item.summary || 'Untitled Event',
-      description: item.description,
+      id: data.id!,
+      title: data.summary || 'Untitled Event',
+      description: data.description || undefined,
       startTime,
       endTime,
-      location: item.location,
-      color: item.colorId,
-      isAllDay: !!item.start?.date,
-      status: item.status,
-      attendees: item.attendees?.map((a) => a.email!),
+      location: data.location || undefined,
+      color: data.colorId || undefined,
+      isAllDay: !!data.start?.date,
+      status: data.status || undefined,
+      attendees: data.attendees?.map((a: any) => a.email!),
     };
   }
 

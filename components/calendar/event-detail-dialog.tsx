@@ -5,10 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Clock, Link as LinkIcon, Trash2, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
+import { Clock, Link as LinkIcon, Trash2, CheckCircle2, ArrowRight, Loader2, Download } from "lucide-react";
 import { formatTimeRange, formatDuration, calculateDuration } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 import { emitTaskUpdate } from "@/lib/task-events";
+import { useToast } from "@/components/ui/toast-provider";
 
 type CalendarEvent = {
   id: string;
@@ -46,13 +47,15 @@ export function EventDetailDialog({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+  const { pushSuccess, pushError } = useToast();
 
   if (!event) return null;
 
   const duration = calculateDuration(event.startTime, event.endTime);
   const timeRange = formatTimeRange(event.startTime, event.endTime);
   const isExternal = event.source !== "miniorg";
-  const canConvertToTask = !event.taskId && !isExternal;
+  // Allow conversion/import for all events that don't have a linked task yet
+  const canConvertToTask = !event.taskId;
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this event?")) return;
@@ -103,7 +106,7 @@ export function EventDetailDialog({
   const handleConvertToTask = async () => {
     setIsConverting(true);
     try {
-      // Create a new task
+      // Create a new task from the event
       const taskResponse = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,7 +125,7 @@ export function EventDetailDialog({
 
       const newTask = await taskResponse.json();
 
-      // Link the event to the newly created task
+      // For both external and miniorg events, just link the existing event to the new task
       const eventResponse = await fetch("/api/calendar-events", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -132,12 +135,32 @@ export function EventDetailDialog({
         }),
       });
 
-      if (eventResponse.ok) {
-        onEventUpdated?.();
-        emitTaskUpdate(); // Notify other components that a task was created
+      if (!eventResponse.ok) {
+        throw new Error("Failed to link event to task");
+      }
+
+      onEventUpdated?.();
+      emitTaskUpdate(); // Notify other components that a task was created
+      onOpenChange(false); // Close the dialog after successful import
+      
+      // Show success message
+      if (isExternal) {
+        pushSuccess(
+          "Event imported successfully",
+          "A new task has been created and linked to this event"
+        );
+      } else {
+        pushSuccess(
+          "Event converted to task",
+          "Your event is now linked to a task"
+        );
       }
     } catch (error) {
-      console.error("Error converting event to task:", error);
+      console.error("Error converting/importing event to task:", error);
+      pushError(
+        "Failed to create task",
+        "Please try again or contact support if the problem persists"
+      );
     } finally {
       setIsConverting(false);
     }
@@ -242,7 +265,7 @@ export function EventDetailDialog({
 
           {/* Actions */}
           <div className="flex flex-col gap-2 pt-4 border-t">
-            {/* Convert to Task button - works for both miniorg and external events */}
+            {/* Import/Convert to Task button - works for both miniorg and external events */}
             {canConvertToTask && (
               <Button
                 variant="outline"
@@ -251,8 +274,17 @@ export function EventDetailDialog({
                 className="w-full"
               >
                 {isConverting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <ArrowRight className="mr-2 h-4 w-4" />
-                {isExternal ? "Create Task from Event" : "Convert to Task"}
+                {isExternal ? (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Import as Task
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    Convert to Task
+                  </>
+                )}
               </Button>
             )}
 

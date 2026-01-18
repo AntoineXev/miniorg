@@ -27,9 +27,10 @@ export async function GET(request: NextRequest) {
     const encodedState = Buffer.from(JSON.stringify(stateData)).toString('base64');
 
     const adapter = new GoogleCalendarAdapter();
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
     const redirectUri =
       process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
-      `${process.env.AUTH_URL}/api/auth/google-calendar/callback`;
+      `${baseUrl}/api/auth/google-calendar/callback`;
 
     const authUrl = adapter.getAuthUrl(redirectUri, encodedState);
 

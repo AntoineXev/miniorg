@@ -21,15 +21,16 @@ migrations_dir = "prisma/migrations"
 # Environment variables (secrets should be set via wrangler secret put)
 [vars]
 NODE_ENV = "production"
+NEXTAUTH_URL = "http://localhost:8787"
 
 # Configuration des secrets pour NextAuth v5:
 # Pour Workers: wrangler secret put SECRET_NAME
 # 
 # Secrets nécessaires:
 # - AUTH_SECRET (utilisé par NextAuth v5)
-# - AUTH_URL (URL complète de votre app, e.g., https://miniorg.your-domain.workers.dev)
 # - GOOGLE_CLIENT_ID
 # - GOOGLE_CLIENT_SECRET
+# - GOOGLE_CALENDAR_REDIRECT_URI (optionnel, par défaut: ${NEXTAUTH_URL}/api/auth/google-calendar/callback)
 
 [observability]
 enabled = false

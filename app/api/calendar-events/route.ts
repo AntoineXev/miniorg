@@ -7,7 +7,7 @@ import { CalendarService } from "@/lib/calendar/calendar-service";
 // Schema for calendar event creation/update
 const calendarEventSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   taskId: z.string().optional().nullable(),
@@ -140,6 +140,7 @@ export async function PATCH(request: NextRequest) {
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
       where: { id, userId: session.user.id },
+      include: { connection: true },
     });
 
     if (!existingEvent) {
@@ -179,6 +180,11 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    // Mark as pending sync if it's an external event (will be synced next)
+    if (existingEvent.externalId && existingEvent.connectionId) {
+      updateData.syncStatus = 'pending';
+    }
+
     const event = await prisma.calendarEvent.update({
       where: { id },
       data: updateData,
@@ -190,6 +196,24 @@ export async function PATCH(request: NextRequest) {
         },
       },
     });
+
+    // If event is from external calendar (Google, etc.), sync back to provider
+    if (existingEvent.externalId && existingEvent.connectionId) {
+      try {
+        const calendarService = new CalendarService();
+        await calendarService.updateExportedEvent(id);
+      } catch (syncError) {
+        console.error("Failed to sync event to external calendar:", syncError);
+        // Update sync status to error but don't fail the request
+        await prisma.calendarEvent.update({
+          where: { id },
+          data: {
+            syncStatus: 'error',
+            syncError: syncError instanceof Error ? syncError.message : 'Unknown error',
+          },
+        });
+      }
+    }
 
     return NextResponse.json(event);
   } catch (error) {
@@ -216,11 +240,22 @@ export async function DELETE(request: NextRequest) {
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
       where: { id, userId: session.user.id },
-      include: { task: true },
+      include: { task: true, connection: true },
     });
 
     if (!existingEvent) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // If event is from external calendar (Google, etc.), delete from provider first
+    if (existingEvent.externalId && existingEvent.connectionId) {
+      try {
+        const calendarService = new CalendarService();
+        await calendarService.deleteExportedEvent(id);
+      } catch (syncError) {
+        console.error("Failed to delete event from external calendar:", syncError);
+        // Continue with local deletion even if external deletion fails
+      }
     }
 
     // If event is linked to a task, update the task

@@ -45,9 +45,10 @@ export async function GET(request: NextRequest) {
     }
 
     const adapter = new GoogleCalendarAdapter();
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
     const redirectUri =
       process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
-      `${process.env.AUTH_URL}/api/auth/google-calendar/callback`;
+      `${baseUrl}/api/auth/google-calendar/callback`;
 
     // Échanger le code contre des tokens
     const tokens = await adapter.exchangeCodeForTokens(code, redirectUri);

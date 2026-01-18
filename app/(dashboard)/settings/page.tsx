@@ -59,6 +59,7 @@ export default function SettingsPage() {
         handleCalendarSelection(decoded);
       } catch (e) {
         console.error("Error decoding calendar data:", e);
+        pushError("Failed to process calendar data", "Please try connecting again");
       }
       // Nettoyer l'URL
       window.history.replaceState({}, "", "/settings");
@@ -72,19 +73,28 @@ export default function SettingsPage() {
     // Dans une vraie app, on pourrait afficher un dialog de sélection
     for (const calendar of calendars) {
       try {
-        await fetch("/api/calendar-connections", {
+        const payload = {
+          provider: "google",
+          providerAccountId: calendar.id,
+          name: calendar.name,
+          calendarId: calendar.id,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: typeof tokens.expiresAt === 'string' 
+            ? tokens.expiresAt 
+            : tokens.expiresAt?.toISOString?.() || new Date(Date.now() + 3600000).toISOString(),
+        };
+
+        const response = await fetch("/api/calendar-connections", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            provider: "google",
-            providerAccountId: calendar.id,
-            name: calendar.name,
-            calendarId: calendar.id,
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            expiresAt: tokens.expiresAt.toISOString(),
-          }),
+          body: JSON.stringify(payload),
         });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Error creating calendar ${calendar.name}:`, response.status, errorText);
+        }
       } catch (error) {
         console.error(`Error adding calendar ${calendar.name}:`, error);
       }
