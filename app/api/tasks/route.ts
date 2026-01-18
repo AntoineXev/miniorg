@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
+import { PrismaD1 } from "@prisma/adapter-d1";
+import { PrismaClient } from '@prisma/client/edge'
 // Schema for task creation/update
 const taskSchema = z.object({
   title: z.string().min(1),
@@ -22,7 +23,6 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const scheduledDate = searchParams.get("scheduledDate");
@@ -65,13 +65,15 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/tasks - Create a new task
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, env: CloudflareEnv) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    console.log("auth passed");
+    const adapter = new PrismaD1(env.DB);
+    const prisma = new PrismaClient({ adapter });
     const json = await request.json();
     const body = taskSchema.parse(json);
 
