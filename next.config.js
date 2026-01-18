@@ -16,6 +16,19 @@ const nextConfig = {
       type: 'asset/source',
     })
     
+    // Support for WebAssembly modules (required for Prisma 7 with Cloudflare)
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    }
+    
+    // Configure WebAssembly loader
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    })
+    
     // Ignore problematic imports from node_modules
     config.resolve.alias = {
       ...config.resolve.alias,

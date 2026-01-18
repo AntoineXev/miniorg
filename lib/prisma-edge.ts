@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client/edge'
+import { PrismaClient } from '../src/generated/prisma/client'
 import { PrismaD1 } from '@prisma/adapter-d1'
 import type { D1Database } from '@cloudflare/workers-types'
 
@@ -6,7 +6,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 const prismaClientCache = new WeakMap<D1Database, PrismaClient>()
 
 /**
- * Get Prisma client configured with D1 adapter for Edge Runtime
+ * Get Prisma client configured with D1 adapter for Cloudflare Workers
  * @param d1Database - D1 database instance from Cloudflare binding
  * @returns Prisma client instance
  */

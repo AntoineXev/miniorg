@@ -1,8 +1,8 @@
 name = "miniorg"
 account_id = "3676fa8d525890e7ddf8e55650e6c144"
-compatibility_date = "2025-01-01"
+compatibility_date = "2025-09-01"
 
-# Compatibility flags for Node.js APIs
+# Compatibility flags for Node.js APIs (including node:fs support)
 compatibility_flags = ["nodejs_compat"]
 
 # Configuration pour Workers

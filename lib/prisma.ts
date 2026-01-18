@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client/edge'
+import { PrismaClient } from '../src/generated/prisma/client'
 import { PrismaD1 } from '@prisma/adapter-d1'
 import type { D1Database } from '@cloudflare/workers-types'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
