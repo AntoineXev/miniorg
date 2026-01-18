@@ -81,11 +81,25 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const body = calendarEventSchema.parse(json);
 
+    const startTime = new Date(body.startTime);
+    const endTime = new Date(body.endTime);
+
+    // If taskId is provided, update the task's scheduledDate and status
+    if (body.taskId) {
+      await prisma.task.update({
+        where: { id: body.taskId },
+        data: {
+          scheduledDate: startTime,
+          status: "planned", // Move from backlog to planned
+        },
+      });
+    }
+
     const event = await prisma.calendarEvent.create({
       data: {
         ...body,
-        startTime: new Date(body.startTime),
-        endTime: new Date(body.endTime),
+        startTime,
+        endTime,
         userId: session.user.id,
       },
       include: {
@@ -143,6 +157,27 @@ export async function PATCH(request: NextRequest) {
       updateData.endTime = new Date(updates.endTime);
     }
 
+    // If startTime is being updated and event is linked to a task, update task's scheduledDate
+    if (updateData.startTime && existingEvent.taskId) {
+      await prisma.task.update({
+        where: { id: existingEvent.taskId },
+        data: {
+          scheduledDate: updateData.startTime,
+        },
+      });
+    }
+
+    // If taskId is being linked (from null to a taskId), update the task
+    if ('taskId' in updates && updates.taskId && !existingEvent.taskId) {
+      await prisma.task.update({
+        where: { id: updates.taskId },
+        data: {
+          scheduledDate: updateData.startTime || existingEvent.startTime,
+          status: "planned",
+        },
+      });
+    }
+
     const event = await prisma.calendarEvent.update({
       where: { id },
       data: updateData,
@@ -180,10 +215,23 @@ export async function DELETE(request: NextRequest) {
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
       where: { id, userId: session.user.id },
+      include: { task: true },
     });
 
     if (!existingEvent) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // If event is linked to a task, update the task
+    if (existingEvent.taskId && existingEvent.task) {
+      await prisma.task.update({
+        where: { id: existingEvent.taskId },
+        data: {
+          scheduledDate: null,
+          // Only set back to backlog if task is not done
+          status: existingEvent.task.status === "done" ? "done" : "backlog",
+        },
+      });
     }
 
     await prisma.calendarEvent.delete({
