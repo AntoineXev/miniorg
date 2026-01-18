@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+import { emitTaskUpdate } from "@/lib/task-events";
+import { useToast } from "@/components/ui/toast-provider";
 
 type CalendarEvent = {
   id: string;
@@ -60,6 +62,7 @@ export function TimelineSidebar({
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const dragDurationRef = useRef<number>(0);
+  const { pushSuccess } = useToast();
 
   const slotHeight = 32; // Height of one time slot in pixels (for 30 min slots)
   const snapInterval = 5; // Snap to 5 minute intervals
@@ -216,6 +219,11 @@ export function TimelineSidebar({
 
           if (response.ok) {
             fetchEvents();
+            emitTaskUpdate(); // Notify other components that tasks have been updated
+            pushSuccess(
+              "Task successfully planned",
+              "You'll find your task in your calendar view"
+            );
           }
         } catch (error) {
           console.error("Error creating event from task:", error);
@@ -737,6 +745,10 @@ function DraggableEvent({
 
           if (response.ok) {
             onEventUpdate();
+            // If event is linked to a task, notify other components
+            if (event.taskId) {
+              emitTaskUpdate();
+            }
           }
         } catch (error) {
           console.error("Error updating event:", error);
@@ -812,6 +824,10 @@ function DraggableEvent({
 
           if (response.ok) {
             onEventUpdate();
+            // If event is linked to a task, notify other components (start time changed)
+            if (event.taskId) {
+              emitTaskUpdate();
+            }
           }
         } catch (error) {
           console.error("Error updating event:", error);

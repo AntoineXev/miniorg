@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, addMinutes } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { emitTaskUpdate } from "@/lib/task-events";
 
 type Task = {
   id: string;
@@ -88,6 +89,7 @@ export function CreateEventForm({
     }
 
     setIsLoading(true);
+    const isLinkingToTask = linkToTask && selectedTaskId;
     try {
       const response = await fetch("/api/calendar-events", {
         method: "POST",
@@ -97,13 +99,17 @@ export function CreateEventForm({
           description: description.trim() || undefined,
           startTime: new Date(startTime).toISOString(),
           endTime: new Date(endTime).toISOString(),
-          taskId: linkToTask && selectedTaskId ? selectedTaskId : null,
+          taskId: isLinkingToTask ? selectedTaskId : null,
         }),
       });
 
       if (response.ok) {
         onEventCreated?.();
         handleClose();
+        // If we linked an event to a task, notify other components
+        if (isLinkingToTask) {
+          emitTaskUpdate();
+        }
       }
     } catch (error) {
       console.error("Error creating event:", error);

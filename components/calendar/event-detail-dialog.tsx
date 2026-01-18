@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { Clock, Link as LinkIcon, Trash2, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { formatTimeRange, formatDuration, calculateDuration } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
+import { emitTaskUpdate } from "@/lib/task-events";
 
 type CalendarEvent = {
   id: string;
@@ -65,6 +66,10 @@ export function EventDetailDialog({
       if (response.ok) {
         onEventDeleted?.();
         onOpenChange(false);
+        // If event was linked to a task, notify other components
+        if (event.taskId) {
+          emitTaskUpdate();
+        }
       }
     } catch (error) {
       console.error("Error deleting event:", error);
@@ -129,6 +134,7 @@ export function EventDetailDialog({
 
       if (eventResponse.ok) {
         onEventUpdated?.();
+        emitTaskUpdate(); // Notify other components that a task was created
       }
     } catch (error) {
       console.error("Error converting event to task:", error);
