@@ -26,6 +26,7 @@ type ToastProps = {
 
 export function ToastComponent({ toast, onClose }: ToastProps) {
   const [isVisible, setIsVisible] = React.useState(true);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   React.useEffect(() => {
     if (toast.duration !== 0) {
@@ -49,6 +50,8 @@ export function ToastComponent({ toast, onClose }: ToastProps) {
       animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20, scale: isVisible ? 1 : 0.95 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "relative flex items-center gap-3 rounded-lg bg-[#0a0a0a] px-4 py-3 shadow-xl border border-white/5",
         "min-w-[320px] max-w-[420px]"
@@ -67,9 +70,19 @@ export function ToastComponent({ toast, onClose }: ToastProps) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white">{toast.title}</p>
-        {toast.description && (
-          <p className="text-xs text-white/70 mt-0.5">{toast.description}</p>
-        )}
+        <AnimatePresence>
+          {toast.description && isHovered && (
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.15 }}
+              className="text-xs text-white/70 mt-0.5 overflow-hidden"
+            >
+              {toast.description}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Separator & Action */}

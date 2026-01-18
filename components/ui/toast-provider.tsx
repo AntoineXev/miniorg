@@ -79,7 +79,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
       {children}
       {mounted &&
         createPortal(
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
             <div className="flex flex-col gap-2 items-center pointer-events-auto">
               <AnimatePresence mode="popLayout">
                 {toasts.map((toast) => (
