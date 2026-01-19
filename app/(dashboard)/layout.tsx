@@ -9,9 +9,10 @@ import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/toast-provider";
+import { useToast } from "@/providers/toast";
 import { useRouter } from "next/navigation";
-import { emitTaskUpdate } from "@/lib/task-events";
+import { emitTaskUpdate } from "@/lib/services/task-events";
+import { QuickAddTaskProvider, useQuickAddTask } from "@/providers/quick-add-task";
 
 type RightSidebarPanel = "timeline" | "backlog" | null;
 
@@ -131,7 +132,9 @@ export default function DashboardLayout({
 }) {
   return (
     <SessionProvider>
-      <DashboardContent>{children}</DashboardContent>
+      <QuickAddTaskProvider>
+        <DashboardContent>{children}</DashboardContent>
+      </QuickAddTaskProvider>
     </SessionProvider>
   );
 }

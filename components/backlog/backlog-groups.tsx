@@ -6,7 +6,7 @@ import { TaskCard } from "@/components/tasks/task-card";
 import { DraggableTaskWrapper } from "@/components/backlog/draggable-task-wrapper";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getTaskDeadlineGroup, deadlineTypeLabels, type DeadlineGroup } from "@/lib/task-utils";
+import { getTaskDeadlineGroup, deadlineTypeLabels, type DeadlineGroup } from "@/lib/utils/task";
 
 type Task = {
   id: string;

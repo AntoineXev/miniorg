@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { BacklogGroups } from "@/components/backlog/backlog-groups";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
-import { onTaskUpdate, emitTaskUpdate } from "@/lib/task-events";
+import { onTaskUpdate, emitTaskUpdate } from "@/lib/services/task-events";
 
 type Task = {
   id: string;

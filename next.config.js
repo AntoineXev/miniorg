@@ -2,6 +2,15 @@
 const isCloudflare = process.env.BUILD_TARGET === 'cloudflare'
 
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, addMinutes } from "date-fns";
 import { Loader2 } from "lucide-react";
-import { emitTaskUpdate } from "@/lib/task-events";
+import { emitTaskUpdate } from "@/lib/services/task-events";
 
 type Task = {
   id: string;

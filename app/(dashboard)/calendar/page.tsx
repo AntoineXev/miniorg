@@ -11,12 +11,13 @@ import { Header } from "@/components/layout/header";
 import { TaskCard } from "@/components/tasks/task-card";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { cn } from "@/lib/utils";
-import { emitTaskUpdate, onTaskUpdate } from "@/lib/task-events";
+import { emitTaskUpdate, onTaskUpdate } from "@/lib/services/task-events";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview";
 import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview";
 import { preserveOffsetOnSource } from "@atlaskit/pragmatic-drag-and-drop/element/preserve-offset-on-source";
+import { useQuickAddTask } from "@/providers/quick-add-task";
 
 type Task = {
   id: string;
@@ -49,6 +50,7 @@ export default function CalendarPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [startDate, setStartDate] = useState(startOfToday());
   const [numDays, setNumDays] = useState(7);
+  const { openQuickAdd } = useQuickAddTask();
 
   // Responsive: ajuster le nombre de jours selon la largeur de l'écran
   useEffect(() => {
@@ -166,17 +168,8 @@ export default function CalendarPage() {
     }
   };
 
-  // TODO: Implement a way to trigger quick add with a specific date
-  // This could be done through a global event system or context
   const handleAddTaskToDay = (date: Date) => {
-    // For now, we'll just open the quick add (which is in the layout)
-    // and the user can set the date manually
-    const event = new KeyboardEvent('keydown', { 
-      key: 'k', 
-      metaKey: true, 
-      bubbles: true 
-    });
-    document.dispatchEvent(event);
+    openQuickAdd(date);
   };
 
   // Générer les colonnes de jours

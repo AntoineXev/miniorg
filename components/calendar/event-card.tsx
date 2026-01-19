@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { isPast } from "date-fns";
-import { calculateDuration } from "@/lib/calendar-utils";
+import { calculateDuration } from "@/lib/utils/calendar";
 import { Calendar } from "lucide-react";
 
 export type CalendarEvent = {

@@ -9,13 +9,13 @@ import { NavButton } from "@/components/ui/nav-button";
 import { EventCard } from "./event-card";
 import { CreateEventForm } from "./create-event-form";
 import { EventDetailDialog } from "./event-detail-dialog";
-import { getTimeSlots, calculateEventPosition, sortEventsByTime, formatTimeRange, formatDuration, snapToInterval, calculateEventColumns } from "@/lib/calendar-utils";
+import { getTimeSlots, calculateEventPosition, sortEventsByTime, formatTimeRange, formatDuration, snapToInterval, calculateEventColumns } from "@/lib/utils/calendar";
 import { cn } from "@/lib/utils";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
-import { emitTaskUpdate } from "@/lib/task-events";
-import { useToast } from "@/components/ui/toast-provider";
+import { emitTaskUpdate } from "@/lib/services/task-events";
+import { useToast } from "@/providers/toast";
 
 type CalendarEvent = {
   id: string;

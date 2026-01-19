@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, X, Trash2, Loader2 } from "lucide-react";
-import { deadlineTypeLabels } from "@/lib/task-utils";
+import { deadlineTypeLabels } from "@/lib/utils/task";
 import { format } from "date-fns";
 
 type Task = {

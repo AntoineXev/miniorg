@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
-import { ToastComponent, type Toast, type ToastVariant } from "./toast";
+import { ToastComponent, type Toast, type ToastVariant } from "@/components/ui/toast";
 
 type ToastContextType = {
   pushToast: (toast: Omit<Toast, "id">) => void;

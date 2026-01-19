@@ -1,6 +1,6 @@
 "use client";
 
-import { useToast } from "@/components/ui/toast-provider";
+import { useToast } from "@/providers/toast";
 
 export class ApiError extends Error {
   constructor(

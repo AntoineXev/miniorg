@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NavButton } from "@/components/ui/nav-button";
 import { Calendar, Plus, Trash2, RefreshCw, Check, ArrowLeft } from "lucide-react";
-import { useToast } from "@/components/ui/toast-provider";
+import { useToast } from "@/providers/toast";
 import { CalendarOnboardingModal } from "@/components/calendar/calendar-onboarding-modal";
 
 type CalendarConnection = {

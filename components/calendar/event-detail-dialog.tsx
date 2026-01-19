@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Clock, Link as LinkIcon, Trash2, CheckCircle2, ArrowRight, Loader2, Download } from "lucide-react";
-import { formatTimeRange, formatDuration, calculateDuration } from "@/lib/calendar-utils";
+import { formatTimeRange, formatDuration, calculateDuration } from "@/lib/utils/calendar";
 import { cn } from "@/lib/utils";
-import { emitTaskUpdate } from "@/lib/task-events";
-import { useToast } from "@/components/ui/toast-provider";
+import { emitTaskUpdate } from "@/lib/services/task-events";
+import { useToast } from "@/providers/toast";
 
 type CalendarEvent = {
   id: string;

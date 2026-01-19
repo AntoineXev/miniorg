@@ -6,19 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Calendar, X } from "lucide-react";
-import { deadlineTypeLabels } from "@/lib/task-utils";
+import { deadlineTypeLabels } from "@/lib/utils/task";
 import { format } from "date-fns";
-import { useApiClient } from "@/lib/api-client";
+import { useApiClient } from "@/lib/services/api-client";
+import { useQuickAddTask } from "@/providers/quick-add-task";
 
 type QuickAddTaskProps = {
   onTaskCreated?: () => void;
-  prefilledDate?: Date;
-  triggerOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
 };
 
-export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpenChange }: QuickAddTaskProps) {
-  const [open, setOpen] = useState(false);
+export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
+  const { isOpen, prefilledDate, openQuickAdd, closeQuickAdd } = useQuickAddTask();
   const [title, setTitle] = useState("");
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
   const [specificDate, setSpecificDate] = useState<string>("");
@@ -41,36 +39,38 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
 
   // Gérer les changements d'état open
   const handleOpenChange = useCallback((newOpen: boolean) => {
-    setOpen(newOpen);
-    onOpenChange?.(newOpen);
-    if (!newOpen) {
+    if (newOpen) {
+      openQuickAdd(prefilledDate);
+    } else {
+      closeQuickAdd();
       resetForm();
     }
-  }, [onOpenChange, resetForm]);
+  }, [openQuickAdd, closeQuickAdd, prefilledDate, resetForm]);
 
-  // Gérer l'ouverture externe (depuis le bouton Add task d'une colonne)
+  // Gérer la date préfillee quand le modal s'ouvre
   useEffect(() => {
-    if (triggerOpen) {
-      setOpen(true);
-      if (prefilledDate) {
-        setUseSpecificDate(true);
-        setSpecificDate(format(prefilledDate, "yyyy-MM-dd"));
-      }
-      onOpenChange?.(true);
+    if (isOpen && prefilledDate) {
+      setUseSpecificDate(true);
+      setSpecificDate(format(prefilledDate, "yyyy-MM-dd"));
     }
-  }, [triggerOpen, prefilledDate, onOpenChange]);
+  }, [isOpen, prefilledDate]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === "k" && (e.metaKey || e.ctrlKey))) {
         e.preventDefault();
-        handleOpenChange(!open);
+        if (isOpen) {
+          closeQuickAdd();
+          resetForm();
+        } else {
+          openQuickAdd();
+        }
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [open, handleOpenChange]);
+  }, [isOpen, openQuickAdd, closeQuickAdd, resetForm]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -86,7 +86,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
         deadlineType: useSpecificDate ? undefined : deadlineType,
         scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
         duration: duration ? parseInt(duration, 10) : undefined,
-        status: "backlog",
+        status: (useSpecificDate && specificDate) ? "planned" : "backlog",
       },
       "Tâche créée",
       { errorMessage: "Erreur lors de la création" }
@@ -94,7 +94,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
 
     if (data) {
       resetForm();
-      handleOpenChange(false);
+      closeQuickAdd();
       onTaskCreated?.();
     }
 
@@ -106,14 +106,15 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
       handleSubmit();
     }
     if (e.key === "Escape") {
-      handleOpenChange(false);
+      closeQuickAdd();
+      resetForm();
     }
   };
 
   return (
     <>
       <Button
-        onClick={() => handleOpenChange(true)}
+        onClick={() => openQuickAdd()}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40"
         size="icon"
       >
@@ -121,7 +122,7 @@ export function QuickAddTask({ onTaskCreated, prefilledDate, triggerOpen, onOpen
       </Button>
 
       <UnifiedModal
-        open={open}
+        open={isOpen}
         onOpenChange={handleOpenChange}
         headerValue={title}
         headerPlaceholder="What do you need to do?"
