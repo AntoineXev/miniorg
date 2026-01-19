@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ListTodo, Calendar, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Backlog", href: "/backlog", icon: ListTodo },
+  { name: "Calendar", href: "/calendar", icon: SquareKanban },
+  { name: "Backlog", href: "/backlog", icon: ClipboardList },
 ];
 
 type SidebarProps = {
@@ -33,7 +33,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
         isCollapsed ? "p-4" : "p-6"
       )}>
         {!isCollapsed && (
-          <h1 className="text-2xl font-semibold tracking-tight">MiniOrg</h1>
+          <h1 className="text-xl font-medium tracking-tight">MiniOrg.</h1>
         )}
         <Button
           variant="ghost"
@@ -46,9 +46,9 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronsRight strokeWidth={1} className="h-4 w-4" />
           ) : (
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronsLeft strokeWidth={1} className="h-4 w-4" />
           )}
         </Button>
       </div>
@@ -61,7 +61,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 isActive
                   ? "text-primary bg-primary/5"
                   : "text-muted-foreground hover:bg-gray-200/70",
@@ -69,40 +69,34 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
               )}
               title={isCollapsed ? item.name : undefined}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <item.icon className="h-5 w-5 shrink-0" strokeWidth={1}/>
               {!isCollapsed && item.name}
             </Link>
           );
         })}
       </nav>
       
-      {/* User section at the bottom */}
-      <div className="p-4">
+      {/* User section at the bottom - Settings link */}
+      <div className="px-3 pb-4">
         {session?.user && (
-          <div className={cn(
-            "flex items-center gap-2",
-            isCollapsed ? "justify-center" : "justify-between"
-          )}>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {session.user.name || session.user.email?.split('@')[0]}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {session.user.email}
-                </p>
-              </div>
+          <Link
+            href="/settings"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+              pathname.startsWith("/settings")
+                ? "text-primary bg-primary/5"
+                : "text-muted-foreground hover:bg-gray-200/70",
+              isCollapsed && "justify-center"
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="h-8 w-8 p-0 shrink-0"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
+            title={isCollapsed ? session.user.name || "Settings" : undefined}
+          >
+            <User className="h-5 w-5 shrink-0" strokeWidth={1}/>
+            {!isCollapsed && (
+              <span className="truncate">
+                {session.user.name || session.user.email?.split('@')[0]}
+              </span>
+            )}
+          </Link>
         )}
       </div>
     </div>

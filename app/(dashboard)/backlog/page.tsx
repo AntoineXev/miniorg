@@ -13,7 +13,7 @@ export default function BacklogPage() {
         />
         
         <div className="flex-1 overflow-auto">
-          <BacklogContent showQuickAdd />
+          <BacklogContent />
         </div>
       </div>
 

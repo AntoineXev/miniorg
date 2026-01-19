@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfToday, isSameDay, parseISO, isWeekend } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavButton } from "@/components/ui/nav-button";
+import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
 import { Header } from "@/components/layout/header";
 import { TaskCard } from "@/components/tasks/task-card";
-import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { cn } from "@/lib/utils";
 import { emitTaskUpdate, onTaskUpdate } from "@/lib/task-events";
@@ -48,8 +49,6 @@ export default function CalendarPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [startDate, setStartDate] = useState(startOfToday());
   const [numDays, setNumDays] = useState(7);
-  const [triggerQuickAdd, setTriggerQuickAdd] = useState(false);
-  const [prefilledDate, setPrefilledDate] = useState<Date | undefined>();
 
   // Responsive: ajuster le nombre de jours selon la largeur de l'écran
   useEffect(() => {
@@ -167,16 +166,17 @@ export default function CalendarPage() {
     }
   };
 
+  // TODO: Implement a way to trigger quick add with a specific date
+  // This could be done through a global event system or context
   const handleAddTaskToDay = (date: Date) => {
-    setPrefilledDate(date);
-    setTriggerQuickAdd(true);
-  };
-
-  const handleQuickAddOpenChange = (open: boolean) => {
-    if (!open) {
-      setTriggerQuickAdd(false);
-      setPrefilledDate(undefined);
-    }
+    // For now, we'll just open the quick add (which is in the layout)
+    // and the user can set the date manually
+    const event = new KeyboardEvent('keydown', { 
+      key: 'k', 
+      metaKey: true, 
+      bubbles: true 
+    });
+    document.dispatchEvent(event);
   };
 
   // Générer les colonnes de jours
@@ -225,34 +225,31 @@ export default function CalendarPage() {
     <>
       <div className="flex flex-col h-full bg-background">
         {/* Header avec navigation */}
-        <Header title="Calendar">
-          <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handlePrevWeek}
-              className="h-8 w-8 p-0 hover:bg-background"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToday}
-              className="h-8 px-4 text-xs font-semibold hover:bg-background"
-            >
-              Today
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNextWeek}
-              className="h-8 w-8 p-0 hover:bg-background"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </Header>
+        <Header 
+          title="Calendar"
+          actions={
+            <ButtonGroup>
+              <ButtonGroupItem
+                onClick={handlePrevWeek}
+                aria-label="Previous week"
+              >
+                <ChevronLeft strokeWidth={1} className="h-4 w-4" />
+              </ButtonGroupItem>
+              <ButtonGroupItem
+                variant="primary"
+                onClick={handleToday}
+              >
+                Today
+              </ButtonGroupItem>
+              <ButtonGroupItem
+                onClick={handleNextWeek}
+                aria-label="Next week"
+              >
+                <ChevronRight strokeWidth={1} className="h-4 w-4" />
+              </ButtonGroupItem>
+            </ButtonGroup>
+          }
+        />
 
         {/* Grid de jours */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden">
@@ -283,13 +280,6 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
-
-      <QuickAddTask 
-        onTaskCreated={fetchTasks} 
-        prefilledDate={prefilledDate}
-        triggerOpen={triggerQuickAdd}
-        onOpenChange={handleQuickAddOpenChange}
-      />
       
       <EditTaskDialog
         task={editingTask}
@@ -464,7 +454,7 @@ const DraggableTask = forwardRef<HTMLDivElement, DraggableTaskProps>(
               }),
               render: ({ container }) => {
                 const preview = document.createElement('div');
-                preview.className = 'bg-card border-2 border-primary rounded-lg p-3 shadow-xl max-w-xs';
+                preview.className = 'bg-card border border-primary rounded-lg p-3 shadow-xl max-w-xs';
                 preview.innerHTML = `
                   <div class="text-sm font-medium text-foreground">
                     ${task.title}
@@ -476,14 +466,14 @@ const DraggableTask = forwardRef<HTMLDivElement, DraggableTaskProps>(
           },
         })
       );
-    }, [task.id, task.title, task.status, isCompleted]);
+    }, [task.id, task.title, task.status, task.duration, isCompleted]);
 
     return (
       <motion.div
         ref={dragRef}
         layout
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity:task.status === "done" ? 0.7 : 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.2 }}
         className={cn(

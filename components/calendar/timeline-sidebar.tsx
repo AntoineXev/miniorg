@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, startOfDay, endOfDay, isSameDay, parseISO, addMinutes, differenceInMinutes } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NavButton } from "@/components/ui/nav-button";
 import { EventCard } from "./event-card";
 import { CreateEventForm } from "./create-event-form";
 import { EventDetailDialog } from "./event-detail-dialog";
@@ -69,7 +70,7 @@ export function TimelineSidebar({
   const timeSlots = getTimeSlots(startHour, endHour, slotInterval, currentDate);
 
   // Fetch events with calendar sync
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const startDate = startOfDay(currentDate).toISOString();
       const endDate = endOfDay(currentDate).toISOString();
@@ -102,11 +103,11 @@ export function TimelineSidebar({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentDate]);
 
   useEffect(() => {
     fetchEvents();
-  }, [currentDate]);
+  }, [currentDate, fetchEvents]);
 
   // Auto-scroll to current hour on mount
   useEffect(() => {
@@ -120,10 +121,10 @@ export function TimelineSidebar({
         }, 100);
       }
     }
-  }, []);
+  }, [currentDate, startHour, endHour, slotInterval]);
 
   // Calculate time from mouse Y position
-  const getTimeFromMouseY = (yPosition: number): Date => {
+  const getTimeFromMouseY = useCallback((yPosition: number): Date => {
     if (!timelineRef.current) return new Date();
     
     const rect = timelineRef.current.getBoundingClientRect();
@@ -143,7 +144,7 @@ export function TimelineSidebar({
     const snappedMinutes = Math.round(minutes / snapInterval) * snapInterval;
     
     return addMinutes(dayStart, snappedMinutes);
-  };
+  }, [currentDate, slotHeight, slotInterval, startHour, snapInterval]);
 
   // Mouse move handler for drag preview - NOT NEEDED, using onDrag instead
   // (Keeping for reference but commented out)
@@ -247,7 +248,7 @@ export function TimelineSidebar({
     });
 
     return cleanup;
-  }, [dragPreview, startHour, endHour, slotInterval, currentDate]);
+  }, [dragPreview, startHour, endHour, slotInterval, currentDate, fetchEvents, getTimeFromMouseY, pushSuccess]);
 
   const handleSlotClick = (slot: { time: Date }) => {
     setPrefilledStartTime(slot.time);
@@ -291,14 +292,13 @@ export function TimelineSidebar({
         <div className="px-4 py-3">
           {/* Date Navigation */}
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+            <NavButton
+              size="sm"
               onClick={handlePreviousDay}
+              aria-label="Previous day"
             >
               <ChevronLeft className="h-4 w-4" />
-            </Button>
+            </NavButton>
 
             <div className="flex flex-col items-center">
               <span className={cn("text-sm font-medium", isToday && "text-primary")}>
@@ -309,14 +309,13 @@ export function TimelineSidebar({
               </span>
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+            <NavButton
+              size="sm"
               onClick={handleNextDay}
+              aria-label="Next day"
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
+            </NavButton>
           </div>
         </div>
       </div>
@@ -769,7 +768,7 @@ function DraggableEvent({
         }
       },
     });
-  }, [event, slotHeight, slotInterval, startHour, getTimeFromMouseY, onEventUpdate, timelineRef, initialTop, initialHeight]);
+  }, [event, slotHeight, slotInterval, startHour, getTimeFromMouseY, onEventUpdate, timelineRef, initialTop, initialHeight, isInFlexGroup]);
 
   // Setup draggable for top handle (resize from top)
   useEffect(() => {

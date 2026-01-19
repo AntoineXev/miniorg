@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { AnimatedCheckbox } from "@/components/ui/animated-checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow, addDays, addMonths, addYears } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -126,23 +126,22 @@ export function TaskCard({
       whileHover={{ y: -2 }}
     >
       <Card
-        className={cn(
-          "group relative p-4 transition-all duration-200 hover:shadow-md cursor-pointer",
-          isCompleted && "opacity-60"
-        )}
+        className="group relative p-4 transition-all duration-200 hover:shadow-md cursor-pointer"
         onClick={() => onEdit?.(task.id)}
       >
         <div className="flex items-start gap-3">
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={(checked) =>
-              onToggleComplete?.(task.id, checked as boolean)
-            }
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1"
-          />
+          <div onClick={(e) => e.stopPropagation()} className="isolate">
+            <AnimatedCheckbox
+              checked={isCompleted}
+              onChange={(checked) => onToggleComplete?.(task.id, checked)}
+              className="w-5 h-5"
+            />
+          </div>
 
-          <div className="flex-1 min-w-0">
+          <div className={cn(
+            "flex-1 min-w-0 transition-opacity",
+            isCompleted && "opacity-70"
+          )}>
             <div className="flex items-start justify-between gap-2">
               <h3
                 className={cn(
@@ -173,7 +172,7 @@ export function TaskCard({
                 <Calendar className={cn(
                   "h-3 w-3",
                   deadlineInfo.overdue ? "text-destructive" : deadlineInfo.urgent ? "text-orange-500" : "text-muted-foreground"
-                )} />
+                )} strokeWidth={1} />
                 <span className={cn(
                   "text-xs",
                   deadlineInfo.overdue ? "text-destructive font-medium" : 

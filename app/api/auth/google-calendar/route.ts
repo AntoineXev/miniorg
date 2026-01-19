@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/auth/google-calendar - Initier l'authentification OAuth Google Calendar
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const callbackUrl = searchParams.get('callbackUrl') || '/settings';
+    const callbackUrl = searchParams.get('callbackUrl') || '/settings/calendars';
 
     // Créer un state unique pour la sécurité OAuth
     const state = crypto.randomUUID();

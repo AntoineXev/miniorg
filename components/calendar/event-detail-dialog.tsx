@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UnifiedModal } from "@/components/ui/unified-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -47,6 +47,7 @@ export function EventDetailDialog({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+  const [showDetails, setShowDetails] = useState(true); // Start expanded
   const { pushSuccess, pushError } = useToast();
 
   if (!event) return null;
@@ -94,6 +95,40 @@ export function EventDetailDialog({
       });
 
       if (response.ok) {
+        onEventUpdated?.();
+      }
+    } catch (error) {
+      console.error("Error updating event:", error);
+    } finally {
+      setIsTogglingComplete(false);
+    }
+  };
+
+  const handleCheckboxChange = async (checked: boolean) => {
+    setIsTogglingComplete(true);
+    try {
+      const response = await fetch("/api/calendar-events", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: event.id,
+          isCompleted: checked,
+        }),
+      });
+
+      if (response.ok) {
+        // If event is completed and linked to a task, mark the task as completed too
+        if (checked && event.taskId) {
+          await fetch("/api/tasks", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: event.taskId,
+              status: "done",
+            }),
+          });
+          emitTaskUpdate();
+        }
         onEventUpdated?.();
       }
     } catch (error) {
@@ -167,157 +202,140 @@ export function EventDetailDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
-        <DialogHeader>
-          <DialogTitle>Event Details</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Event color indicator */}
-          {event.color && (
-            <div 
-              className="h-1 w-full rounded-full -mt-2"
-              style={{ backgroundColor: event.color }}
-            />
-          )}
-
-          {/* Title */}
-          <div>
-            <h3 className={cn(
-              "text-xl font-semibold",
-              event.isCompleted && "line-through text-muted-foreground"
-            )}>
-              {event.title}
-            </h3>
-          </div>
-
-          {/* Time and Duration */}
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{timeRange}</span>
-            </div>
-            <Badge variant="secondary" className="text-xs">
-              {formatDuration(duration)}
-            </Badge>
-            {event.isCompleted && (
-              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Completed
-              </Badge>
-            )}
-          </div>
-
-          {/* Date */}
-          <div className="text-sm text-muted-foreground">
-            {format(event.startTime, "EEEE, MMMM d, yyyy")}
-          </div>
-
-          {/* Description */}
-          {event.description && (
-            <div className="space-y-1">
-              <h4 className="text-sm font-medium">Description</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {event.description}
-              </p>
-            </div>
-          )}
-
+    <UnifiedModal
+      open={open}
+      onOpenChange={onOpenChange}
+      headerValue={event.title}
+      headerDisabled={true}
+      showCheckbox={!isExternal}
+      checkboxChecked={event.isCompleted}
+      onCheckboxChange={!isExternal ? handleCheckboxChange : undefined}
+      showMoreExpanded={showDetails}
+      onShowMoreToggle={setShowDetails}
+      footerLeftActions={
+        <div className="flex items-center gap-2">
           {/* Source badge for external events */}
           {isExternal && (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="capitalize">
-                From {event.source}
-              </Badge>
-            </div>
+            <Badge variant="secondary" className="capitalize text-xs">
+              From {event.source}
+            </Badge>
+          )}
+          
+          {/* Completed badge */}
+          {event.isCompleted && (
+            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+              <CheckCircle2 className="h-3 w-3 mr-1" strokeWidth={1} />
+              Completed
+            </Badge>
+          )}
+        </div>
+      }
+      actionButtons={
+        <>
+          {/* Delete - only for miniorg events */}
+          {!isExternal && (
+            <Button
+              variant="ghost"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="shadow-lg bg-white border border-red-600 hover:bg-red-50"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin text-red-600" strokeWidth={1} />
+              ) : (
+                <Trash2 className="h-4 w-4 text-red-600" strokeWidth={1} />
+              )}
+            </Button>
           )}
 
-          {/* Linked Task Info */}
-          {event.taskId && event.task && (
-            <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <LinkIcon className="h-4 w-4 text-blue-600" />
-                <span>Linked to Task</span>
-              </div>
-              <div>
-                <p className="font-medium">{event.task.title}</p>
-                <Badge variant="secondary" className="text-xs mt-2 capitalize">
-                  {event.task.status}
-                </Badge>
-                {event.task.tags && event.task.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {event.task.tags.map((tag) => (
-                      <Badge
-                        key={tag.id}
-                        variant="secondary"
-                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                        className="text-xs"
-                      >
-                        {tag.name}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Import/Convert to Task button */}
+          {canConvertToTask && (
+            <Button
+              variant="default"
+              onClick={handleConvertToTask}
+              disabled={isConverting}
+              className="shadow-lg"
+            >
+              {isConverting && <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1} />}
+              {isExternal ? (
+                <>
+                  <Download className="mr-2 h-4 w-4" strokeWidth={1} />
+                  Import
+                </>
+              ) : (
+                <>
+                  <ArrowRight className="mr-2 h-4 w-4" strokeWidth={1} />
+                  Add to Tasks
+                </>
+              )}
+            </Button>
           )}
+        </>
+      }
+    >
+      {/* Event color indicator */}
+      {event.color && (
+        <div 
+          className="h-1 w-full rounded-full -mb-2"
+          style={{ backgroundColor: event.color }}
+        />
+      )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2 pt-4 border-t">
-            {/* Import/Convert to Task button - works for both miniorg and external events */}
-            {canConvertToTask && (
-              <Button
-                variant="outline"
-                onClick={handleConvertToTask}
-                disabled={isConverting}
-                className="w-full"
-              >
-                {isConverting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isExternal ? (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Import as Task
-                  </>
-                ) : (
-                  <>
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                    Convert to Task
-                  </>
-                )}
-              </Button>
-            )}
+      {/* Time and Duration */}
+      <div className="flex items-center gap-3 text-sm flex-wrap">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1} />
+          <span className="font-medium">{timeRange}</span>
+        </div>
+        <Badge variant="secondary" className="text-xs">
+          {formatDuration(duration)}
+        </Badge>
+      </div>
 
-            {/* Toggle Complete - only for miniorg events */}
-            {!isExternal && (
-              <Button
-                variant={event.isCompleted ? "outline" : "default"}
-                onClick={handleToggleComplete}
-                disabled={isTogglingComplete}
-                className="w-full"
-              >
-                {isTogglingComplete && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                {event.isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
-              </Button>
-            )}
+      {/* Date */}
+      <div className="text-sm text-muted-foreground">
+        {format(event.startTime, "EEEE, MMMM d, yyyy")}
+      </div>
 
-            {/* Delete - only for miniorg events */}
-            {!isExternal && (
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="w-full"
-              >
-                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Event
-              </Button>
+      {/* Description */}
+      {event.description && (
+        <div className="space-y-1">
+          <h4 className="text-sm font-medium">Description</h4>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {event.description}
+          </p>
+        </div>
+      )}
+
+      {/* Linked Task Info */}
+      {event.taskId && event.task && (
+        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <LinkIcon className="h-4 w-4 text-blue-600" strokeWidth={1} />
+            <span>Linked to Task</span>
+          </div>
+          <div>
+            <p className="font-medium text-sm">{event.task.title}</p>
+            <Badge variant="secondary" className="text-xs mt-2 capitalize">
+              {event.task.status}
+            </Badge>
+            {event.task.tags && event.task.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {event.task.tags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    variant="secondary"
+                    style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                    className="text-xs"
+                  >
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </UnifiedModal>
   );
 }
