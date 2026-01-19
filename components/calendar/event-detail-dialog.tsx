@@ -47,8 +47,12 @@ export function EventDetailDialog({
 
   if (!event || !localEvent) return null;
 
-  const duration = calculateDuration(localEvent.startTime, localEvent.endTime);
-  const timeRange = formatTimeRange(localEvent.startTime, localEvent.endTime);
+  // Normalize dates to Date objects
+  const startTime = typeof localEvent.startTime === 'string' ? new Date(localEvent.startTime) : localEvent.startTime;
+  const endTime = typeof localEvent.endTime === 'string' ? new Date(localEvent.endTime) : localEvent.endTime;
+
+  const duration = calculateDuration(startTime, endTime);
+  const timeRange = formatTimeRange(startTime, endTime);
   const isExternal = localEvent.source !== "miniorg";
   // Allow conversion/import for all events that don't have a linked task yet
   const canConvertToTask = !localEvent.taskId;
@@ -111,7 +115,7 @@ export function EventDetailDialog({
     createTask.mutate({
       title: localEvent.title,
       description: localEvent.description || undefined,
-      scheduledDate: localEvent.startTime.toISOString(),
+      scheduledDate: startTime,
       duration: duration,
     }, {
       onSuccess: (newTask) => {
@@ -264,7 +268,7 @@ export function EventDetailDialog({
 
       {/* Date */}
       <div className="text-sm text-muted-foreground">
-        {format(localEvent.startTime, "EEEE, MMMM d, yyyy")}
+        {format(startTime, "EEEE, MMMM d, yyyy")}
       </div>
 
       {/* Description */}

@@ -81,7 +81,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
       title: title.trim(),
       description: description.trim() || undefined,
       deadlineType: useSpecificDate ? undefined : deadlineType,
-      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
+      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate) : undefined,
       duration: duration ? parseInt(duration, 10) : undefined,
     }, {
       onSuccess: () => {
