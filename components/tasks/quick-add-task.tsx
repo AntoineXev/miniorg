@@ -86,7 +86,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
         deadlineType: useSpecificDate ? undefined : deadlineType,
         scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
         duration: duration ? parseInt(duration, 10) : undefined,
-        status: (useSpecificDate && specificDate) ? "planned" : "backlog",
+        // Status is automatically determined by backend based on scheduledDate
       },
       "Tâche créée",
       { errorMessage: "Erreur lors de la création" }

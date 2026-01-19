@@ -1,19 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { Header } from "@/components/layout/header";
 import { BacklogContent } from "@/components/backlog/backlog-content";
+import { BacklogFilterToggle } from "@/components/backlog/backlog-filter-toggle";
 
 export default function BacklogPage() {
+  const [showAllTasks, setShowAllTasks] = useState(true);
+
   return (
     <>
       <div className="flex flex-col h-full">
         <Header 
           title="Backlog" 
           subtitle="All your tasks, organized by deadline"
+          actions={
+            <BacklogFilterToggle 
+              showAllTasks={showAllTasks}
+              onShowAllTasksChange={setShowAllTasks}
+            />
+          }
         />
         
         <div className="flex-1 overflow-auto">
-          <BacklogContent />
+          <BacklogContent 
+            showAllTasks={showAllTasks}
+            onShowAllTasksChange={setShowAllTasks}
+          />
         </div>
       </div>
 

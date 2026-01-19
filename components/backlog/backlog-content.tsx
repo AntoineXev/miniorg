@@ -23,11 +23,15 @@ type Task = {
 type BacklogContentProps = {
   showHeader?: boolean;
   compact?: boolean;
+  showAllTasks?: boolean;
+  onShowAllTasksChange?: (value: boolean) => void;
 };
 
 export function BacklogContent({ 
   showHeader = false,
-  compact = false 
+  compact = false,
+  showAllTasks = true,
+  onShowAllTasksChange
 }: BacklogContentProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,10 +40,15 @@ export function BacklogContent({
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch("/api/tasks?status=backlog");
+      // Fetch all non-completed tasks (both backlog and planned)
+      const response = await fetch("/api/tasks");
       if (response.ok) {
         const data = await response.json();
-        setTasks(data);
+        // Filter to show only backlog and planned tasks (not done)
+        const activeTasks = data.filter(
+          (task: Task) => task.status === "backlog" || task.status === "planned"
+        );
+        setTasks(activeTasks);
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -47,6 +56,11 @@ export function BacklogContent({
       setIsLoading(false);
     }
   };
+
+  // Filter tasks based on showAllTasks toggle
+  const filteredTasks = showAllTasks 
+    ? tasks 
+    : tasks.filter(task => task.status === "backlog"); // Only unplanned tasks
 
   useEffect(() => {
     fetchTasks();
@@ -61,13 +75,20 @@ export function BacklogContent({
 
   const handleToggleComplete = async (taskId: string, completed: boolean) => {
     try {
+      const updatePayload: any = {
+        id: taskId,
+      };
+      
+      // Only set status when marking as done
+      // When unchecking, omit status to let backend auto-determine it (backlog or planned)
+      if (completed) {
+        updatePayload.status = "done";
+      }
+      
       const response = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: taskId,
-          status: completed ? "done" : "backlog",
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (response.ok) {
@@ -111,17 +132,23 @@ export function BacklogContent({
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading tasks...</p>
           </div>
-        ) : tasks.length === 0 ? (
+        ) : filteredTasks.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
-              No tasks yet. Press{" "}
-              <kbd className="px-2 py-1 bg-secondary rounded text-xs">⌘K</kbd> to
-              create your first task.
+              {showAllTasks ? (
+                <>
+                  No tasks yet. Press{" "}
+                  <kbd className="px-2 py-1 bg-secondary rounded text-xs">⌘K</kbd> to
+                  create your first task.
+                </>
+              ) : (
+                "Aucune tâche non planifiée. Toutes vos tâches sont déjà planifiées !"
+              )}
             </p>
           </div>
         ) : (
           <BacklogGroups
-            tasks={tasks}
+            tasks={filteredTasks}
             onToggleComplete={handleToggleComplete}
             onEdit={handleEdit}
             onDelete={handleDelete}

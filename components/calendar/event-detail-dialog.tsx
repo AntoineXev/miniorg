@@ -150,7 +150,7 @@ export function EventDetailDialog({
           description: event.description || undefined,
           scheduledDate: event.startTime.toISOString(),
           duration: duration,
-          status: "planned",
+          // Status is automatically determined by backend (will be "planned" due to scheduledDate)
         }),
       });
 

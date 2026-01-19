@@ -108,13 +108,20 @@ export function EditTaskDialog({
     setIsCompleted(checked);
     
     try {
+      const updatePayload: any = {
+        id: task.id,
+      };
+      
+      // Only set status when marking as done
+      // When unchecking, omit status entirely to let backend auto-determine it
+      if (checked) {
+        updatePayload.status = "done";
+      }
+      
       const response = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: task.id,
-          status: checked ? "done" : "planned",
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (response.ok) {

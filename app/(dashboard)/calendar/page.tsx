@@ -96,13 +96,20 @@ export default function CalendarPage() {
 
   const handleToggleComplete = async (taskId: string, completed: boolean) => {
     try {
+      const updatePayload: any = {
+        id: taskId,
+      };
+      
+      // Only set status when marking as done
+      // When unchecking, omit status entirely to let backend auto-determine it
+      if (completed) {
+        updatePayload.status = "done";
+      }
+      
       const response = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: taskId,
-          status: completed ? "done" : "planned",
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (response.ok) {
@@ -116,21 +123,16 @@ export default function CalendarPage() {
 
   const handleTaskDrop = async (taskId: string, newDate: Date, source?: string) => {
     try {
-      // Si la tâche vient du backlog, on change aussi son statut
-      const updateData: any = {
-        id: taskId,
-        scheduledDate: newDate.toISOString(),
-      };
-      
-      // Si la source est le backlog, changer le statut en "planned"
-      if (source === "backlog") {
-        updateData.status = "planned";
-      }
-
+      // Update the task's scheduledDate
+      // Status will be automatically determined by backend (will be "planned" due to scheduledDate)
       const response = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify({
+          id: taskId,
+          scheduledDate: newDate.toISOString(),
+          // Status is automatically managed by backend
+        }),
       });
 
       if (response.ok) {

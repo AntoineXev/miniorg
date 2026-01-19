@@ -16,6 +16,23 @@ const calendarEventSchema = z.object({
   source: z.enum(["miniorg", "google", "outlook"]).optional(),
 });
 
+// Helper function to automatically determine task status based on scheduledDate
+// This ensures consistent status management across the application
+function determineTaskStatus(scheduledDate: Date | null | undefined, currentStatus?: string): string {
+  // If explicitly set to "done", keep it
+  if (currentStatus === "done") {
+    return "done";
+  }
+  
+  // If task has a scheduled date, it's planned
+  if (scheduledDate) {
+    return "planned";
+  }
+  
+  // Otherwise, it's in the backlog
+  return "backlog";
+}
+
 // GET /api/calendar-events - Fetch all calendar events for authenticated user
 export async function GET(request: NextRequest) {
   try {
@@ -85,15 +102,18 @@ export async function POST(request: NextRequest) {
     const startTime = new Date(body.startTime);
     const endTime = new Date(body.endTime);
 
-    // If taskId is provided, update the task's scheduledDate and status
+    // If taskId is provided, update the task's scheduledDate and auto-determine status
     if (body.taskId) {
-      await prisma.task.update({
-        where: { id: body.taskId },
-        data: {
-          scheduledDate: startTime,
-          status: "planned", // Move from backlog to planned
-        },
-      });
+      const task = await prisma.task.findUnique({ where: { id: body.taskId } });
+      if (task) {
+        await prisma.task.update({
+          where: { id: body.taskId },
+          data: {
+            scheduledDate: startTime,
+            status: determineTaskStatus(startTime, task.status),
+          },
+        });
+      }
     }
 
     const event = await prisma.calendarEvent.create({
@@ -159,25 +179,33 @@ export async function PATCH(request: NextRequest) {
       updateData.endTime = new Date(updates.endTime);
     }
 
-    // If startTime is being updated and event is linked to a task, update task's scheduledDate
+    // If startTime is being updated and event is linked to a task, update task's scheduledDate and status
     if (updateData.startTime && existingEvent.taskId) {
-      await prisma.task.update({
-        where: { id: existingEvent.taskId },
-        data: {
-          scheduledDate: updateData.startTime,
-        },
-      });
+      const task = await prisma.task.findUnique({ where: { id: existingEvent.taskId } });
+      if (task) {
+        await prisma.task.update({
+          where: { id: existingEvent.taskId },
+          data: {
+            scheduledDate: updateData.startTime,
+            status: determineTaskStatus(updateData.startTime, task.status),
+          },
+        });
+      }
     }
 
     // If taskId is being linked (from null to a taskId), update the task
     if ('taskId' in updates && updates.taskId && !existingEvent.taskId) {
-      await prisma.task.update({
-        where: { id: updates.taskId },
-        data: {
-          scheduledDate: updateData.startTime || existingEvent.startTime,
-          status: "planned",
-        },
-      });
+      const task = await prisma.task.findUnique({ where: { id: updates.taskId } });
+      if (task) {
+        const newScheduledDate = updateData.startTime || existingEvent.startTime;
+        await prisma.task.update({
+          where: { id: updates.taskId },
+          data: {
+            scheduledDate: newScheduledDate,
+            status: determineTaskStatus(newScheduledDate, task.status),
+          },
+        });
+      }
     }
 
     // Mark as pending sync if it's an external event (will be synced next)
@@ -258,14 +286,13 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // If event is linked to a task, update the task
+    // If event is linked to a task, clear scheduledDate and auto-determine status
     if (existingEvent.taskId && existingEvent.task) {
       await prisma.task.update({
         where: { id: existingEvent.taskId },
         data: {
           scheduledDate: null,
-          // Only set back to backlog if task is not done
-          status: existingEvent.task.status === "done" ? "done" : "backlog",
+          status: determineTaskStatus(null, existingEvent.task.status),
         },
       });
     }

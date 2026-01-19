@@ -15,6 +15,23 @@ const taskSchema = z.object({
   tagIds: z.array(z.string()).optional(),
 });
 
+// Helper function to automatically determine task status based on scheduledDate
+// This ensures consistent status management across the application
+function determineTaskStatus(scheduledDate: Date | null | undefined, currentStatus?: string): string {
+  // If explicitly set to "done", keep it
+  if (currentStatus === "done") {
+    return "done";
+  }
+  
+  // If task has a scheduled date, it's planned
+  if (scheduledDate) {
+    return "planned";
+  }
+  
+  // Otherwise, it's in the backlog
+  return "backlog";
+}
+
 // GET /api/tasks - Fetch all tasks for authenticated user
 export async function GET(request: NextRequest) {
   try {
@@ -75,11 +92,18 @@ export async function POST(request: NextRequest) {
 
     const { tagIds, ...taskData } = body;
 
+    const scheduledDate = body.scheduledDate ? new Date(body.scheduledDate) : null;
+    
+    // Automatically determine status based on scheduledDate
+    // Unless explicitly set to "done" by the client
+    const status = determineTaskStatus(scheduledDate, body.status);
+
     const task = await prisma.task.create({
       data: {
         ...taskData,
+        status,
         userId: session.user.id,
-        scheduledDate: body.scheduledDate ? new Date(body.scheduledDate) : null,
+        scheduledDate,
         deadlineSetAt: body.deadlineSetAt ? new Date(body.deadlineSetAt) : body.deadlineType ? new Date() : null,
         tags: tagIds ? {
           connect: tagIds.map((id) => ({ id })),
@@ -134,9 +158,35 @@ export async function PATCH(request: NextRequest) {
       updateData.scheduledDate = updates.scheduledDate ? new Date(updates.scheduledDate) : null;
     }
     
-    // Handle completedAt based on status
-    if ('status' in updates) {
-      updateData.completedAt = updates.status === "done" && !existingTask.completedAt ? new Date() : updates.status !== "done" ? null : undefined;
+    // Automatically determine status based on scheduledDate and current status
+    // This ensures tasks are automatically moved between backlog/planned/done
+    const newScheduledDate = 'scheduledDate' in updates 
+      ? updateData.scheduledDate 
+      : existingTask.scheduledDate;
+    const newStatus = 'status' in updates ? updates.status : existingTask.status;
+    
+    // Auto-determine status in these cases:
+    // 1. Status is not explicitly being set AND task is not currently "done"
+    // 2. Status is not explicitly being set BUT scheduledDate IS being changed (even if currently "done")
+    const shouldAutoDetermineStatus = !('status' in updates) && (
+      existingTask.status !== "done" || 'scheduledDate' in updates
+    );
+    
+    if (shouldAutoDetermineStatus) {
+      // When auto-determining, don't pass current status if it's "done" - let it be redetermined
+      const statusForDetermination = existingTask.status === "done" ? undefined : newStatus;
+      updateData.status = determineTaskStatus(newScheduledDate, statusForDetermination);
+    }
+    
+    // Handle completedAt based on final status (either explicitly set or auto-determined)
+    const finalStatus = updateData.status || ('status' in updates ? updates.status : existingTask.status);
+    
+    if (finalStatus === "done" && !existingTask.completedAt) {
+      // Task is being marked as done - set completedAt
+      updateData.completedAt = new Date();
+    } else if (finalStatus !== "done" && existingTask.completedAt) {
+      // Task is being unmarked as done - clear completedAt
+      updateData.completedAt = null;
     }
     
     // Handle tags
