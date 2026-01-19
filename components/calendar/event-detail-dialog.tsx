@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UnifiedModal } from "@/components/ui/unified-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ type EventDetailDialogProps = {
   event: CalendarEvent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEventUpdated?: () => void;
+  onEventUpdated?: (updatedEvent: CalendarEvent) => void;
   onEventDeleted?: () => void;
 };
 
@@ -48,22 +48,30 @@ export function EventDetailDialog({
   const [isConverting, setIsConverting] = useState(false);
   const [isTogglingComplete, setIsTogglingComplete] = useState(false);
   const [showDetails, setShowDetails] = useState(true); // Start expanded
+  const [localEvent, setLocalEvent] = useState(event);
   const { pushSuccess, pushError } = useToast();
 
-  if (!event) return null;
+  // Sync local event with prop
+  useEffect(() => {
+    if (event) {
+      setLocalEvent(event);
+    }
+  }, [event]);
 
-  const duration = calculateDuration(event.startTime, event.endTime);
-  const timeRange = formatTimeRange(event.startTime, event.endTime);
-  const isExternal = event.source !== "miniorg";
+  if (!event || !localEvent) return null;
+
+  const duration = calculateDuration(localEvent.startTime, localEvent.endTime);
+  const timeRange = formatTimeRange(localEvent.startTime, localEvent.endTime);
+  const isExternal = localEvent.source !== "miniorg";
   // Allow conversion/import for all events that don't have a linked task yet
-  const canConvertToTask = !event.taskId;
+  const canConvertToTask = !localEvent.taskId;
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this event?")) return;
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/calendar-events?id=${event.id}`, {
+      const response = await fetch(`/api/calendar-events?id=${localEvent.id}`, {
         method: "DELETE",
       });
 
@@ -71,7 +79,7 @@ export function EventDetailDialog({
         onEventDeleted?.();
         onOpenChange(false);
         // If event was linked to a task, notify other components
-        if (event.taskId) {
+        if (localEvent.taskId) {
           emitTaskUpdate();
         }
       }
@@ -82,57 +90,60 @@ export function EventDetailDialog({
     }
   };
 
-  const handleToggleComplete = async () => {
-    setIsTogglingComplete(true);
-    try {
-      const response = await fetch("/api/calendar-events", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: event.id,
-          isCompleted: !event.isCompleted,
-        }),
-      });
-
-      if (response.ok) {
-        onEventUpdated?.();
-      }
-    } catch (error) {
-      console.error("Error updating event:", error);
-    } finally {
-      setIsTogglingComplete(false);
-    }
-  };
-
   const handleCheckboxChange = async (checked: boolean) => {
+    // Optimistically update the local state immediately for instant UI feedback
+    setLocalEvent(prev => prev ? { ...prev, isCompleted: checked } : prev);
     setIsTogglingComplete(true);
+    
     try {
       const response = await fetch("/api/calendar-events", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: event.id,
+          id: localEvent.id,
           isCompleted: checked,
         }),
       });
 
       if (response.ok) {
-        // If event is completed and linked to a task, mark the task as completed too
-        if (checked && event.taskId) {
-          await fetch("/api/tasks", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: event.taskId,
-              status: "done",
-            }),
-          });
-          emitTaskUpdate();
+        const updatedEvent = await response.json();
+        // Parse dates
+        const parsedEvent = {
+          ...updatedEvent,
+          startTime: typeof updatedEvent.startTime === 'string' ? new Date(updatedEvent.startTime) : updatedEvent.startTime,
+          endTime: typeof updatedEvent.endTime === 'string' ? new Date(updatedEvent.endTime) : updatedEvent.endTime,
+        };
+        
+        // Update local state with full response (including taskId if auto-imported)
+        setLocalEvent(parsedEvent);
+        
+        // Backend now handles auto-import and task status sync
+        // Just notify parent component  
+        onEventUpdated?.(parsedEvent);
+        
+        // Notify task-related components (backlog, etc.) that tasks have changed
+        // This is important because completion can create/update tasks
+        emitTaskUpdate();
+        
+        // Show success message for auto-import
+        if (checked && !localEvent.taskId) {
+          pushSuccess(
+            "Event completed and imported",
+            "A new task has been created and marked as done"
+          );
         }
-        onEventUpdated?.();
+      } else {
+        // Revert optimistic update on error
+        setLocalEvent(prev => prev ? { ...prev, isCompleted: !checked } : prev);
       }
     } catch (error) {
       console.error("Error updating event:", error);
+      // Revert optimistic update on error
+      setLocalEvent(prev => prev ? { ...prev, isCompleted: !checked } : prev);
+      pushError(
+        "Failed to update event",
+        "Please try again or contact support if the problem persists"
+      );
     } finally {
       setIsTogglingComplete(false);
     }
@@ -146,9 +157,9 @@ export function EventDetailDialog({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: event.title,
-          description: event.description || undefined,
-          scheduledDate: event.startTime.toISOString(),
+          title: localEvent.title,
+          description: localEvent.description || undefined,
+          scheduledDate: localEvent.startTime.toISOString(),
           duration: duration,
           // Status is automatically determined by backend (will be "planned" due to scheduledDate)
         }),
@@ -165,7 +176,7 @@ export function EventDetailDialog({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: event.id,
+          id: localEvent.id,
           taskId: newTask.id,
         }),
       });
@@ -174,8 +185,17 @@ export function EventDetailDialog({
         throw new Error("Failed to link event to task");
       }
 
-      onEventUpdated?.();
-      emitTaskUpdate(); // Notify other components that a task was created
+      const updatedEvent = await eventResponse.json();
+      // Parse dates
+      const parsedEvent = {
+        ...updatedEvent,
+        startTime: typeof updatedEvent.startTime === 'string' ? new Date(updatedEvent.startTime) : updatedEvent.startTime,
+        endTime: typeof updatedEvent.endTime === 'string' ? new Date(updatedEvent.endTime) : updatedEvent.endTime,
+      };
+
+      // Update local state
+      setLocalEvent(parsedEvent);
+      onEventUpdated?.(parsedEvent);
       onOpenChange(false); // Close the dialog after successful import
       
       // Show success message
@@ -205,10 +225,10 @@ export function EventDetailDialog({
     <UnifiedModal
       open={open}
       onOpenChange={onOpenChange}
-      headerValue={event.title}
+      headerValue={localEvent.title}
       headerDisabled={true}
       showCheckbox={!isExternal}
-      checkboxChecked={event.isCompleted}
+      checkboxChecked={localEvent.isCompleted}
       onCheckboxChange={!isExternal ? handleCheckboxChange : undefined}
       showMoreExpanded={showDetails}
       onShowMoreToggle={setShowDetails}
@@ -217,12 +237,12 @@ export function EventDetailDialog({
           {/* Source badge for external events */}
           {isExternal && (
             <Badge variant="secondary" className="capitalize text-xs">
-              From {event.source}
+              From {localEvent.source}
             </Badge>
           )}
           
           {/* Completed badge */}
-          {event.isCompleted && (
+          {localEvent.isCompleted && (
             <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
               <CheckCircle2 className="h-3 w-3 mr-1" strokeWidth={1} />
               Completed
@@ -274,10 +294,10 @@ export function EventDetailDialog({
       }
     >
       {/* Event color indicator */}
-      {event.color && (
+      {localEvent.color && (
         <div 
           className="h-1 w-full rounded-full -mb-2"
-          style={{ backgroundColor: event.color }}
+          style={{ backgroundColor: localEvent.color }}
         />
       )}
 
@@ -294,34 +314,34 @@ export function EventDetailDialog({
 
       {/* Date */}
       <div className="text-sm text-muted-foreground">
-        {format(event.startTime, "EEEE, MMMM d, yyyy")}
+        {format(localEvent.startTime, "EEEE, MMMM d, yyyy")}
       </div>
 
       {/* Description */}
-      {event.description && (
+      {localEvent.description && (
         <div className="space-y-1">
           <h4 className="text-sm font-medium">Description</h4>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {event.description}
+            {localEvent.description}
           </p>
         </div>
       )}
 
       {/* Linked Task Info */}
-      {event.taskId && event.task && (
+      {localEvent.taskId && localEvent.task && (
         <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
             <LinkIcon className="h-4 w-4 text-blue-600" strokeWidth={1} />
             <span>Linked to Task</span>
           </div>
           <div>
-            <p className="font-medium text-sm">{event.task.title}</p>
+            <p className="font-medium text-sm">{localEvent.task.title}</p>
             <Badge variant="secondary" className="text-xs mt-2 capitalize">
-              {event.task.status}
+              {localEvent.task.status}
             </Badge>
-            {event.task.tags && event.task.tags.length > 0 && (
+            {localEvent.task.tags && localEvent.task.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {event.task.tags.map((tag) => (
+                {localEvent.task.tags.map((tag) => (
                   <Badge
                     key={tag.id}
                     variant="secondary"

@@ -179,6 +179,57 @@ export async function PATCH(request: NextRequest) {
       updateData.endTime = new Date(updates.endTime);
     }
 
+    // Handle isCompleted logic: auto-import and sync task status
+    if ('isCompleted' in updates) {
+      const isCompleting = updates.isCompleted === true;
+      const isUncompleting = updates.isCompleted === false;
+
+      if (isCompleting) {
+        // If event is being completed and has no task, auto-import it
+        if (!existingEvent.taskId) {
+          // Calculate duration
+          const startTime = updateData.startTime || existingEvent.startTime;
+          const endTime = updateData.endTime || existingEvent.endTime;
+          const durationMinutes = Math.round(
+            (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+          );
+
+          // Create a new task
+          const newTask = await prisma.task.create({
+            data: {
+              title: existingEvent.title,
+              description: existingEvent.description,
+              scheduledDate: startTime,
+              duration: durationMinutes,
+              status: "done", // Mark as done since we're completing the event
+              userId: session.user.id,
+            },
+          });
+
+          // Link the event to the new task
+          updateData.taskId = newTask.id;
+        } else {
+          // Event already has a task, mark it as done
+          await prisma.task.update({
+            where: { id: existingEvent.taskId },
+            data: { status: "done" },
+          });
+        }
+      } else if (isUncompleting && existingEvent.taskId) {
+        // If event is being uncompleted and has a task, update task status
+        const task = await prisma.task.findUnique({ where: { id: existingEvent.taskId } });
+        if (task) {
+          // Set status based on whether it has a scheduledDate
+          await prisma.task.update({
+            where: { id: existingEvent.taskId },
+            data: {
+              status: task.scheduledDate ? "planned" : "backlog",
+            },
+          });
+        }
+      }
+    }
+
     // If startTime is being updated and event is linked to a task, update task's scheduledDate and status
     if (updateData.startTime && existingEvent.taskId) {
       const task = await prisma.task.findUnique({ where: { id: existingEvent.taskId } });

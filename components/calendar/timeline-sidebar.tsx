@@ -110,6 +110,26 @@ export function TimelineSidebar({
     fetchEvents();
   }, [currentDate, fetchEvents]);
 
+  // Update a single event in state without refetching (avoids sync loop)
+  const handleEventUpdated = useCallback((updatedEvent: CalendarEvent) => {
+    // Update in events list
+    setEvents(prev => {
+      const newEvents = prev.map(e => e.id === updatedEvent.id ? updatedEvent : e);
+      return sortEventsByTime(newEvents);
+    });
+    
+    // Update selectedEvent if it's the same one
+    setSelectedEvent(prev => {
+      if (prev?.id === updatedEvent.id) {
+        return updatedEvent;
+      }
+      return prev;
+    });
+    
+    // Note: We don't call emitTaskUpdate() here to avoid unnecessary fetches
+    // The backend already handles task status synchronization
+  }, []);
+
   // Update current time every minute to keep the red line moving
   useEffect(() => {
     const interval = setInterval(() => {
