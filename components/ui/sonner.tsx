@@ -15,6 +15,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         error: <div className="h-3 w-3 rounded-sm  bg-[#f87171] shrink-0 mt-0.5" style={{ boxShadow: "0 0 8px #f8717150" }} />,
         info: <div className="h-3 w-3 rounded-sm  bg-[#60a5fa] shrink-0 mt-0.5" style={{ boxShadow: "0 0 8px #60a5fa50" }} />,
         warning: <div className="h-3 w-3 rounded-sm  bg-[#fbbf24] shrink-0 mt-0.5" style={{ boxShadow: "0 0 8px #fbbf2450" }} />,
+        loading: <div className="h-3 w-3 rounded-sm bg-white/90 shrink-0 my-auto animate-pulse" style={{ boxShadow: "0 0 8px #ffffff50" }} />,
       }}
       toastOptions={{
         unstyled: true,
@@ -30,6 +31,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           error: "flex items-center gap-3",
           info: "flex items-center gap-3",
           warning: "flex items-center gap-3",
+          loading: "flex items-center gap-3",
         },
       }}
       {...props}

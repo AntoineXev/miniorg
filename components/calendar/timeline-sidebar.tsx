@@ -14,11 +14,12 @@ import { cn } from "@/lib/utils";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
-import { useCalendarEventsQuery } from "@/lib/api/queries/calendar-events";
+import { useCalendarEventsQuery, calendarEventKeys } from "@/lib/api/queries/calendar-events";
 import { useCreateEventMutation, useUpdateEventMutation } from "@/lib/api/mutations/calendar-events";
 import { useUpdateTaskMutation } from "@/lib/api/mutations/tasks";
 import type { CalendarEvent } from "@/lib/api/types";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type TimelineSidebarProps = {
   selectedDate?: Date;
@@ -66,6 +67,7 @@ export function TimelineSidebar({
     endDate,
   });
   
+  const queryClient = useQueryClient();
   const createEvent = useCreateEventMutation();
   const updateEvent = useUpdateEventMutation();
   const updateTask = useUpdateTaskMutation();
@@ -84,17 +86,22 @@ export function TimelineSidebar({
   useEffect(() => {
     const syncCalendars = async () => {
       try {
-        await fetch('/api/calendar-sync', {
+        const response = await fetch('/api/calendar-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ startDate, endDate }),
         });
+        
+        if (response.ok) {
+          // Invalidate and refetch calendar events after successful sync
+          queryClient.invalidateQueries({ queryKey: calendarEventKeys.all });
+        }
       } catch (syncError) {
         console.error('Calendar sync error:', syncError);
       }
     };
     syncCalendars();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, queryClient]);
 
   // Update current time every minute to keep the red line moving
   useEffect(() => {

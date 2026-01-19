@@ -10,12 +10,39 @@ export function useCreateTagMutation() {
   return useMutation({
     mutationFn: (data: { name: string; color?: string }) =>
       ApiClient.post<Tag>("/api/tags", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tagKeys.all });
-      toast.success("Tag created successfully");
+    onMutate: async (newTag) => {
+      const toastId = toast.loading("Creating tag...");
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: tagKeys.all });
+
+      // Snapshot previous value
+      const previousTags = queryClient.getQueryData<Tag[]>(tagKeys.all);
+
+      // Optimistically add the new tag
+      if (previousTags) {
+        const optimisticTag: Tag = {
+          id: `temp-${Date.now()}`,
+          name: newTag.name,
+          color: newTag.color || "#6b7280",
+          userId: "",
+        };
+
+        queryClient.setQueryData<Tag[]>(tagKeys.all, [...previousTags, optimisticTag]);
+      }
+
+      return { previousTags, toastId };
     },
-    onError: (error) => {
-      toast.error("Failed to create tag");
+    onSuccess: (_, __, context) => {
+      toast.success("Tag created", { id: context?.toastId });
+      queryClient.invalidateQueries({ queryKey: tagKeys.all });
+    },
+    onError: (error, _, context) => {
+      // Rollback to previous state
+      if (context?.previousTags) {
+        queryClient.setQueryData(tagKeys.all, context.previousTags);
+      }
+      toast.error("Failed to create tag", { id: context?.toastId });
       console.error(error);
     },
   });
