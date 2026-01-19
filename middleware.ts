@@ -1,12 +1,12 @@
-import { auth } from "@/lib/auth";
+import { authEdge } from "@/lib/auth-edge";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const session = await auth();
+  const session = await authEdge();
 
   // Liste des routes protégées (dashboard)
-  const protectedRoutes = ["/backlog", "/calendar", "/today"];
+  const protectedRoutes = ["/backlog", "/calendar", "/today", "/settings"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );

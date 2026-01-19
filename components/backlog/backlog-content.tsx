@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { BacklogGroups } from "@/components/backlog/backlog-groups";
-import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { onTaskUpdate, emitTaskUpdate } from "@/lib/task-events";
 
@@ -22,13 +21,11 @@ type Task = {
 };
 
 type BacklogContentProps = {
-  showQuickAdd?: boolean;
   showHeader?: boolean;
   compact?: boolean;
 };
 
 export function BacklogContent({ 
-  showQuickAdd = true,
   showHeader = false,
   compact = false 
 }: BacklogContentProps) {
@@ -131,8 +128,6 @@ export function BacklogContent({
           />
         )}
       </div>
-
-      {showQuickAdd && <QuickAddTask onTaskCreated={fetchTasks} />}
       
       <EditTaskDialog
         task={editingTask}

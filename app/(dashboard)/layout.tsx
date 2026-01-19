@@ -5,11 +5,13 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TimelineSidebar } from "@/components/calendar/timeline-sidebar";
 import { BacklogSidebar } from "@/components/backlog/backlog-sidebar";
+import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { Button } from "@/components/ui/button";
-import { Calendar, ListTodo } from "lucide-react";
+import { CalendarClock, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
 import { useRouter } from "next/navigation";
+import { emitTaskUpdate } from "@/lib/task-events";
 
 type RightSidebarPanel = "timeline" | "backlog" | null;
 
@@ -36,7 +38,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       
       router.push("/login");
     }
-  }, [status, session, pushInfo]);
+  }, [status, session, pushInfo, router]);
 
   // Affiche un écran de chargement pendant la vérification
   if (status === "loading") {
@@ -69,7 +71,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 overflow-hidden p-2 gap-2">
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 overflow-auto rounded-l-lg border bg-card shadow-sm">
+          <main className="flex-1 overflow-auto rounded-l-lg border bg-background shadow-sm">
             {children}
           </main>
         </div>
@@ -78,8 +80,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="flex gap-0 flex-shrink-0">
           {/* Panel Content Area */}
           <div className={cn(
-            "transition-all duration-300 ease-in-out overflow-hidden border-l border-t border-b shadow-sm bg-card",
-            activePanel ? "w-[380px] opacity-100" : "w-0 opacity-0"
+            "transition-all duration-300 ease-in-out overflow-hidden border-l border-t border-b shadow-sm bg-background",
+            activePanel ? "w-[350px] opacity-100" : "w-0 opacity-0"
           )}>
             {activePanel === "timeline" && <TimelineSidebar />}
             {activePanel === "backlog" && <BacklogSidebar />}
@@ -97,7 +99,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               )}
               title="Timeline"
             >
-              <Calendar className="h-5 w-5" />
+              <CalendarClock strokeWidth={1} className="h-5 w-5" />
             </button>
 
             <button
@@ -110,11 +112,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               )}
               title="Backlog"
             >
-              <ListTodo className="h-5 w-5" />
+              <ClipboardList strokeWidth={1} className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Global Quick Add Task - Accessible from anywhere */}
+      <QuickAddTask onTaskCreated={() => emitTaskUpdate()} />
     </div>
   );
 }

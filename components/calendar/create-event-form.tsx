@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect, useCallback } from "react";
+import { UnifiedModal } from "@/components/ui/unified-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,12 +42,29 @@ export function CreateEventForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingTasks, setIsFetchingTasks] = useState(false);
 
+  const fetchTasks = useCallback(async () => {
+    setIsFetchingTasks(true);
+    try {
+      const response = await fetch("/api/tasks");
+      if (response.ok) {
+        const data = await response.json();
+        // Filter to only show non-completed tasks
+        const activeTasks = data.filter((t: any) => t.status !== "done");
+        setTasks(activeTasks);
+      }
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    } finally {
+      setIsFetchingTasks(false);
+    }
+  }, []);
+
   // Fetch tasks when linking option is enabled
   useEffect(() => {
     if (linkToTask && tasks.length === 0) {
       fetchTasks();
     }
-  }, [linkToTask]);
+  }, [linkToTask, fetchTasks, tasks.length]);
 
   // Set prefilled times when dialog opens
   useEffect(() => {
@@ -63,23 +80,6 @@ export function CreateEventForm({
       }
     }
   }, [open, prefilledStartTime, prefilledEndTime]);
-
-  const fetchTasks = async () => {
-    setIsFetchingTasks(true);
-    try {
-      const response = await fetch("/api/tasks");
-      if (response.ok) {
-        const data = await response.json();
-        // Filter to only show non-completed tasks
-        const activeTasks = data.filter((t: any) => t.status !== "done");
-        setTasks(activeTasks);
-      }
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setIsFetchingTasks(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,120 +128,123 @@ export function CreateEventForm({
     onOpenChange(false);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      handleSubmit(new Event("submit") as any);
+    }
+    if (e.key === "Escape") {
+      handleClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Create Calendar Event</DialogTitle>
-        </DialogHeader>
+    <UnifiedModal
+      open={open}
+      onOpenChange={handleClose}
+      headerValue={title}
+      headerPlaceholder="Event title"
+      onHeaderChange={setTitle}
+      onKeyDown={handleKeyDown}
+      footerLeftActions={<></>}
+      actionButtons={
+          <Button 
+            type="button" 
+            onClick={(e) => handleSubmit(e as any)} 
+            disabled={isLoading || !title.trim() || !startTime || !endTime}
+            className="shadow-lg"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1} />}
+            Create Event
+          </Button>
+      }
+      keyboardHints={
+        <>
+          <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px] font-mono">esc</kbd>
+          <span className="mx-1">to cancel</span>
+          <span className="mx-2">•</span>
+          <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px] font-mono">⌘ enter</kbd>
+          <span className="mx-1">or</span>
+          <span className="text-foreground font-medium">create</span>
+          <span className="mx-1">to save</span>
+        </>
+      }
+    >
+      <div>
+        <label className="text-xs text-muted-foreground mb-1.5 block">
+          Description
+        </label>
+        <textarea
+          placeholder="Optional description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Event title"
-              required
-              autoFocus
-            />
-          </div>
+      <div>
+        <label className="text-xs text-muted-foreground mb-1.5 block">
+          Start Time
+        </label>
+        <Input
+          type="datetime-local"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          required
+          className="h-9 text-sm"
+        />
+      </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description"
-              className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+      <div>
+        <label className="text-xs text-muted-foreground mb-1.5 block">
+          End Time
+        </label>
+        <Input
+          type="datetime-local"
+          value={endTime}
+          onChange={(e) => setEndTime(e.target.value)}
+          required
+          className="h-9 text-sm"
+        />
+      </div>
 
-          {/* Start Time */}
-          <div className="space-y-2">
-            <Label htmlFor="startTime">Start Time *</Label>
-            <Input
-              id="startTime"
-              type="datetime-local"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              required
-            />
-          </div>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="linkToTask"
+            checked={linkToTask}
+            onCheckedChange={(checked) => setLinkToTask(checked as boolean)}
+          />
+          <Label htmlFor="linkToTask" className="cursor-pointer font-normal text-xs text-muted-foreground">
+            Link to existing task
+          </Label>
+        </div>
 
-          {/* End Time */}
-          <div className="space-y-2">
-            <Label htmlFor="endTime">End Time *</Label>
-            <Input
-              id="endTime"
-              type="datetime-local"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Link to Task */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="linkToTask"
-                checked={linkToTask}
-                onCheckedChange={(checked) => setLinkToTask(checked as boolean)}
-              />
-              <Label htmlFor="linkToTask" className="cursor-pointer font-normal">
-                Link to existing task
-              </Label>
-            </div>
-
-            {linkToTask && (
-              <div className="space-y-2 pl-6">
-                {isFetchingTasks ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading tasks...
-                  </div>
-                ) : tasks.length > 0 ? (
-                  <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a task" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tasks.map((task) => (
-                        <SelectItem key={task.id} value={task.id}>
-                          {task.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No active tasks found</p>
-                )}
+        {linkToTask && (
+          <div className="space-y-2 pl-6">
+            {isFetchingTasks ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1} />
+                Loading tasks...
               </div>
+            ) : tasks.length > 0 ? (
+              <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Select a task" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tasks.map((task) => (
+                    <SelectItem key={task.id} value={task.id}>
+                      {task.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-sm text-muted-foreground">No active tasks found</p>
             )}
           </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Event
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        )}
+      </div>
+    </UnifiedModal>
   );
 }

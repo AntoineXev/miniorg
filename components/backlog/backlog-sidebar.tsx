@@ -15,7 +15,7 @@ export function BacklogSidebar() {
 
       {/* Content with scroll */}
       <div className="flex-1 overflow-y-auto">
-        <BacklogContent showQuickAdd={false} compact />
+        <BacklogContent compact />
       </div>
     </div>
   );

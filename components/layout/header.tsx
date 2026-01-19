@@ -7,14 +7,16 @@ type HeaderProps = {
   subtitle?: string;
   actions?: ReactNode;
   children?: ReactNode;
+  backButton?: ReactNode;
 };
 
-export function Header({ title, subtitle, actions, children }: HeaderProps) {
+export function Header({ title, subtitle, actions, children, backButton }: HeaderProps) {
   return (
     <header className="backdrop-blur-md sticky top-0 z-10 border-b">
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            {backButton && backButton}
             {title && (
               <div>
                 <h1 className=" font-semibold tracking-tight">{title}</h1>

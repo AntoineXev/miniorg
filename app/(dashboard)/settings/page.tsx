@@ -1,303 +1,117 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Header } from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Calendar, Plus, Trash2, RefreshCw, Check } from "lucide-react";
-import { useToast } from "@/components/ui/toast-provider";
+import { User, Calendar, Hash, LogOut, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-type CalendarConnection = {
-  id: string;
-  name: string;
-  provider: string;
-  calendarId: string;
-  isActive: boolean;
-  isExportTarget: boolean;
-  lastSyncAt: string | null;
-  createdAt: string;
+type SettingsSectionProps = {
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  onClick: () => void;
+  showChevron?: boolean;
 };
 
+function SettingsSection({ icon, title, subtitle, onClick, showChevron = true }: SettingsSectionProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left"
+    >
+      <div className="flex-shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+        )}
+      </div>
+      {showChevron && (
+        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+      )}
+    </button>
+  );
+}
+
 export default function SettingsPage() {
-  const [connections, setConnections] = useState<CalendarConnection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const { pushSuccess, pushError } = useToast();
+  const { data: session } = useSession();
+  const router = useRouter();
 
-  const fetchConnections = async () => {
-    try {
-      const response = await fetch("/api/calendar-connections");
-      if (response.ok) {
-        const data = await response.json();
-        setConnections(data);
-      }
-    } catch (error) {
-      console.error("Error fetching connections:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/login" });
   };
 
-  useEffect(() => {
-    fetchConnections();
-
-    // Vérifier si on revient du callback OAuth avec des données
-    const urlParams = new URLSearchParams(window.location.search);
-    const calendarData = urlParams.get("calendar_data");
-    const error = urlParams.get("error");
-
-    if (error) {
-      pushError("Authentication failed", error);
-      // Nettoyer l'URL
-      window.history.replaceState({}, "", "/settings");
-      return;
+  const getUserInitials = () => {
+    if (!session?.user?.name) {
+      return session?.user?.email?.charAt(0).toUpperCase() || "U";
     }
-
-    if (calendarData) {
-      try {
-        const decoded = JSON.parse(atob(calendarData));
-        handleCalendarSelection(decoded);
-      } catch (e) {
-        console.error("Error decoding calendar data:", e);
-        pushError("Failed to process calendar data", "Please try connecting again");
-      }
-      // Nettoyer l'URL
-      window.history.replaceState({}, "", "/settings");
+    const names = session.user.name.split(" ");
+    if (names.length >= 2) {
+      return names[0].charAt(0) + names[1].charAt(0);
     }
-  }, []);
-
-  const handleCalendarSelection = async (data: any) => {
-    const { tokens, calendars } = data;
-
-    // Pour simplifier, on ajoute tous les calendriers automatiquement
-    // Dans une vraie app, on pourrait afficher un dialog de sélection
-    for (const calendar of calendars) {
-      try {
-        const payload = {
-          provider: "google",
-          providerAccountId: calendar.id,
-          name: calendar.name,
-          calendarId: calendar.id,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          expiresAt: typeof tokens.expiresAt === 'string' 
-            ? tokens.expiresAt 
-            : tokens.expiresAt?.toISOString?.() || new Date(Date.now() + 3600000).toISOString(),
-        };
-
-        const response = await fetch("/api/calendar-connections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Error creating calendar ${calendar.name}:`, response.status, errorText);
-        }
-      } catch (error) {
-        console.error(`Error adding calendar ${calendar.name}:`, error);
-      }
-    }
-
-    pushSuccess("Calendars connected", `${calendars.length} calendar(s) added successfully`);
-    fetchConnections();
-  };
-
-  const handleConnectGoogle = () => {
-    window.location.href = "/api/auth/google-calendar";
-  };
-
-  const handleToggleActive = async (id: string, isActive: boolean) => {
-    try {
-      const response = await fetch("/api/calendar-connections", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, isActive }),
-      });
-
-      if (response.ok) {
-        fetchConnections();
-        pushSuccess(
-          isActive ? "Calendar enabled" : "Calendar disabled",
-          ""
-        );
-      }
-    } catch (error) {
-      console.error("Error toggling calendar:", error);
-      pushError("Failed to update calendar", "");
-    }
-  };
-
-  const handleSetExportTarget = async (id: string) => {
-    try {
-      const response = await fetch("/api/calendar-connections", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, isExportTarget: true }),
-      });
-
-      if (response.ok) {
-        fetchConnections();
-        pushSuccess("Export calendar updated", "");
-      }
-    } catch (error) {
-      console.error("Error setting export target:", error);
-      pushError("Failed to update export calendar", "");
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this calendar connection?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/calendar-connections?id=${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        fetchConnections();
-        pushSuccess("Calendar removed", "");
-      }
-    } catch (error) {
-      console.error("Error deleting calendar:", error);
-      pushError("Failed to remove calendar", "");
-    }
-  };
-
-  const handleForceSync = async () => {
-    setIsSyncing(true);
-    try {
-      const response = await fetch("/api/calendar-sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        pushSuccess(
-          "Synchronization complete",
-          `${data.syncedCount}/${data.totalCount} calendar(s) synced`
-        );
-        fetchConnections();
-      }
-    } catch (error) {
-      console.error("Error syncing calendars:", error);
-      pushError("Synchronization failed", "");
-    } finally {
-      setIsSyncing(false);
-    }
+    return names[0].charAt(0);
   };
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <Header title="Settings">
-        <Button onClick={handleConnectGoogle} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Connect Google Calendar
-        </Button>
-      </Header>
+      <Header title="Paramètres" subtitle="Gérer votre compte et vos préférences" />
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Connected Calendars */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Connected Calendars</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleForceSync}
-                disabled={isSyncing || connections.length === 0}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-                {isSyncing ? "Syncing..." : "Sync Now"}
-              </Button>
-            </div>
+        <div className="max-w-2xl mx-auto space-y-6">
+          {/* User Profile Section */}
+          <Card className="overflow-hidden">
+            <SettingsSection
+              icon={
+                session?.user?.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name || "User"}
+                    className="h-12 w-12 rounded-full object-cover"
+                    width={48}
+                    height={48}
+                  />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg font-medium text-primary">
+                      {getUserInitials()}
+                    </span>
+                  </div>
+                )
+              }
+              title={session?.user?.name || "Utilisateur"}
+              subtitle={session?.user?.email ?? undefined}
+              onClick={() => router.push("/settings/profile")}
+            />
+          </Card>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
-            ) : connections.length === 0 ? (
-              <Card className="p-8 text-center">
-                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">No calendars connected</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Connect your Google Calendar to sync events automatically
-                </p>
-                <Button onClick={handleConnectGoogle}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Connect Google Calendar
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {connections.map((connection) => (
-                  <Card key={connection.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <Calendar className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex-1">
-                          <h3 className="font-medium">{connection.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {connection.provider} • {connection.isActive ? "Active" : "Inactive"}
-                            {connection.lastSyncAt && (
-                              <> • Last synced {new Date(connection.lastSyncAt).toLocaleString()}</>
-                            )}
-                          </p>
-                        </div>
-                      </div>
+          {/* Settings Sections */}
+          <Card className="overflow-hidden divide-y">
+            <SettingsSection
+              icon={<Calendar className="h-5 w-5 text-muted-foreground" strokeWidth={1} />}
+              title="Calendriers"
+              subtitle="Gérer vos connexions calendrier"
+              onClick={() => router.push("/settings/calendars")}
+            />
+            <SettingsSection
+              icon={<Hash className="h-5 w-5 text-muted-foreground" strokeWidth={1} />}
+              title="Tags"
+              subtitle="Organiser vos tâches"
+              onClick={() => router.push("/settings/tags")}
+            />
+          </Card>
 
-                      <div className="flex items-center gap-2">
-                        {/* Toggle Active */}
-                        <Button
-                          variant={connection.isActive ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleToggleActive(connection.id, !connection.isActive)}
-                        >
-                          {connection.isActive ? "Enabled" : "Disabled"}
-                        </Button>
-
-                        {/* Export Target */}
-                        <Button
-                          variant={connection.isExportTarget ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleSetExportTarget(connection.id)}
-                          disabled={connection.isExportTarget}
-                          title="Set as export target"
-                        >
-                          {connection.isExportTarget && <Check className="h-4 w-4 mr-1" />}
-                          Export
-                        </Button>
-
-                        {/* Delete */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(connection.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Info Section */}
-          <Card className="p-6">
-            <h3 className="font-semibold mb-2">How it works</h3>
-            <ul className="text-sm text-muted-foreground space-y-2">
-              <li>• <strong>Active calendars</strong>: Events from these calendars will be imported into your timeline</li>
-              <li>• <strong>Export calendar</strong>: When you schedule a task, it will be automatically exported to this calendar</li>
-              <li>• <strong>Sync</strong>: Your calendars sync automatically when you open the timeline</li>
-            </ul>
+          {/* Logout Section */}
+          <Card className="overflow-hidden">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-3 p-4 text-red-600 hover:bg-red-50 transition-colors font-medium"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Se déconnecter</span>
+            </button>
           </Card>
         </div>
       </div>
