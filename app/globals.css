@@ -36,3 +36,28 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@layer utilities {
+  .sticky-header-shadow {
+    /* Animation de l'ombre au scroll (navigateurs modernes) */
+    animation: fade-shadow linear forwards;
+    animation-timeline: scroll(nearest);
+    animation-range: 0 50px;
+  }
+
+  @keyframes fade-shadow {
+    from {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+    to {
+      box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Fallback pour les navigateurs qui ne supportent pas scroll-driven animations */
+  @supports not (animation-timeline: scroll()) {
+    .sticky-header-shadow {
+      box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.08);
+    }
+  }
+}

@@ -245,7 +245,7 @@ export default function CalendarPage() {
         />
 
         {/* Grid de jours */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="flex-1 overflow-x-auto">
           <div className="min-w-max h-full">
             <div className="grid gap-0 h-full" style={{ gridTemplateColumns: `repeat(${numDays}, minmax(300px, 1fr))` }}>
               {isLoading ? (
@@ -337,12 +337,12 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onAddTask, onTaskD
     <div 
       ref={dropRef}
       className={cn(
-        "flex flex-col h-full bg-background transition-all duration-200",
+        "h-full bg-background transition-all duration-200 overflow-y-auto",
         isDraggedOver && "bg-primary/5 ring-2 ring-primary/20 ring-inset"
       )}
     >
-      {/* Header du jour */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm px-4 py-3.5 space-y-1.5">
+      {/* Header du jour - reste fixe pendant le scroll */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm px-4 py-3.5 space-y-1.5 sticky-header-shadow">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className={cn(
@@ -376,7 +376,7 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onAddTask, onTaskD
       </div>
 
       {/* Liste des tâches */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2.5">
+      <div className="px-3 py-4 space-y-2.5">
         <AnimatePresence mode="popLayout">
           {day.tasks.map((task) => (
             <DraggableTask

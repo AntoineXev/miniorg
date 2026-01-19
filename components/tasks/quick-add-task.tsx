@@ -101,13 +101,21 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
     setIsSubmitting(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
       handleSubmit();
     }
     if (e.key === "Escape") {
       closeQuickAdd();
       resetForm();
+    }
+  };
+
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Allow Enter in description without submitting
+      return;
     }
   };
 
@@ -127,7 +135,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
         headerValue={title}
         headerPlaceholder="What do you need to do?"
         onHeaderChange={setTitle}
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleTitleKeyDown}
         showMoreExpanded={showMore}
         onShowMoreToggle={setShowMore}
         footerLeftActions={
@@ -214,7 +222,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
             <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px] font-mono">esc</kbd>
             <span className="mx-1">or click outside to cancel</span>
             <span className="mx-2">•</span>
-            <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px] font-mono">⌘ enter</kbd>
+            <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px] font-mono">enter</kbd>
             <span className="mx-1">or</span>
             <span className="text-foreground font-medium">create</span>
             <span className="mx-1">to save</span>
@@ -229,6 +237,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
             placeholder="Add more details..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={handleDescriptionKeyDown}
             className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>

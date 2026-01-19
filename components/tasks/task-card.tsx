@@ -124,9 +124,10 @@ export function TaskCard({
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.2 }}
       whileHover={{ y: -2 }}
+      className="max-w-72"
     >
       <Card
-        className="group relative p-4 transition-all duration-200 hover:shadow-md cursor-pointer"
+        className="group relative p-4 transition-all duration-200 hover:shadow-md cursor-pointer w-full"
         onClick={() => onEdit?.(task.id)}
       >
         <div className="flex items-start gap-3">
@@ -145,7 +146,7 @@ export function TaskCard({
             <div className="flex items-start justify-between gap-2">
               <h3
                 className={cn(
-                  "font-medium text-sm flex-1",
+                  "font-medium text-sm flex-1 truncate",
                   isCompleted && "line-through text-muted-foreground"
                 )}
               >
@@ -162,7 +163,7 @@ export function TaskCard({
             </div>
 
             {task.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs text-muted-foreground/80 mt-1 line-clamp-1">
                 {task.description}
               </p>
             )}
