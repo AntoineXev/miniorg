@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NavButton } from "@/components/ui/nav-button";
 import { Calendar, Plus, Trash2, RefreshCw, Check, ArrowLeft } from "lucide-react";
-import { useToast } from "@/providers/toast";
+import { toast } from "sonner";
 import { CalendarOnboardingModal } from "@/components/calendar/calendar-onboarding-modal";
 
 type CalendarConnection = {
@@ -26,7 +26,6 @@ export default function CalendarsSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const { pushSuccess, pushError } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -52,7 +51,7 @@ export default function CalendarsSettingsPage() {
     const error = searchParams.get("error");
 
     if (error) {
-      pushError("Authentication failed", error);
+      toast.error("Authentication failed", { description: error });
       // Clean up URL
       window.history.replaceState({}, "", "/settings/calendars");
       return;
@@ -64,7 +63,7 @@ export default function CalendarsSettingsPage() {
       // Clean up URL
       window.history.replaceState({}, "", "/settings/calendars");
     }
-  }, [searchParams, pushError]);
+  }, [searchParams]);
 
   const handleOnboardingComplete = async (
     activeIds: string[],
@@ -94,9 +93,11 @@ export default function CalendarsSettingsPage() {
 
       // Refresh connections
       await fetchConnections();
-      pushSuccess(
+      toast.success(
         "Calendar setup complete",
-        `${activeIds.length} calendar(s) configured`
+        {
+          description: `${activeIds.length} calendar(s) configured`
+        }
       );
     } catch (error) {
       console.error("Error completing onboarding:", error);
@@ -118,14 +119,13 @@ export default function CalendarsSettingsPage() {
 
       if (response.ok) {
         fetchConnections();
-        pushSuccess(
-          isActive ? "Calendar enabled" : "Calendar disabled",
-          ""
+        toast.success(
+          isActive ? "Calendar enabled" : "Calendar disabled"
         );
       }
     } catch (error) {
       console.error("Error toggling calendar:", error);
-      pushError("Failed to update calendar", "");
+      toast.error("Failed to update calendar");
     }
   };
 
@@ -139,11 +139,11 @@ export default function CalendarsSettingsPage() {
 
       if (response.ok) {
         fetchConnections();
-        pushSuccess("Export calendar updated", "");
+        toast.success("Export calendar updated");
       }
     } catch (error) {
       console.error("Error setting export target:", error);
-      pushError("Failed to update export calendar", "");
+      toast.error("Failed to update export calendar");
     }
   };
 
@@ -159,11 +159,11 @@ export default function CalendarsSettingsPage() {
 
       if (response.ok) {
         fetchConnections();
-        pushSuccess("Calendar removed", "");
+        toast.success("Calendar removed");
       }
     } catch (error) {
       console.error("Error deleting calendar:", error);
-      pushError("Failed to remove calendar", "");
+      toast.error("Failed to remove calendar");
     }
   };
 
@@ -178,15 +178,17 @@ export default function CalendarsSettingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        pushSuccess(
+        toast.success(
           "Synchronization complete",
-          `${data.syncedCount}/${data.totalCount} calendar(s) synced`
+          {
+            description: `${data.syncedCount}/${data.totalCount} calendar(s) synced`
+          }
         );
         fetchConnections();
       }
     } catch (error) {
       console.error("Error syncing calendars:", error);
-      pushError("Synchronization failed", "");
+      toast.error("Synchronization failed");
     } finally {
       setIsSyncing(false);
     }

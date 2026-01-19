@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Calendar, X } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/utils/task";
 import { format } from "date-fns";
-import { useApiClient } from "@/lib/services/api-client";
 import { useQuickAddTask } from "@/providers/quick-add-task";
+import { useCreateTaskMutation } from "@/lib/api/mutations/tasks";
 
 type QuickAddTaskProps = {
   onTaskCreated?: () => void;
@@ -24,8 +24,9 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
   const [duration, setDuration] = useState<string>("30"); // Duration in minutes
   const [showMore, setShowMore] = useState(false);
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const api = useApiClient();
+
+  const createTask = useCreateTaskMutation();
+  const isSubmitting = createTask.isPending;
 
   const resetForm = useCallback(() => {
     setTitle("");
@@ -76,29 +77,19 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
     e?.preventDefault();
     if (!title.trim()) return;
 
-    setIsSubmitting(true);
-
-    const data = await api.post<{ id: string }>(
-      "/api/tasks",
-      {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        deadlineType: useSpecificDate ? undefined : deadlineType,
-        scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
-        duration: duration ? parseInt(duration, 10) : undefined,
-        // Status is automatically determined by backend based on scheduledDate
+    createTask.mutate({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      deadlineType: useSpecificDate ? undefined : deadlineType,
+      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : undefined,
+      duration: duration ? parseInt(duration, 10) : undefined,
+    }, {
+      onSuccess: () => {
+        resetForm();
+        closeQuickAdd();
+        onTaskCreated?.();
       },
-      "Tâche créée",
-      { errorMessage: "Erreur lors de la création" }
-    );
-
-    if (data) {
-      resetForm();
-      closeQuickAdd();
-      onTaskCreated?.();
-    }
-
-    setIsSubmitting(false);
+    });
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {

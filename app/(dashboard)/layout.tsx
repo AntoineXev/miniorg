@@ -6,10 +6,9 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { RightSidebar, RightSidebarPanel } from "@/components/layout/right-sidebar";
 import { RightSidebarProvider, useRightSidebar } from "@/components/layout/right-sidebar/context";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
-import { useToast } from "@/providers/toast";
 import { useRouter } from "next/navigation";
-import { emitTaskUpdate } from "@/lib/services/task-events";
 import { QuickAddTaskProvider } from "@/providers/quick-add-task";
+import { toast } from "sonner";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -20,7 +19,6 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
   const { data: session, status } = useSession();
-  const { pushInfo } = useToast();
   const hasRedirected = useRef(false);
   const router = useRouter();
   
@@ -45,14 +43,16 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
       hasRedirected.current = true;
       
       // Affiche le toast avant la redirection
-      pushInfo(
+      toast.info(
         "Déconnecté",
-        "Pour des raisons de sécurité vous avez été déconnecté"
+        {
+          description: "Pour des raisons de sécurité vous avez été déconnecté"
+        }
       );
       
       router.push("/login");
     }
-  }, [status, session, pushInfo, router]);
+  }, [status, session, router]);
 
   // Affiche un écran de chargement pendant la vérification
   if (status === "loading") {
@@ -108,7 +108,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Global Quick Add Task - Accessible from anywhere */}
-      <QuickAddTask onTaskCreated={() => emitTaskUpdate()} />
+      <QuickAddTask onTaskCreated={() => {}} />
     </div>
   );
 }

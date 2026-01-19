@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ToastProvider } from "@/providers/toast";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryProvider } from "@/providers/query-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,11 +18,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <TooltipProvider delayDuration={200}>
-          <ToastProvider>{children}</ToastProvider>
-        </TooltipProvider>
+        <QueryProvider>
+          <TooltipProvider delayDuration={200}>
+            {children}
+          </TooltipProvider>
+          <Toaster position="bottom-center" />
+        </QueryProvider>
       </body>
     </html>
   );

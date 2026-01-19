@@ -9,13 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, addMinutes } from "date-fns";
 import { Loader2 } from "lucide-react";
-import { emitTaskUpdate } from "@/lib/services/task-events";
-
-type Task = {
-  id: string;
-  title: string;
-  duration?: number | null;
-};
+import { useTasksQuery } from "@/lib/api/queries/tasks";
+import { useCreateEventMutation } from "@/lib/api/mutations/calendar-events";
+import type { Task } from "@/lib/api/types";
 
 type CreateEventFormProps = {
   open: boolean;
@@ -38,33 +34,13 @@ export function CreateEventForm({
   const [endTime, setEndTime] = useState("");
   const [linkToTask, setLinkToTask] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingTasks, setIsFetchingTasks] = useState(false);
 
-  const fetchTasks = useCallback(async () => {
-    setIsFetchingTasks(true);
-    try {
-      const response = await fetch("/api/tasks");
-      if (response.ok) {
-        const data = await response.json();
-        // Filter to only show non-completed tasks
-        const activeTasks = data.filter((t: any) => t.status !== "done");
-        setTasks(activeTasks);
-      }
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setIsFetchingTasks(false);
-    }
-  }, []);
+  const { data: allTasks = [], isLoading: isFetchingTasks } = useTasksQuery();
+  const createEvent = useCreateEventMutation();
+  const isLoading = createEvent.isPending;
 
-  // Fetch tasks when linking option is enabled
-  useEffect(() => {
-    if (linkToTask && tasks.length === 0) {
-      fetchTasks();
-    }
-  }, [linkToTask, fetchTasks, tasks.length]);
+  // Filter to only show non-completed tasks
+  const tasks = allTasks.filter((t: Task) => t.status !== "done");
 
   // Set prefilled times when dialog opens
   useEffect(() => {
@@ -88,34 +64,19 @@ export function CreateEventForm({
       return;
     }
 
-    setIsLoading(true);
     const isLinkingToTask = linkToTask && selectedTaskId;
-    try {
-      const response = await fetch("/api/calendar-events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-          taskId: isLinkingToTask ? selectedTaskId : null,
-        }),
-      });
-
-      if (response.ok) {
+    createEvent.mutate({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      startTime: new Date(startTime).toISOString(),
+      endTime: new Date(endTime).toISOString(),
+      taskId: isLinkingToTask ? selectedTaskId : null,
+    }, {
+      onSuccess: () => {
         onEventCreated?.();
         handleClose();
-        // If we linked an event to a task, notify other components
-        if (isLinkingToTask) {
-          emitTaskUpdate();
-        }
-      }
-    } catch (error) {
-      console.error("Error creating event:", error);
-    } finally {
-      setIsLoading(false);
-    }
+      },
+    });
   };
 
   const handleClose = () => {

@@ -8,26 +8,10 @@ import { format } from "date-fns";
 import { Clock, Link as LinkIcon, Trash2, CheckCircle2, ArrowRight, Loader2, Download } from "lucide-react";
 import { formatTimeRange, formatDuration, calculateDuration } from "@/lib/utils/calendar";
 import { cn } from "@/lib/utils";
-import { emitTaskUpdate } from "@/lib/services/task-events";
-import { useToast } from "@/providers/toast";
-
-type CalendarEvent = {
-  id: string;
-  title: string;
-  description?: string | null;
-  startTime: Date;
-  endTime: Date;
-  taskId?: string | null;
-  color?: string | null;
-  isCompleted: boolean;
-  source: string;
-  task?: {
-    id: string;
-    title: string;
-    status: string;
-    tags?: Array<{ id: string; name: string; color: string }>;
-  } | null;
-};
+import { useUpdateEventMutation, useDeleteEventMutation } from "@/lib/api/mutations/calendar-events";
+import { useCreateTaskMutation } from "@/lib/api/mutations/tasks";
+import type { CalendarEvent } from "@/lib/api/types";
+import { toast } from "sonner";
 
 type EventDetailDialogProps = {
   event: CalendarEvent | null;
@@ -44,12 +28,15 @@ export function EventDetailDialog({
   onEventUpdated,
   onEventDeleted,
 }: EventDetailDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isConverting, setIsConverting] = useState(false);
-  const [isTogglingComplete, setIsTogglingComplete] = useState(false);
   const [showDetails, setShowDetails] = useState(true); // Start expanded
   const [localEvent, setLocalEvent] = useState(event);
-  const { pushSuccess, pushError } = useToast();
+
+  const updateEvent = useUpdateEventMutation();
+  const deleteEvent = useDeleteEventMutation();
+  const createTask = useCreateTaskMutation();
+  const isDeleting = deleteEvent.isPending;
+  const isConverting = createTask.isPending;
+  const isTogglingComplete = updateEvent.isPending;
 
   // Sync local event with prop
   useEffect(() => {
@@ -69,44 +56,23 @@ export function EventDetailDialog({
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this event?")) return;
 
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/calendar-events?id=${localEvent.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
+    deleteEvent.mutate(localEvent.id, {
+      onSuccess: () => {
         onEventDeleted?.();
         onOpenChange(false);
-        // If event was linked to a task, notify other components
-        if (localEvent.taskId) {
-          emitTaskUpdate();
-        }
-      }
-    } catch (error) {
-      console.error("Error deleting event:", error);
-    } finally {
-      setIsDeleting(false);
-    }
+      },
+    });
   };
 
   const handleCheckboxChange = async (checked: boolean) => {
     // Optimistically update the local state immediately for instant UI feedback
     setLocalEvent(prev => prev ? { ...prev, isCompleted: checked } : prev);
-    setIsTogglingComplete(true);
     
-    try {
-      const response = await fetch("/api/calendar-events", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: localEvent.id,
-          isCompleted: checked,
-        }),
-      });
-
-      if (response.ok) {
-        const updatedEvent = await response.json();
+    updateEvent.mutate({
+      id: localEvent.id,
+      isCompleted: checked,
+    }, {
+      onSuccess: (updatedEvent) => {
         // Parse dates
         const parsedEvent = {
           ...updatedEvent,
@@ -116,109 +82,93 @@ export function EventDetailDialog({
         
         // Update local state with full response (including taskId if auto-imported)
         setLocalEvent(parsedEvent);
-        
-        // Backend now handles auto-import and task status sync
-        // Just notify parent component  
         onEventUpdated?.(parsedEvent);
-        
-        // Notify task-related components (backlog, etc.) that tasks have changed
-        // This is important because completion can create/update tasks
-        emitTaskUpdate();
         
         // Show success message for auto-import
         if (checked && !localEvent.taskId) {
-          pushSuccess(
+          toast.success(
             "Event completed and imported",
-            "A new task has been created and marked as done"
+            {
+              description: "A new task has been created and marked as done"
+            }
           );
         }
-      } else {
+      },
+      onError: () => {
         // Revert optimistic update on error
         setLocalEvent(prev => prev ? { ...prev, isCompleted: !checked } : prev);
-      }
-    } catch (error) {
-      console.error("Error updating event:", error);
-      // Revert optimistic update on error
-      setLocalEvent(prev => prev ? { ...prev, isCompleted: !checked } : prev);
-      pushError(
-        "Failed to update event",
-        "Please try again or contact support if the problem persists"
-      );
-    } finally {
-      setIsTogglingComplete(false);
-    }
+        toast.error(
+          "Failed to update event",
+          {
+            description: "Please try again or contact support if the problem persists"
+          }
+        );
+      },
+    });
   };
 
   const handleConvertToTask = async () => {
-    setIsConverting(true);
-    try {
-      // Create a new task from the event
-      const taskResponse = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: localEvent.title,
-          description: localEvent.description || undefined,
-          scheduledDate: localEvent.startTime.toISOString(),
-          duration: duration,
-          // Status is automatically determined by backend (will be "planned" due to scheduledDate)
-        }),
-      });
-
-      if (!taskResponse.ok) {
-        throw new Error("Failed to create task");
-      }
-
-      const newTask = await taskResponse.json();
-
-      // For both external and miniorg events, just link the existing event to the new task
-      const eventResponse = await fetch("/api/calendar-events", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    createTask.mutate({
+      title: localEvent.title,
+      description: localEvent.description || undefined,
+      scheduledDate: localEvent.startTime.toISOString(),
+      duration: duration,
+    }, {
+      onSuccess: (newTask) => {
+        // Now link the event to the task
+        updateEvent.mutate({
           id: localEvent.id,
           taskId: newTask.id,
-        }),
-      });
+        }, {
+          onSuccess: (updatedEvent) => {
+            // Parse dates
+            const parsedEvent = {
+              ...updatedEvent,
+              startTime: typeof updatedEvent.startTime === 'string' ? new Date(updatedEvent.startTime) : updatedEvent.startTime,
+              endTime: typeof updatedEvent.endTime === 'string' ? new Date(updatedEvent.endTime) : updatedEvent.endTime,
+            };
 
-      if (!eventResponse.ok) {
-        throw new Error("Failed to link event to task");
-      }
-
-      const updatedEvent = await eventResponse.json();
-      // Parse dates
-      const parsedEvent = {
-        ...updatedEvent,
-        startTime: typeof updatedEvent.startTime === 'string' ? new Date(updatedEvent.startTime) : updatedEvent.startTime,
-        endTime: typeof updatedEvent.endTime === 'string' ? new Date(updatedEvent.endTime) : updatedEvent.endTime,
-      };
-
-      // Update local state
-      setLocalEvent(parsedEvent);
-      onEventUpdated?.(parsedEvent);
-      onOpenChange(false); // Close the dialog after successful import
-      
-      // Show success message
-      if (isExternal) {
-        pushSuccess(
-          "Event imported successfully",
-          "A new task has been created and linked to this event"
+            // Update local state
+            setLocalEvent(parsedEvent);
+            onEventUpdated?.(parsedEvent);
+            onOpenChange(false); // Close the dialog after successful import
+            
+            // Show success message
+            if (isExternal) {
+              toast.success(
+                "Event imported successfully",
+                {
+                  description: "A new task has been created and linked to this event"
+                }
+              );
+            } else {
+              toast.success(
+                "Event converted to task",
+                {
+                  description: "Your event is now linked to a task"
+                }
+              );
+            }
+          },
+          onError: () => {
+            toast.error(
+              "Failed to link event to task",
+              {
+                description: "Please try again or contact support if the problem persists"
+              }
+            );
+          },
+        });
+      },
+      onError: () => {
+        toast.error(
+          "Failed to create task",
+          {
+            description: "Please try again or contact support if the problem persists"
+          }
         );
-      } else {
-        pushSuccess(
-          "Event converted to task",
-          "Your event is now linked to a task"
-        );
-      }
-    } catch (error) {
-      console.error("Error converting/importing event to task:", error);
-      pushError(
-        "Failed to create task",
-        "Please try again or contact support if the problem persists"
-      );
-    } finally {
-      setIsConverting(false);
-    }
+      },
+    });
   };
 
   return (

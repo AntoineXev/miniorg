@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, startOfDay, endOfDay, isSameDay, parseISO, addMinutes, differenceInMinutes } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -14,21 +14,11 @@ import { cn } from "@/lib/utils";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
-import { emitTaskUpdate } from "@/lib/services/task-events";
-import { useToast } from "@/providers/toast";
-
-type CalendarEvent = {
-  id: string;
-  title: string;
-  description?: string | null;
-  startTime: Date;
-  endTime: Date;
-  taskId?: string | null;
-  color?: string | null;
-  isCompleted: boolean;
-  source: string;
-  task?: any;
-};
+import { useCalendarEventsQuery } from "@/lib/api/queries/calendar-events";
+import { useCreateEventMutation, useUpdateEventMutation } from "@/lib/api/mutations/calendar-events";
+import { useUpdateTaskMutation } from "@/lib/api/mutations/tasks";
+import type { CalendarEvent } from "@/lib/api/types";
+import { toast } from "sonner";
 
 type TimelineSidebarProps = {
   selectedDate?: Date;
@@ -52,8 +42,6 @@ export function TimelineSidebar({
   endHour = 22,
   slotInterval = 30,
 }: TimelineSidebarProps) {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
@@ -63,20 +51,38 @@ export function TimelineSidebar({
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const dragDurationRef = useRef<number>(0);
-  const { pushSuccess } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const slotHeight = 32; // Height of one time slot in pixels (for 30 min slots)
   const snapInterval = 5; // Snap to 5 minute intervals
   const timeSlots = getTimeSlots(startHour, endHour, slotInterval, currentDate);
 
-  // Fetch events with calendar sync
-  const fetchEvents = useCallback(async () => {
-    try {
-      const startDate = startOfDay(currentDate).toISOString();
-      const endDate = endOfDay(currentDate).toISOString();
-      
-      // Sync calendars first
+  // Use React Query hooks
+  const startDate = useMemo(() => startOfDay(currentDate).toISOString(), [currentDate]);
+  const endDate = useMemo(() => endOfDay(currentDate).toISOString(), [currentDate]);
+  
+  const { data: rawEvents = [], isLoading } = useCalendarEventsQuery({
+    startDate,
+    endDate,
+  });
+  
+  const createEvent = useCreateEventMutation();
+  const updateEvent = useUpdateEventMutation();
+  const updateTask = useUpdateTaskMutation();
+
+  // Parse and sort events
+  const events = useMemo(() => {
+    const parsedEvents = rawEvents.map((event: any) => ({
+      ...event,
+      startTime: typeof event.startTime === 'string' ? parseISO(event.startTime) : event.startTime,
+      endTime: typeof event.endTime === 'string' ? parseISO(event.endTime) : event.endTime,
+    }));
+    return sortEventsByTime(parsedEvents);
+  }, [rawEvents]);
+
+  // Trigger calendar sync when date changes
+  useEffect(() => {
+    const syncCalendars = async () => {
       try {
         await fetch('/api/calendar-sync', {
           method: 'POST',
@@ -85,50 +91,10 @@ export function TimelineSidebar({
         });
       } catch (syncError) {
         console.error('Calendar sync error:', syncError);
-        // Continue to fetch events even if sync fails
       }
-      
-      const response = await fetch(`/api/calendar-events?startDate=${startDate}&endDate=${endDate}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Parse dates
-        const parsedEvents = data.map((event: any) => ({
-          ...event,
-          startTime: typeof event.startTime === 'string' ? parseISO(event.startTime) : event.startTime,
-          endTime: typeof event.endTime === 'string' ? parseISO(event.endTime) : event.endTime,
-        }));
-        setEvents(sortEventsByTime(parsedEvents));
-      }
-    } catch (error) {
-      console.error("Error fetching events:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentDate]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [currentDate, fetchEvents]);
-
-  // Update a single event in state without refetching (avoids sync loop)
-  const handleEventUpdated = useCallback((updatedEvent: CalendarEvent) => {
-    // Update in events list
-    setEvents(prev => {
-      const newEvents = prev.map(e => e.id === updatedEvent.id ? updatedEvent : e);
-      return sortEventsByTime(newEvents);
-    });
-    
-    // Update selectedEvent if it's the same one
-    setSelectedEvent(prev => {
-      if (prev?.id === updatedEvent.id) {
-        return updatedEvent;
-      }
-      return prev;
-    });
-    
-    // Note: We don't call emitTaskUpdate() here to avoid unnecessary fetches
-    // The backend already handles task status synchronization
-  }, []);
+    };
+    syncCalendars();
+  }, [startDate, endDate]);
 
   // Update current time every minute to keep the red line moving
   useEffect(() => {
@@ -248,29 +214,24 @@ export function TimelineSidebar({
         const finalEndTime = addMinutes(finalStartTime, taskDuration);
 
         // Create event from task
-        try {
-          const response = await fetch("/api/calendar-events", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: taskTitle,
-              startTime: finalStartTime.toISOString(),
-              endTime: finalEndTime.toISOString(),
-              taskId: taskId,
-            }),
-          });
-
-          if (response.ok) {
-            fetchEvents();
-            emitTaskUpdate(); // Notify other components that tasks have been updated
-            pushSuccess(
+        createEvent.mutate({
+          title: taskTitle,
+          startTime: finalStartTime.toISOString(),
+          endTime: finalEndTime.toISOString(),
+          taskId: taskId,
+        }, {
+          onSuccess: () => {
+            toast.success(
               "Task successfully planned",
-              "You'll find your task in your calendar view"
+              {
+                description: "You'll find your task in your calendar view"
+              }
             );
-          }
-        } catch (error) {
-          console.error("Error creating event from task:", error);
-        }
+          },
+          onError: (error) => {
+            console.error("Error creating event from task:", error);
+          },
+        });
         
         setDragPreview(null);
         dragDurationRef.current = 0;
@@ -278,7 +239,7 @@ export function TimelineSidebar({
     });
 
     return cleanup;
-  }, [dragPreview, startHour, endHour, slotInterval, currentDate, fetchEvents, getTimeFromMouseY, pushSuccess]);
+  }, [dragPreview, startHour, endHour, slotInterval, currentDate, getTimeFromMouseY]);
 
   const handleSlotClick = (slot: { time: Date }) => {
     setPrefilledStartTime(slot.time);
@@ -443,7 +404,7 @@ export function TimelineSidebar({
                             startHour={startHour}
                             currentDate={currentDate}
                             onEventClick={handleEventClick}
-                            onEventUpdate={fetchEvents}
+                            onEventUpdate={() => {}}
                             getTimeFromMouseY={getTimeFromMouseY}
                             timelineRef={timelineRef}
                           />
@@ -515,7 +476,7 @@ export function TimelineSidebar({
                                       startHour={startHour}
                                       currentDate={currentDate}
                                       onEventClick={handleEventClick}
-                                      onEventUpdate={fetchEvents}
+                                      onEventUpdate={() => {}}
                                       getTimeFromMouseY={getTimeFromMouseY}
                                       timelineRef={timelineRef}
                                       isInFlexGroup={true}
@@ -622,7 +583,7 @@ export function TimelineSidebar({
         open={isCreateFormOpen}
         onOpenChange={setIsCreateFormOpen}
         prefilledStartTime={prefilledStartTime}
-        onEventCreated={fetchEvents}
+        onEventCreated={() => {}}
       />
 
       {/* Event Detail Dialog */}
@@ -630,8 +591,8 @@ export function TimelineSidebar({
         event={selectedEvent}
         open={isEventDetailOpen}
         onOpenChange={setIsEventDetailOpen}
-        onEventUpdated={fetchEvents}
-        onEventDeleted={fetchEvents}
+        onEventUpdated={() => {}}
+        onEventDeleted={() => {}}
       />
     </div>
   );
@@ -684,6 +645,9 @@ function DraggableEvent({
   const [dragAbsoluteLeft, setDragAbsoluteLeft] = useState<number>(0);
   const [dragAbsoluteWidth, setDragAbsoluteWidth] = useState<number>(0);
   const [dragPreviewTimes, setDragPreviewTimes] = useState<{ start: Date; end: Date } | null>(null);
+
+  // Use React Query mutation for updating events
+  const updateEvent = useUpdateEventMutation();
 
   // Update local position when props change
   useEffect(() => {
@@ -772,29 +736,20 @@ function DraggableEvent({
         setDragPreviewTimes(null);
 
         // Update event
-        try {
-          const response = await fetch("/api/calendar-events", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: event.id,
-              startTime: newStartTime.toISOString(),
-              endTime: newEndTime.toISOString(),
-            }),
-          });
-
-          if (response.ok) {
+        updateEvent.mutate({
+          id: event.id,
+          startTime: newStartTime.toISOString(),
+          endTime: newEndTime.toISOString(),
+        }, {
+          onSuccess: () => {
             onEventUpdate();
-            // If event is linked to a task, notify other components
-            if (event.taskId) {
-              emitTaskUpdate();
-            }
-          }
-        } catch (error) {
-          console.error("Error updating event:", error);
-          // Reset position on error
-          setLocalPosition({ top: initialTop, height: initialHeight });
-        }
+          },
+          onError: (error) => {
+            console.error("Error updating event:", error);
+            // Reset position on error
+            setLocalPosition({ top: initialTop, height: initialHeight });
+          },
+        });
       },
     });
   }, [event, slotHeight, slotInterval, startHour, getTimeFromMouseY, onEventUpdate, timelineRef, initialTop, initialHeight, isInFlexGroup]);
@@ -852,27 +807,18 @@ function DraggableEvent({
         }
 
         // Update event
-        try {
-          const response = await fetch("/api/calendar-events", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: event.id,
-              startTime: newStartTime.toISOString(),
-            }),
-          });
-
-          if (response.ok) {
+        updateEvent.mutate({
+          id: event.id,
+          startTime: newStartTime.toISOString(),
+        }, {
+          onSuccess: () => {
             onEventUpdate();
-            // If event is linked to a task, notify other components (start time changed)
-            if (event.taskId) {
-              emitTaskUpdate();
-            }
-          }
-        } catch (error) {
-          console.error("Error updating event:", error);
-          setLocalPosition({ top: initialTop, height: initialHeight });
-        }
+          },
+          onError: (error) => {
+            console.error("Error updating event:", error);
+            setLocalPosition({ top: initialTop, height: initialHeight });
+          },
+        });
       },
     });
   }, [event, slotHeight, slotInterval, startHour, getTimeFromMouseY, onEventUpdate, timelineRef, initialTop, initialHeight]);
@@ -930,23 +876,18 @@ function DraggableEvent({
         }
 
         // Update event
-        try {
-          const response = await fetch("/api/calendar-events", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: event.id,
-              endTime: newEndTime.toISOString(),
-            }),
-          });
-
-          if (response.ok) {
+        updateEvent.mutate({
+          id: event.id,
+          endTime: newEndTime.toISOString(),
+        }, {
+          onSuccess: () => {
             onEventUpdate();
-          }
-        } catch (error) {
-          console.error("Error updating event:", error);
-          setLocalPosition({ top: initialTop, height: initialHeight });
-        }
+          },
+          onError: (error) => {
+            console.error("Error updating event:", error);
+            setLocalPosition({ top: initialTop, height: initialHeight });
+          },
+        });
       },
     });
   }, [event, slotHeight, slotInterval, startHour, getTimeFromMouseY, onEventUpdate, timelineRef, initialTop, initialHeight]);
