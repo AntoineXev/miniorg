@@ -18,7 +18,7 @@ const ButtonGroup = forwardRef<HTMLDivElement, ButtonGroupProps>(
       <div
         ref={ref}
         className={cn(
-          "inline-flex shadow-xs items-center rounded-full p-0.5 gap-1 border border-border/40 bg-background/50 backdrop-blur-sm",
+          "inline-flex shadow-xs items-center rounded-full p-1 gap-1 border border-border/40 bg-card backdrop-blur-sm",
           "dark:bg-zinc-900/50 dark:border-zinc-800/50",
           className
         )}
