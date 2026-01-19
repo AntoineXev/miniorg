@@ -337,7 +337,7 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onAddTask, onTaskD
     <div 
       ref={dropRef}
       className={cn(
-        "h-full bg-background transition-all duration-200 overflow-y-auto",
+        "h-full bg-background transition-all duration-200 overflow-y-auto max-w-72",
         isDraggedOver && "bg-primary/5 ring-2 ring-primary/20 ring-inset"
       )}
     >

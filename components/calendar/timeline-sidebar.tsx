@@ -64,6 +64,7 @@ export function TimelineSidebar({
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const dragDurationRef = useRef<number>(0);
   const { pushSuccess } = useToast();
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const slotHeight = 32; // Height of one time slot in pixels (for 30 min slots)
   const snapInterval = 5; // Snap to 5 minute intervals
@@ -108,6 +109,15 @@ export function TimelineSidebar({
   useEffect(() => {
     fetchEvents();
   }, [currentDate, fetchEvents]);
+
+  // Update current time every minute to keep the red line moving
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-scroll to current hour on mount
   useEffect(() => {
@@ -558,9 +568,8 @@ export function TimelineSidebar({
 
             {/* Current time indicator */}
             {isToday && (() => {
-              const now = new Date();
-              const currentHour = now.getHours();
-              const currentMinute = now.getMinutes();
+              const currentHour = currentTime.getHours();
+              const currentMinute = currentTime.getMinutes();
               
               if (currentHour >= startHour && currentHour < endHour) {
                 const minutesFromStart = (currentHour - startHour) * 60 + currentMinute;

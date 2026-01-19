@@ -124,7 +124,7 @@ export function TaskCard({
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.2 }}
       whileHover={{ y: -2 }}
-      className="max-w-72"
+      className="w-full"
     >
       <Card
         className="group relative p-4 transition-all duration-200 hover:shadow-md cursor-pointer w-full"
