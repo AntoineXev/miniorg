@@ -70,7 +70,7 @@ export default function CalendarPage() {
   const handleTaskDrop = (taskId: string, newDate: Date, source?: string) => {
     updateTask.mutate({
       id: taskId,
-      scheduledDate: newDate.toISOString(),
+      scheduledDate: newDate,
     });
   };
 

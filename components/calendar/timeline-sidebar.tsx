@@ -9,7 +9,7 @@ import { NavButton } from "@/components/ui/nav-button";
 import { EventCard } from "./event-card";
 import { CreateEventForm } from "./create-event-form";
 import { EventDetailDialog } from "./event-detail-dialog";
-import { getTimeSlots, calculateEventPosition, sortEventsByTime, formatTimeRange, formatDuration, snapToInterval, calculateEventColumns } from "@/lib/utils/calendar";
+import { getTimeSlots, calculateEventPosition, sortEventsByTime, formatTimeRange, formatDuration, snapToInterval, calculateEventColumns, type CalendarEvent as CalendarEventWithDates } from "@/lib/utils/calendar";
 import { cn } from "@/lib/utils";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
@@ -515,7 +515,7 @@ export function TimelineSidebar({
                           id: 'preview',
                           isCompleted: false,
                           source: 'miniorg',
-                        } as CalendarEvent,
+                        } as CalendarEventWithDates,
                         slotHeight,
                         slotInterval,
                         startHour
@@ -527,7 +527,7 @@ export function TimelineSidebar({
                             id: 'preview',
                             isCompleted: false,
                             source: 'miniorg',
-                          } as CalendarEvent,
+                          } as CalendarEventWithDates,
                           slotHeight,
                           slotInterval,
                           startHour
@@ -607,7 +607,7 @@ export function TimelineSidebar({
 
 // Draggable Event Component with resize handles
 type DraggableEventProps = {
-  event: CalendarEvent;
+  event: CalendarEventWithDates;
   top: number;
   height: number;
   column: number;

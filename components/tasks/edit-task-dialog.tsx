@@ -72,7 +72,7 @@ export function EditTaskDialog({
       title: title.trim(),
       description: description.trim() || null,
       deadlineType: useSpecificDate ? null : (deadlineType || null),
-      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : null,
+      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate) : null,
       duration: duration ? parseInt(duration, 10) : null,
       status: isCompleted ? "done" : task.status,
     }, {

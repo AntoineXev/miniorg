@@ -1,4 +1,5 @@
 import { format, differenceInMinutes, addMinutes, startOfDay, areIntervalsOverlapping } from 'date-fns';
+import type { CalendarEvent as ApiCalendarEvent } from '@/lib/api/types';
 
 export type TimeSlot = {
   time: Date;
@@ -7,17 +8,12 @@ export type TimeSlot = {
   minute: number;
 };
 
-export type CalendarEvent = {
-  id: string;
-  title: string;
-  description?: string | null;
+// Re-export CalendarEvent with Date objects (for local utility functions)
+export type CalendarEvent = Omit<ApiCalendarEvent, 'startTime' | 'endTime' | 'isCompleted' | 'source'> & {
   startTime: Date;
   endTime: Date;
-  taskId?: string | null;
-  color?: string | null;
   isCompleted: boolean;
-  source: string;
-  task?: any;
+  source: "miniorg" | "google" | "outlook";
 };
 
 /**

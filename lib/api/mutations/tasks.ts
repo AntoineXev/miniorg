@@ -27,8 +27,6 @@ export function useCreateTaskMutation() {
           title: newTask.title || "",
           description: newTask.description || "",
           status: newTask.status || "backlog",
-          priority: newTask.priority || "medium",
-          userId: "",
           createdAt: new Date(),
           updatedAt: new Date(),
           ...newTask,
