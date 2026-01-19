@@ -20,6 +20,7 @@ import { useUpdateTaskMutation } from "@/lib/api/mutations/tasks";
 import type { CalendarEvent } from "@/lib/api/types";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { Loader } from "@/components/ui/loader";
 
 type TimelineSidebarProps = {
   selectedDate?: Date;
@@ -328,10 +329,7 @@ export function TimelineSidebar({
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading timeline...</p>
-            </div>
+            <Loader showText text="Loading timeline" />
           </div>
         ) : (
           <div className="relative">

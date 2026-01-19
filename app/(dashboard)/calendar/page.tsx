@@ -21,6 +21,7 @@ import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/el
 import { preserveOffsetOnSource } from "@atlaskit/pragmatic-drag-and-drop/element/preserve-offset-on-source";
 import { useQuickAddTask } from "@/providers/quick-add-task";
 import { toast } from "sonner";
+import { Loader } from "@/components/ui/loader";
 
 type DayColumn = {
   date: Date;
@@ -169,10 +170,7 @@ export default function CalendarPage() {
             <div className="grid gap-0 h-full" style={{ gridTemplateColumns: `repeat(${numDays}, minmax(300px, 1fr))` }}>
               {isLoading ? (
                 <div className="col-span-full flex items-center justify-center h-full">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading calendar...</p>
-                  </div>
+                  <Loader showText text="Loading calendar" />
                 </div>
               ) : (
                 dayColumns.map((day, index) => (

@@ -9,6 +9,7 @@ import { NavButton } from "@/components/ui/nav-button";
 import { Calendar, Plus, Trash2, RefreshCw, Check, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CalendarOnboardingModal } from "@/components/calendar/calendar-onboarding-modal";
+import { Loader } from "@/components/ui/loader";
 
 type CalendarConnection = {
   id: string;
@@ -232,7 +233,7 @@ export default function CalendarsSettingsPage() {
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <Loader showText text="Loading calendars" />
                 </div>
               ) : connections.length === 0 ? (
                 <Card className="p-8 text-center">

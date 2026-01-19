@@ -9,6 +9,7 @@ import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { useRouter } from "next/navigation";
 import { QuickAddTaskProvider } from "@/providers/quick-add-task";
 import { toast } from "sonner";
+import { Loader } from "@/components/ui/loader";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -58,7 +59,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   if (status === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-100">
-        <div className="text-muted-foreground">Chargement...</div>
+        <Loader size="lg" showText text="Chargement de votre session" />
       </div>
     );
   }

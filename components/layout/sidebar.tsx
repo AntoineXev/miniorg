@@ -33,7 +33,9 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
         isCollapsed ? "p-4" : "p-6"
       )}>
         {!isCollapsed && (
-          <h1 className="text-xl font-medium tracking-tight">MiniOrg.</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-medium tracking-tight">MiniOrg.</h1>
+          </div>
         )}
         <Button
           variant="ghost"

@@ -6,6 +6,7 @@ import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import type { Task } from "@/lib/api/types";
+import { Loader } from "@/components/ui/loader";
 
 type BacklogContentProps = {
   showHeader?: boolean;
@@ -63,7 +64,7 @@ export function BacklogContent({
       <div className={compact ? "" : "w-full pb-20 bg-background"}>
         {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading tasks...</p>
+            <Loader showText text="Loading tasks" />
           </div>
         ) : filteredTasks.length === 0 ? (
           <div className="text-center py-12">
