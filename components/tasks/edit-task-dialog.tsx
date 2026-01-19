@@ -8,18 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, X, Trash2, Loader2 } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/utils/task";
 import { format } from "date-fns";
-
-type Task = {
-  id: string;
-  title: string;
-  description?: string | null;
-  status: string;
-  scheduledDate?: Date | null;
-  deadlineType?: string | null;
-  duration?: number | null; // Duration in minutes
-  completedAt?: Date | null;
-  tags?: Array<{ id: string; name: string; color: string }>;
-};
+import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
+import type { Task } from "@/lib/api/types";
 
 type EditTaskDialogProps = {
   task: Task | null;
@@ -43,9 +33,12 @@ export function EditTaskDialog({
   const [useSpecificDate, setUseSpecificDate] = useState(false);
   const [duration, setDuration] = useState<string>("30"); // Duration in minutes as string for input
   const [showMore, setShowMore] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  const updateTask = useUpdateTaskMutation();
+  const deleteTask = useDeleteTaskMutation();
+  const isSubmitting = updateTask.isPending;
+  const isDeleting = deleteTask.isPending;
 
   // Initialize form when task changes
   useEffect(() => {
@@ -74,32 +67,20 @@ export function EditTaskDialog({
     e?.preventDefault();
     if (!title.trim() || !task) return;
 
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: task.id,
-          title: title.trim(),
-          description: description.trim() || null,
-          deadlineType: useSpecificDate ? null : (deadlineType || null),
-          scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : null,
-          duration: duration ? parseInt(duration, 10) : null,
-          status: isCompleted ? "done" : task.status,
-        }),
-      });
-
-      if (response.ok) {
+    updateTask.mutate({
+      id: task.id,
+      title: title.trim(),
+      description: description.trim() || null,
+      deadlineType: useSpecificDate ? null : (deadlineType || null),
+      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate).toISOString() : null,
+      duration: duration ? parseInt(duration, 10) : null,
+      status: isCompleted ? "done" : task.status,
+    }, {
+      onSuccess: () => {
         onOpenChange(false);
         onTaskUpdated?.();
-      }
-    } catch (error) {
-      console.error("Error updating task:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+    });
   };
 
   const handleCheckboxChange = async (checked: boolean) => {
@@ -107,31 +88,25 @@ export function EditTaskDialog({
     
     setIsCompleted(checked);
     
-    try {
-      const updatePayload: any = {
-        id: task.id,
-      };
-      
-      // Only set status when marking as done
-      // When unchecking, omit status entirely to let backend auto-determine it
-      if (checked) {
-        updatePayload.status = "done";
-      }
-      
-      const response = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatePayload),
-      });
-
-      if (response.ok) {
-        onTaskUpdated?.();
-      }
-    } catch (error) {
-      console.error("Error updating task status:", error);
-      // Revert on error
-      setIsCompleted(!checked);
+    const updatePayload: any = {
+      id: task.id,
+    };
+    
+    // Only set status when marking as done
+    // When unchecking, omit status entirely to let backend auto-determine it
+    if (checked) {
+      updatePayload.status = "done";
     }
+    
+    updateTask.mutate(updatePayload, {
+      onSuccess: () => {
+        onTaskUpdated?.();
+      },
+      onError: () => {
+        // Revert on error
+        setIsCompleted(!checked);
+      },
+    });
   };
 
   const handleDelete = async () => {
@@ -140,22 +115,12 @@ export function EditTaskDialog({
     const confirmed = confirm("Are you sure you want to delete this task?");
     if (!confirmed) return;
 
-    setIsDeleting(true);
-
-    try {
-      const response = await fetch(`/api/tasks?id=${task.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
+    deleteTask.mutate(task.id, {
+      onSuccess: () => {
         onOpenChange(false);
         onTaskDeleted?.();
-      }
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    } finally {
-      setIsDeleting(false);
-    }
+      },
+    });
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {

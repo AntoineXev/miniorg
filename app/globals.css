@@ -60,4 +60,12 @@
       box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.08);
     }
   }
+
+  /* Fix pour l'icône de loading de Sonner - forcer à gauche */
+
+}
+
+.sonner-loader {
+  position: relative !important;
+  transform: translateX(-50%) !important;
 }

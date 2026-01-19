@@ -11,28 +11,16 @@ import { Header } from "@/components/layout/header";
 import { TaskCard } from "@/components/tasks/task-card";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { cn } from "@/lib/utils";
-import { emitTaskUpdate, onTaskUpdate } from "@/lib/services/task-events";
+import { useTasksQuery } from "@/lib/api/queries/tasks";
+import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
+import type { Task } from "@/lib/api/types";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview";
 import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview";
 import { preserveOffsetOnSource } from "@atlaskit/pragmatic-drag-and-drop/element/preserve-offset-on-source";
 import { useQuickAddTask } from "@/providers/quick-add-task";
-
-type Task = {
-  id: string;
-  title: string;
-  description?: string | null;
-  status: string;
-  scheduledDate?: Date | null;
-  deadlineType?: string | null;
-  deadlineSetAt?: Date | null;
-  duration?: number | null; // Duration in minutes
-  completedAt?: Date | null;
-  tags?: Array<{ id: string; name: string; color: string }>;
-  createdAt: Date;
-  updatedAt: Date;
-};
+import { toast } from "sonner";
 
 type DayColumn = {
   date: Date;
@@ -44,13 +32,16 @@ type DayColumn = {
 };
 
 export default function CalendarPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [startDate, setStartDate] = useState(startOfToday());
   const [numDays, setNumDays] = useState(7);
   const { openQuickAdd } = useQuickAddTask();
+
+  // Use React Query hooks
+  const { data: tasks = [], isLoading } = useTasksQuery();
+  const updateTask = useUpdateTaskMutation();
+  const deleteTask = useDeleteTaskMutation();
 
   // Responsive: ajuster le nombre de jours selon la largeur de l'écran
   useEffect(() => {
@@ -69,97 +60,23 @@ export default function CalendarPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch("/api/tasks");
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data);
-      }
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  // Listen for task updates from other components (e.g., backlog operations)
-  useEffect(() => {
-    return onTaskUpdate(() => {
-      fetchTasks();
+  const handleToggleComplete = (taskId: string, completed: boolean) => {
+    updateTask.mutate({
+      id: taskId,
+      status: completed ? "done" : "",
     });
-  }, []);
-
-  const handleToggleComplete = async (taskId: string, completed: boolean) => {
-    try {
-      const updatePayload: any = {
-        id: taskId,
-      };
-      
-      // Only set status when marking as done
-      // When unchecking, omit status entirely to let backend auto-determine it
-      if (completed) {
-        updatePayload.status = "done";
-      }
-      
-      const response = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatePayload),
-      });
-
-      if (response.ok) {
-        fetchTasks();
-        emitTaskUpdate();
-      }
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
   };
 
-  const handleTaskDrop = async (taskId: string, newDate: Date, source?: string) => {
-    try {
-      // Update the task's scheduledDate
-      // Status will be automatically determined by backend (will be "planned" due to scheduledDate)
-      const response = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: taskId,
-          scheduledDate: newDate.toISOString(),
-          // Status is automatically managed by backend
-        }),
-      });
-
-      if (response.ok) {
-        fetchTasks();
-        // Émettre un événement pour notifier les autres composants
-        emitTaskUpdate();
-      }
-    } catch (error) {
-      console.error("Error updating task date:", error);
-    }
+  const handleTaskDrop = (taskId: string, newDate: Date, source?: string) => {
+    updateTask.mutate({
+      id: taskId,
+      scheduledDate: newDate.toISOString(),
+    });
   };
 
-  const handleDelete = async (taskId: string) => {
+  const handleDelete = (taskId: string) => {
     if (!confirm("Are you sure you want to delete this task?")) return;
-
-    try {
-      const response = await fetch(`/api/tasks?id=${taskId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        fetchTasks();
-        emitTaskUpdate();
-      }
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
+    deleteTask.mutate(taskId);
   };
 
   const handleEdit = (taskId: string) => {
@@ -280,8 +197,8 @@ export default function CalendarPage() {
         task={editingTask}
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        onTaskUpdated={fetchTasks}
-        onTaskDeleted={fetchTasks}
+        onTaskUpdated={() => {}}
+        onTaskDeleted={() => {}}
       />
     </>
   );

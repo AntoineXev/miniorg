@@ -165,16 +165,24 @@ export async function PATCH(request: NextRequest) {
       : existingTask.scheduledDate;
     const newStatus = 'status' in updates ? updates.status : existingTask.status;
     
+    // Special case: if status is explicitly set to empty string, null, or undefined when task is "done",
+    // treat it as "uncompleting" the task
+    const isExplicitlyUncheckingDoneTask = 
+      existingTask.status === "done" && 
+      'status' in updates && 
+      (updates.status === "" || updates.status === null || updates.status === undefined);
+    
     // Auto-determine status in these cases:
     // 1. Status is not explicitly being set AND task is not currently "done"
     // 2. Status is not explicitly being set BUT scheduledDate IS being changed (even if currently "done")
-    const shouldAutoDetermineStatus = !('status' in updates) && (
+    // 3. Task is being explicitly "unchecked" from done status
+    const shouldAutoDetermineStatus = (!('status' in updates) && (
       existingTask.status !== "done" || 'scheduledDate' in updates
-    );
+    )) || isExplicitlyUncheckingDoneTask;
     
     if (shouldAutoDetermineStatus) {
       // When auto-determining, don't pass current status if it's "done" - let it be redetermined
-      const statusForDetermination = existingTask.status === "done" ? undefined : newStatus;
+      const statusForDetermination = (existingTask.status === "done" || isExplicitlyUncheckingDoneTask) ? undefined : newStatus;
       updateData.status = determineTaskStatus(newScheduledDate, statusForDetermination);
     }
     

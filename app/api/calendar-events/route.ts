@@ -132,6 +132,48 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Check if there's an export target connection and export the event
+    const exportConnection = await prisma.calendarConnection.findFirst({
+      where: {
+        userId: session.user.id,
+        isExportTarget: true,
+        isActive: true,
+      },
+    });
+
+    if (exportConnection) {
+      try {
+        const calendarService = new CalendarService();
+        await calendarService.exportEvent(exportConnection.id, event.id);
+        
+        // Refetch the event to get the updated externalId and sync status
+        const updatedEvent = await prisma.calendarEvent.findUnique({
+          where: { id: event.id },
+          include: {
+            task: {
+              include: {
+                tags: true,
+              },
+            },
+          },
+        });
+        
+        return NextResponse.json(updatedEvent || event, { status: 201 });
+      } catch (exportError) {
+        console.error("Failed to export event to external calendar:", exportError);
+        // Update sync status to error but don't fail the request
+        await prisma.calendarEvent.update({
+          where: { id: event.id },
+          data: {
+            syncStatus: 'error',
+            syncError: exportError instanceof Error ? exportError.message : 'Unknown error',
+          },
+        });
+        // Return the event anyway, it was created locally
+        return NextResponse.json(event, { status: 201 });
+      }
+    }
+
     return NextResponse.json(event, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
