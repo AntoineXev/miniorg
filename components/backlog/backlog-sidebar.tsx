@@ -13,8 +13,8 @@ export function BacklogSidebar() {
       <div className="px-6 py-4 border-b">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Backlog</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h2 className="font-semibold tracking-tight">Backlog</h2>
+            <p className="text-xs text-muted-foreground mt-1">
               All your tasks, organized by deadline
             </p>
           </div>

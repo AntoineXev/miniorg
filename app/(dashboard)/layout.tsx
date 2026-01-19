@@ -3,26 +3,39 @@
 import { useState, useEffect, useRef } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { TimelineSidebar } from "@/components/calendar/timeline-sidebar";
-import { BacklogSidebar } from "@/components/backlog/backlog-sidebar";
+import { RightSidebar, RightSidebarPanel } from "@/components/layout/right-sidebar";
+import { RightSidebarProvider, useRightSidebar } from "@/components/layout/right-sidebar/context";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
-import { Button } from "@/components/ui/button";
-import { CalendarClock, ClipboardList } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/providers/toast";
 import { useRouter } from "next/navigation";
 import { emitTaskUpdate } from "@/lib/services/task-events";
-import { QuickAddTaskProvider, useQuickAddTask } from "@/providers/quick-add-task";
+import { QuickAddTaskProvider } from "@/providers/quick-add-task";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
-type RightSidebarPanel = "timeline" | "backlog" | null;
-
-function DashboardContent({ children }: { children: React.ReactNode }) {
+function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [activePanel, setActivePanel] = useState<RightSidebarPanel>("timeline");
+  const { activePanel } = useRightSidebar();
   const { data: session, status } = useSession();
   const { pushInfo } = useToast();
   const hasRedirected = useRef(false);
   const router = useRouter();
+  
+  // Load saved layout from localStorage
+  const [defaultLayout, setDefaultLayout] = useState<{ [id: string]: number } | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const saved = localStorage.getItem("miniorg-dashboard-layout");
+    return saved ? JSON.parse(saved) : undefined;
+  });
+
+  // Save layout changes to localStorage
+  const handleLayoutChange = (layout: { [id: string]: number }) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("miniorg-dashboard-layout", JSON.stringify(layout));
+  };
 
   useEffect(() => {
     // Vérifie si la session est chargée et si l'utilisateur n'est pas authentifié
@@ -55,66 +68,41 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const togglePanel = (panel: RightSidebarPanel) => {
-    if (activePanel === panel) {
-      setActivePanel(null);
-    } else {
-      setActivePanel(panel);
-    }
-  };
-
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-100">
       <Sidebar 
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex flex-1 overflow-hidden p-2 gap-2">
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 overflow-auto rounded-l-lg border bg-background shadow-sm">
-            {children}
-          </main>
-        </div>
+      <div className="flex-1 overflow-hidden p-2">
+        <div className="flex h-full">
+          <ResizablePanelGroup 
+            orientation="horizontal" 
+            className="flex-1 gap"
+            onLayoutChanged={handleLayoutChange}
+            defaultLayout={defaultLayout}
+          >
+            {/* Main content */}
+            <ResizablePanel id="main-content" defaultSize={75} minSize={40}>
+              <main className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
+                {children}
+              </main>
+            </ResizablePanel>
 
-        {/* Right Sidebar System - Double Sidebar */}
-        <div className="flex gap-0 flex-shrink-0">
-          {/* Panel Content Area */}
-          <div className={cn(
-            "transition-all duration-300 ease-in-out overflow-hidden border-l border-t border-b shadow-sm bg-background",
-            activePanel ? "w-[350px] opacity-100" : "w-0 opacity-0"
-          )}>
-            {activePanel === "timeline" && <TimelineSidebar />}
-            {activePanel === "backlog" && <BacklogSidebar />}
-          </div>
+            {/* Resizable Panel Content - Only show when a panel is active */}
+            {activePanel && (
+              <>
+                <ResizableHandle className="w-2 bg-transparent hover:bg-primary/10" />
+                <ResizablePanel id="right-sidebar" defaultSize={350} minSize={250} maxSize={500}>
+                  <RightSidebarPanel />
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
 
-          {/* Icon Bar - Always Visible */}
-          <div className="w-14 flex-shrink-0 bg-background border rounded-r-lg shadow-sm flex flex-col items-center py-4 gap-1">
-            <button
-              onClick={() => togglePanel("timeline")}
-              className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                activePanel === "timeline"
-                  ? "text-primary bg-primary/5"
-                  : "text-muted-foreground hover:bg-gray-200/70"
-              )}
-              title="Timeline"
-            >
-              <CalendarClock strokeWidth={1} className="h-5 w-5" />
-            </button>
-
-            <button
-              onClick={() => togglePanel("backlog")}
-              className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                activePanel === "backlog"
-                  ? "text-primary bg-primary/5"
-                  : "text-muted-foreground hover:bg-gray-200/70"
-              )}
-              title="Backlog"
-            >
-              <ClipboardList strokeWidth={1} className="h-5 w-5" />
-            </button>
+          {/* Right Sidebar Icon Bar - Always visible, fixed width, with gap */}
+          <div className="h-full">
+            <RightSidebar />
           </div>
         </div>
       </div>
@@ -122,6 +110,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       {/* Global Quick Add Task - Accessible from anywhere */}
       <QuickAddTask onTaskCreated={() => emitTaskUpdate()} />
     </div>
+  );
+}
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  return (
+    <RightSidebarProvider>
+      <DashboardContentInner>{children}</DashboardContentInner>
+    </RightSidebarProvider>
   );
 }
 
