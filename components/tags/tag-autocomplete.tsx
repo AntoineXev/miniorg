@@ -106,7 +106,8 @@ export function TagAutocomplete({
     onKeyDown?.(e);
   };
 
-  const handleSelectTag = (tag: Tag) => {
+  const handleSelectTag = (tag: Tag | null) => {
+    if (!tag) return;
     // Remove the # and search query from input
     const newValue = value.replace(/#\w*$/, "");
     onChange(newValue);

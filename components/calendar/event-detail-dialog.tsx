@@ -293,18 +293,15 @@ export function EventDetailDialog({
             <Badge variant="secondary" className="text-xs mt-2 capitalize">
               {localEvent.task.status}
             </Badge>
-            {localEvent.task.tags && localEvent.task.tags.length > 0 && (
+            {localEvent.task.tag && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {localEvent.task.tags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    variant="secondary"
-                    style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                    className="text-xs"
-                  >
-                    {tag.name}
-                  </Badge>
-                ))}
+                <Badge
+                  variant="secondary"
+                  style={{ backgroundColor: `${localEvent.task.tag.color}20`, color: localEvent.task.tag.color }}
+                  className="text-xs"
+                >
+                  {localEvent.task.tag.name}
+                </Badge>
               </div>
             )}
           </div>
