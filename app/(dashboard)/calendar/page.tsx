@@ -94,9 +94,11 @@ export default function CalendarPage() {
 
   // Générer les colonnes de jours
   const dayColumns: DayColumn[] = [];
+  const today = new Date();
+  
   for (let i = 0; i < numDays; i++) {
     const date = addDays(startDate, i);
-    const isToday = isSameDay(date, new Date());
+    const isToday = isSameDay(date, today);
     const isWeekendDay = isWeekend(date);
 
     // Filtrer les tâches pour ce jour
@@ -108,9 +110,34 @@ export default function CalendarPage() {
       return isSameDay(taskDate, date);
     });
 
+    // Si c'est aujourd'hui, ajouter aussi les tâches en retard (overdue)
+    if (isToday) {
+      const overdueTasks = tasks.filter((task) => {
+        // Ne pas inclure les tâches déjà comptées pour aujourd'hui
+        if (!task.scheduledDate || task.status === "done") return false;
+        const taskDate = typeof task.scheduledDate === 'string' 
+          ? parseISO(task.scheduledDate) 
+          : task.scheduledDate;
+        // Tâche en retard = scheduledDate dans le passé et pas aujourd'hui
+        return taskDate < today && !isSameDay(taskDate, today);
+      });
+      dayTasks.push(...overdueTasks);
+    }
+
     // Séparer les tâches complétées et non complétées, mais GARDER LES DEUX
     const incompleteTasks = dayTasks.filter(t => t.status !== "done");
     const completedTasks = dayTasks.filter(t => t.status === "done");
+
+    // Trier les tâches incomplètes par date (overdue d'abord, les plus anciennes en premier)
+    incompleteTasks.sort((a, b) => {
+      const dateA = a.scheduledDate 
+        ? (typeof a.scheduledDate === 'string' ? parseISO(a.scheduledDate) : a.scheduledDate)
+        : new Date();
+      const dateB = b.scheduledDate 
+        ? (typeof b.scheduledDate === 'string' ? parseISO(b.scheduledDate) : b.scheduledDate)
+        : new Date();
+      return dateA.getTime() - dateB.getTime(); // Ordre croissant (plus ancien en premier)
+    });
 
     dayColumns.push({
       date,
