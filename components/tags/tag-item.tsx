@@ -60,20 +60,29 @@ export function TagItem({ tag, isChild = false, onEdit, onCreateChild }: TagItem
         <ButtonGroup>
           {!isChild && onCreateChild && (
             <ButtonGroupItem
-              onClick={() => onCreateChild(tag.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateChild(tag.id);
+              }}
               title="Add channel"
             >
               <Plus className="h-3 w-3" strokeWidth={1} />
             </ButtonGroupItem>
           )}
           <ButtonGroupItem
-            onClick={() => onEdit(tag)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(tag);
+            }}
             title="Edit"
           >
             <Edit2 className="h-3 w-3" strokeWidth={1} />
           </ButtonGroupItem>
           <ButtonGroupItem
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
             className="text-destructive hover:text-destructive"
             title="Delete"
           >
