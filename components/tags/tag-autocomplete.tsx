@@ -108,7 +108,7 @@ export function TagAutocomplete({
 
   const handleSelectTag = (tag: Tag) => {
     // Remove the # and search query from input
-    const newValue = value.replace(/#\w*$/, "").trim();
+    const newValue = value.replace(/#\w*$/, "");
     onChange(newValue);
     onSelectTag(tag);
     setShowDropdown(false);

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { UnifiedModal } from "@/components/ui/unified-modal";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -44,8 +43,7 @@ export function TagDialog({ open, onOpenChange, tag, parentId, mode }: TagDialog
     }
   }, [tag]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!name.trim()) return;
 
     const data = {
@@ -65,36 +63,34 @@ export function TagDialog({ open, onOpenChange, tag, parentId, mode }: TagDialog
     onOpenChange(false);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   const isSubmitting = createTag.isPending || updateTag.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit" : "Create"} {isContext ? "Context" : "Channel"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={isContext ? "Work, Personal..." : "Project name..."}
-              autoFocus
-            />
-          </div>
-
+    <UnifiedModal
+      open={open}
+      onOpenChange={onOpenChange}
+      headerValue={name}
+      headerPlaceholder={isContext ? "Work, Personal..." : "Project name..."}
+      onHeaderChange={setName}
+      onKeyDown={handleKeyDown}
+      showMoreExpanded={true}
+      maxWidth="sm:max-w-[500px]"
+      showMoreContent={
+        <>
           <div className="space-y-2">
             <Label>Color</Label>
             <ColorPicker selectedColor={color} onSelectColor={setColor} />
           </div>
 
           {isContext && (
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               <Label 
                 htmlFor="personal-switch" 
                 className="flex items-center justify-between cursor-pointer"
@@ -130,22 +126,23 @@ export function TagDialog({ open, onOpenChange, tag, parentId, mode }: TagDialog
               </Label>
             </div>
           )}
-
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Discard
-            </Button>
-            <Button type="submit" disabled={!name.trim() || isSubmitting}>
-              {isSubmitting ? "Saving..." : "Create"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      actionButtons={
+        <Button 
+          onClick={handleSubmit} 
+          disabled={!name.trim() || isSubmitting}
+        >
+          {isSubmitting ? "Saving..." : (isEditing ? "Save" : "Create")}
+        </Button>
+      }
+      keyboardHints={
+        <span className="flex items-center gap-1">
+          <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted">⌘</kbd>
+          <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted">Enter</kbd>
+          <span className="ml-1">to save</span>
+        </span>
+      }
+    />
   );
 }
