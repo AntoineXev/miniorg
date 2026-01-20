@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { AnimatedCheckbox } from "@/components/ui/animated-checkbox";
 import { Badge } from "@/components/ui/badge";
-import { format, formatDistanceToNow, isPast, isToday, isTomorrow, addDays, addMonths, addYears } from "date-fns";
+import { format, formatDistanceToNow, isPast, isToday, isTomorrow, isSameDay, addDays, addMonths, addYears, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Pencil, Trash2, Calendar } from "lucide-react";
 
@@ -20,6 +20,7 @@ export type TaskCardProps = {
     duration?: number | null; // Duration in minutes
     completedAt?: Date | null;
     tags?: Array<{ id: string; name: string; color: string }>;
+    calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string }>;
   };
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onEdit?: (taskId: string) => void;
@@ -59,6 +60,32 @@ export function TaskCard({
     if (task.scheduledDate) {
       const date = new Date(task.scheduledDate);
       const now = new Date();
+      
+      // Check if there's a calendar event for today
+      if (isToday(date) && task.calendarEvents && task.calendarEvents.length > 0) {
+        // Find event(s) that are on the same day as the scheduled date
+        const todayEvent = task.calendarEvents.find((event) => {
+          const eventStart = typeof event.startTime === 'string' ? new Date(event.startTime) : event.startTime;
+          return isSameDay(eventStart, date);
+        });
+        
+        if (todayEvent) {
+          const eventStart = typeof todayEvent.startTime === 'string' ? new Date(todayEvent.startTime) : todayEvent.startTime;
+          
+          // Calculate expected end time (start time + task duration)
+          const taskDuration = task.duration || 30; // Use task duration or default to 30 minutes
+          const expectedEndTime = addMinutes(eventStart, taskDuration);
+          
+          // Check if the expected end time has passed
+          const isEventOverdue = isPast(expectedEndTime) && !isCompleted;
+          
+          return { 
+            text: format(eventStart, "HH'h'mm"), 
+            urgent: true,
+            overdue: isEventOverdue
+          };
+        }
+      }
       
       if (isToday(date)) {
         return { text: "Today", urgent: true };

@@ -66,6 +66,13 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         tags: true,
+        calendarEvents: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
       },
       orderBy: [
         { order: "asc" },
@@ -111,6 +118,13 @@ export async function POST(request: NextRequest) {
       },
       include: {
         tags: true,
+        calendarEvents: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
       },
     });
 
@@ -209,6 +223,13 @@ export async function PATCH(request: NextRequest) {
       data: updateData,
       include: {
         tags: true,
+        calendarEvents: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
       },
     });
 

@@ -35,30 +35,26 @@ type DayColumn = {
 export default function CalendarPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [startDate, setStartDate] = useState(startOfToday());
-  const [numDays, setNumDays] = useState(7);
+  const [startDate, setStartDate] = useState(addDays(startOfToday(), -5)); // Commencer 5 jours avant aujourd'hui
+  const [numDays] = useState(11); // 5 jours avant + aujourd'hui + 5 jours après = 11 jours
   const { openQuickAdd } = useQuickAddTask();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Use React Query hooks
   const { data: tasks = [], isLoading } = useTasksQuery();
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
 
-  // Responsive: ajuster le nombre de jours selon la largeur de l'écran
+  // Scroll vers aujourd'hui au chargement
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setNumDays(3);
-      } else if (window.innerWidth < 1024) {
-        setNumDays(5);
-      } else {
-        setNumDays(7);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    if (scrollContainerRef.current) {
+      const todayIndex = 5; // Aujourd'hui est à l'index 5 (5 jours après le début)
+      const columnWidth = 300; // minWidth des colonnes
+      const scrollPosition = todayIndex * columnWidth; // Positionner aujourd'hui à gauche
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'smooth' });
+      }, 100);
+    }
   }, []);
 
   const handleToggleComplete = (taskId: string, completed: boolean) => {
@@ -150,15 +146,24 @@ export default function CalendarPage() {
   }
 
   const handlePrevWeek = () => {
-    setStartDate(addDays(startDate, -numDays));
+    setStartDate(addDays(startDate, -7));
   };
 
   const handleNextWeek = () => {
-    setStartDate(addDays(startDate, numDays));
+    setStartDate(addDays(startDate, 7));
   };
 
   const handleToday = () => {
-    setStartDate(startOfToday());
+    setStartDate(addDays(startOfToday(), -5));
+    // Scroll vers aujourd'hui
+    if (scrollContainerRef.current) {
+      const todayIndex = 5;
+      const columnWidth = 300;
+      const scrollPosition = todayIndex * columnWidth; // Positionner aujourd'hui à gauche
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'smooth' });
+      }, 100);
+    }
   };
 
   return (
@@ -192,7 +197,7 @@ export default function CalendarPage() {
         />
 
         {/* Grid de jours */}
-        <div className="flex-1 overflow-x-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-x-auto">
           <div className="min-w-max h-full">
             <div className="grid gap-0 h-full" style={{ gridTemplateColumns: `repeat(${numDays}, minmax(300px, 1fr))` }}>
               {isLoading ? (
