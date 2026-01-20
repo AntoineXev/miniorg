@@ -10,10 +10,14 @@ export type Task = {
   deadlineSetAt?: Date | null;
   duration?: number | null;
   completedAt?: Date | null;
-  tags?: Array<{ id: string; name: string; color: string }>;
+  tag?: { id: string; name: string; color: string } | null;
   calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string }>;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type TaskInput = Omit<Partial<Task>, 'tag' | 'calendarEvents' | 'createdAt' | 'updatedAt'> & {
+  tagId?: string | null;
 };
 
 export type CalendarEvent = {
@@ -38,6 +42,11 @@ export type Tag = {
   name: string;
   color: string;
   userId: string;
+  isPersonal: boolean;
+  isDefault: boolean;
+  parentId?: string | null;
+  children?: Tag[];
+  createdAt: Date;
 };
 
 export type CalendarConnection = {

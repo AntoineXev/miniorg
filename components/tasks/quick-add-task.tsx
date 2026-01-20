@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { UnifiedModal } from "@/components/ui/unified-modal";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, X } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Plus, Clock } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/utils/task";
-import { format } from "date-fns";
 import { useQuickAddTask } from "@/providers/quick-add-task";
 import { useCreateTaskMutation } from "@/lib/api/mutations/tasks";
+import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
+import { TagSelector } from "@/components/tags/tag-selector";
+import { useTagsQuery } from "@/lib/api/queries/tags";
+import type { Tag } from "@/lib/api/types";
 
 type QuickAddTaskProps = {
   onTaskCreated?: () => void;
@@ -19,23 +22,36 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
   const { isOpen, prefilledDate, openQuickAdd, closeQuickAdd } = useQuickAddTask();
   const [title, setTitle] = useState("");
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
-  const [specificDate, setSpecificDate] = useState<string>("");
+  const [specificDate, setSpecificDate] = useState<Date | undefined>(undefined);
   const [useSpecificDate, setUseSpecificDate] = useState(false);
   const [duration, setDuration] = useState<string>("30"); // Duration in minutes
   const [showMore, setShowMore] = useState(false);
   const [description, setDescription] = useState("");
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
 
   const createTask = useCreateTaskMutation();
+  const { data: tags } = useTagsQuery();
   const isSubmitting = createTask.isPending;
+
+  // Set default tag when modal opens
+  useEffect(() => {
+    if (isOpen && tags && tags.length > 0 && !selectedTag) {
+      const defaultTag = tags.find((t) => t.isDefault && !t.parentId);
+      if (defaultTag) {
+        setSelectedTag(defaultTag);
+      }
+    }
+  }, [isOpen, tags, selectedTag]);
 
   const resetForm = useCallback(() => {
     setTitle("");
     setDeadlineType("next_3_days");
-    setSpecificDate("");
+    setSpecificDate(undefined);
     setUseSpecificDate(false);
     setDuration("30");
     setShowMore(false);
     setDescription("");
+    setSelectedTag(null);
   }, []);
 
   // Gérer les changements d'état open
@@ -52,7 +68,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
   useEffect(() => {
     if (isOpen && prefilledDate) {
       setUseSpecificDate(true);
-      setSpecificDate(format(prefilledDate, "yyyy-MM-dd"));
+      setSpecificDate(prefilledDate);
     }
   }, [isOpen, prefilledDate]);
 
@@ -81,8 +97,9 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
       title: title.trim(),
       description: description.trim() || undefined,
       deadlineType: useSpecificDate ? undefined : deadlineType,
-      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate) : undefined,
+      scheduledDate: useSpecificDate && specificDate ? specificDate : undefined,
       duration: duration ? parseInt(duration, 10) : undefined,
+      tagId: selectedTag?.id || null,
     }, {
       onSuccess: () => {
         resetForm();
@@ -90,6 +107,10 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
         onTaskCreated?.();
       },
     });
+  };
+
+  const handleSelectTag = (tag: Tag | null) => {
+    setSelectedTag(tag);
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
@@ -125,34 +146,30 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
         onOpenChange={handleOpenChange}
         headerValue={title}
         headerPlaceholder="What do you need to do?"
-        onHeaderChange={setTitle}
-        onKeyDown={handleTitleKeyDown}
+        customHeader={
+          <TagAutocomplete
+            value={title}
+            onChange={setTitle}
+            selectedTag={selectedTag}
+            onSelectTag={handleSelectTag}
+            placeholder="What do you need to do?"
+            onKeyDown={handleTitleKeyDown}
+          />
+        }
         showMoreExpanded={showMore}
         onShowMoreToggle={setShowMore}
         footerLeftActions={
           <>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            
             {useSpecificDate ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={specificDate}
-                  onChange={(e) => setSpecificDate(e.target.value)}
-                  className="h-8 text-sm w-auto"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setUseSpecificDate(false);
-                    setSpecificDate("");
-                  }}
-                  className="h-8 px-2"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
+              <DatePicker
+                date={specificDate}
+                onDateChange={setSpecificDate}
+                onClear={() => {
+                  setUseSpecificDate(false);
+                  setSpecificDate(undefined);
+                }}
+                placeholder="Pick a date"
+              />
             ) : (
               <>
                 <Select value={deadlineType} onValueChange={setDeadlineType}>
@@ -179,7 +196,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
               </>
             )}
 
-            <div className="flex items-center gap-1.5 ml-2 border-l pl-3">
+            <div className="flex items-center gap-2 ml-3 border-l border-border pl-3">
               <Select value={duration} onValueChange={setDuration}>
                 <SelectTrigger className="h-8 text-sm border-0 focus:ring-0 w-auto">
                   <SelectValue />
@@ -196,6 +213,14 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
                   <SelectItem value="480">8 hours</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="flex items-center gap-2 ml-3 border-l border-border pl-3">
+              <TagSelector
+                selectedTag={selectedTag}
+                onSelectTag={handleSelectTag}
+                showNoTagOption={true}
+              />
             </div>
           </>
         }
@@ -233,16 +258,6 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
           />
         </div>
 
-        <div>
-          <label className="text-xs text-muted-foreground mb-1.5 block">
-            Tags
-          </label>
-          <Input
-            placeholder="Coming soon..."
-            disabled
-            className="h-9 text-sm"
-          />
-        </div>
       </UnifiedModal>
     </>
   );

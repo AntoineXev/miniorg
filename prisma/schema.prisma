@@ -73,25 +73,36 @@ model Task {
   completedAt    DateTime?
   userId         String
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags           Tag[]           @relation("TaskTags")
+  tagId          String?
+  tag            Tag?            @relation(fields: [tagId], references: [id], onDelete: SetNull)
   calendarEvents CalendarEvent[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@index([userId, status])
   @@index([scheduledDate])
+  @@index([tagId])
 }
 
 model Tag {
-  id        String   @id @default(cuid())
-  name      String
-  color     String   @default("#E17C4F")
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tasks     Task[]   @relation("TaskTags")
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  color      String   @default("#E17C4F")
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks      Task[]
+  
+  // Hierarchy: channels (parentId = null) and sub-channels (parentId = channel id)
+  isPersonal Boolean  @default(false)
+  isDefault  Boolean  @default(false)
+  parentId   String?
+  parent     Tag?     @relation("TagHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Tag[]    @relation("TagHierarchy")
+  
+  createdAt  DateTime @default(now())
 
   @@unique([userId, name])
+  @@index([userId, parentId])
 }
 
 model CalendarEvent {

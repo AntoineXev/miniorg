@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       include: {
         task: {
           include: {
-            tags: true,
+            tag: true,
           },
         },
       },
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       include: {
         task: {
           include: {
-            tags: true,
+            tag: true,
           },
         },
       },
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
           include: {
             task: {
               include: {
-                tags: true,
+                tag: true,
               },
             },
           },
@@ -312,7 +312,7 @@ export async function PATCH(request: NextRequest) {
       include: {
         task: {
           include: {
-            tags: true,
+            tag: true,
           },
         },
       },

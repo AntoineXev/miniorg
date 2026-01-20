@@ -6,7 +6,9 @@ import { AnimatedCheckbox } from "@/components/ui/animated-checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow, isSameDay, addDays, addMonths, addYears, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Pencil, Trash2, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
+import { TagSelector } from "@/components/tags/tag-selector";
+import type { Tag } from "@/lib/api/types";
 
 export type TaskCardProps = {
   task: {
@@ -19,12 +21,13 @@ export type TaskCardProps = {
     deadlineSetAt?: Date | null;
     duration?: number | null; // Duration in minutes
     completedAt?: Date | null;
-    tags?: Array<{ id: string; name: string; color: string }>;
+    tag?: { id: string; name: string; color: string } | null;
     calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string }>;
   };
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onEdit?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
+  onUpdateTag?: (taskId: string, tagId: string | null) => void;
   showTime?: boolean;
   estimatedMinutes?: number;
 };
@@ -34,6 +37,7 @@ export function TaskCard({
   onToggleComplete,
   onEdit,
   onDelete,
+  onUpdateTag,
   showTime = false,
   estimatedMinutes,
 }: TaskCardProps) {
@@ -154,7 +158,7 @@ export function TaskCard({
       className="w-full"
     >
       <Card
-        className="group relative p-4 transition-all duration-200 hover:shadow-md cursor-pointer w-full"
+        className="group relative p-3 transition-all duration-200 hover:shadow-md cursor-pointer w-full"
         onClick={() => onEdit?.(task.id)}
       >
         <div className="flex items-start gap-3">
@@ -194,9 +198,10 @@ export function TaskCard({
                 {task.description}
               </p>
             )}
+          <div className="flex justify-between items-center gap-1 mt-3">
 
             {deadlineInfo && (
-              <div className="flex items-center gap-1 mt-2">
+              <div className="flex items-center gap-1">
                 <Calendar className={cn(
                   "h-3 w-3",
                   deadlineInfo.overdue ? "text-destructive" : deadlineInfo.urgent ? "text-orange-500" : "text-muted-foreground"
@@ -211,27 +216,22 @@ export function TaskCard({
                 </span>
               </div>
             )}
-
             {showTime && task.scheduledDate && (
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground">
                 {format(new Date(task.scheduledDate), "h:mm a")}
               </p>
             )}
 
-            {task.tags && task.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {task.tags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    variant="secondary"
-                    style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                    className="text-xs"
-                  >
-                    {tag.name}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            <div onClick={(e) => e.stopPropagation()} className="isolate">
+              <TagSelector
+                className={cn(task.tag && 'opacity-100', !task.tag && 'opacity-0 group-hover:opacity-80 transition-opacity')}
+                selectedTag={task.tag as Tag | null}
+                onSelectTag={(tag) => onUpdateTag?.(task.id, tag?.id || null)}
+                showNoTagOption={true}
+                size="small"
+              />
+            </div>
+            </div>
           </div>
         </div>
       </Card>

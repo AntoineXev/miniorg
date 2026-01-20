@@ -28,6 +28,7 @@ type BacklogGroupsProps = {
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onEdit?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
+  onUpdateTag?: (taskId: string, tagId: string | null) => void;
 };
 
 const groupOrder: DeadlineGroup[] = [
@@ -40,7 +41,7 @@ const groupOrder: DeadlineGroup[] = [
   "no_date",
 ];
 
-export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete }: BacklogGroupsProps) {
+export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete, onUpdateTag }: BacklogGroupsProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(groupOrder)
   );
@@ -122,6 +123,7 @@ export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete }: Bac
                             onToggleComplete={onToggleComplete}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            onUpdateTag={onUpdateTag}
                           />
                         </DraggableTaskWrapper>
                       </motion.div>

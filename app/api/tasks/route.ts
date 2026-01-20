@@ -12,7 +12,7 @@ const taskSchema = z.object({
   deadlineType: z.enum(["next_3_days", "next_week", "next_month", "next_quarter", "next_year", "no_date"]).optional(),
   deadlineSetAt: z.string().datetime().optional(),
   duration: z.number().int().min(1).optional(), // Duration in minutes
-  tagIds: z.array(z.string()).optional(),
+  tagId: z.string().nullable().optional(),
 });
 
 // Helper function to automatically determine task status based on scheduledDate
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        tags: true,
+        tag: true,
         calendarEvents: {
           select: {
             id: true,
@@ -97,8 +97,6 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const body = taskSchema.parse(json);
 
-    const { tagIds, ...taskData } = body;
-
     const scheduledDate = body.scheduledDate ? new Date(body.scheduledDate) : null;
     
     // Automatically determine status based on scheduledDate
@@ -107,17 +105,14 @@ export async function POST(request: NextRequest) {
 
     const task = await prisma.task.create({
       data: {
-        ...taskData,
+        ...body,
         status,
         userId: session.user.id,
         scheduledDate,
         deadlineSetAt: body.deadlineSetAt ? new Date(body.deadlineSetAt) : body.deadlineType ? new Date() : null,
-        tags: tagIds ? {
-          connect: tagIds.map((id) => ({ id })),
-        } : undefined,
       },
       include: {
-        tags: true,
+        tag: true,
         calendarEvents: {
           select: {
             id: true,
@@ -162,7 +157,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    const { tagIds, ...taskData } = updates;
+    const taskData = updates;
 
     // Prepare update data, handling null values correctly
     const updateData: any = { ...taskData };
@@ -206,23 +201,33 @@ export async function PATCH(request: NextRequest) {
     if (finalStatus === "done" && !existingTask.completedAt) {
       // Task is being marked as done - set completedAt
       updateData.completedAt = new Date();
+      
+      // If task has a scheduled date in the past, update it to today
+      const taskScheduledDate = newScheduledDate || existingTask.scheduledDate;
+      if (taskScheduledDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const scheduledDate = new Date(taskScheduledDate);
+        scheduledDate.setHours(0, 0, 0, 0);
+        
+        if (scheduledDate < today) {
+          // Update scheduled date to today (preserving time if there was one)
+          const originalTime = new Date(taskScheduledDate);
+          const updatedDate = new Date();
+          updatedDate.setHours(originalTime.getHours(), originalTime.getMinutes(), originalTime.getSeconds(), originalTime.getMilliseconds());
+          updateData.scheduledDate = updatedDate;
+        }
+      }
     } else if (finalStatus !== "done" && existingTask.completedAt) {
       // Task is being unmarked as done - clear completedAt
       updateData.completedAt = null;
-    }
-    
-    // Handle tags
-    if (tagIds) {
-      updateData.tags = {
-        set: tagIds.map((id: string) => ({ id })),
-      };
     }
 
     const task = await prisma.task.update({
       where: { id },
       data: updateData,
       include: {
-        tags: true,
+        tag: true,
         calendarEvents: {
           select: {
             id: true,

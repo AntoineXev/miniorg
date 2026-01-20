@@ -6,7 +6,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AnimatedCheckbox } from "@/components/ui/animated-checkbox";
-import { ChevronRight } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type UnifiedModalProps = {
@@ -19,6 +19,7 @@ type UnifiedModalProps = {
   onHeaderChange?: (value: string) => void;
   headerDisabled?: boolean;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  customHeader?: React.ReactNode;
   
   // Checkbox (for completion)
   showCheckbox?: boolean;
@@ -55,6 +56,7 @@ export function UnifiedModal({
   onHeaderChange,
   headerDisabled = false,
   onKeyDown,
+  customHeader,
   showCheckbox = false,
   checkboxChecked = false,
   onCheckboxChange,
@@ -110,18 +112,20 @@ export function UnifiedModal({
                     onChange={onCheckboxChange}
                   />
                 )}
-                <Input
-                  placeholder={headerPlaceholder}
-                  value={headerValue}
-                  onChange={onHeaderChange ? (e) => onHeaderChange(e.target.value) : undefined}
-                  onKeyDown={onKeyDown}
-                  disabled={headerDisabled}
-                  autoFocus={!headerDisabled && !showCheckbox}
-                  className={cn(
-                    "flex-1 text-lg bg-transparent border-0 focus-visible:ring-offset-0 focus-visible:ring-0 px-0 text-foreground placeholder:text-muted-foreground font-medium disabled:opacity-100 disabled:cursor-default transition-all duration-200",
-                    checkboxChecked && "line-through text-muted-foreground opacity-60"
-                  )}
-                />
+                {customHeader || (
+                  <Input
+                    placeholder={headerPlaceholder}
+                    value={headerValue}
+                    onChange={onHeaderChange ? (e) => onHeaderChange(e.target.value) : undefined}
+                    onKeyDown={onKeyDown}
+                    disabled={headerDisabled}
+                    autoFocus={!headerDisabled && !showCheckbox}
+                    className={cn(
+                      "flex-1 text-lg bg-transparent border-0 focus-visible:ring-offset-0 focus-visible:ring-0 px-0 text-foreground placeholder:text-muted-foreground font-medium disabled:opacity-100 disabled:cursor-default transition-all duration-200",
+                      checkboxChecked && "line-through text-muted-foreground opacity-60"
+                    )}
+                  />
+                )}
               </div>
             </div>
 
@@ -147,7 +151,7 @@ export function UnifiedModal({
             {!hideFooter && (
               <div className="flex items-center justify-between px-4 py-2 bg-secondary/30 border-t bg-background">
                 {/* Left side - Custom actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full">
                   {footerLeftActions}
                 </div>
 
@@ -157,15 +161,25 @@ export function UnifiedModal({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowMore(!showMore)}
-                    className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                    className="h-8 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center"
                   >
-                    {showMore ? "Show less" : "Show more"}
-                    <ChevronRight
-                      className={`h-3 w-3 ml-1 transition-transform ${
-                        showMore ? "rotate-90" : ""
-                      }`}
-                      strokeWidth={1}
-                    />
+                    <span>{showMore ? "Show less" : "Show more"}</span>
+                    { !showMore && (
+                    <Plus
+                    className={`h-4 w-4 ml-1 transition-transform ${
+                      showMore ? "rotate-90" : ""
+                    }`}
+                    strokeWidth={1}
+                  />
+                    )}
+{ showMore && (
+                    <Minus
+                    className={`h-4 w-4 ml-1 transition-transform ${
+                      !showMore ? "rotate-90" : ""
+                    }`}
+                    strokeWidth={1}
+                  />
+                    )}
                   </Button>
                 )}
               </div>

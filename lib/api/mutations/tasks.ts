@@ -3,14 +3,14 @@ import { toast } from "sonner";
 import { ApiClient } from "../client";
 import { taskKeys } from "../queries/tasks";
 import { calendarEventKeys } from "../queries/calendar-events";
-import type { Task } from "../types";
+import type { Task, TaskInput } from "../types";
 
 // Hook to create a task
 export function useCreateTaskMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<Task>) => ApiClient.post<Task>("/api/tasks", data),
+    mutationFn: (data: TaskInput) => ApiClient.post<Task>("/api/tasks", data),
     onMutate: async (newTask) => {
       const toastId = toast.loading("Creating task...");
 
@@ -57,7 +57,7 @@ export function useUpdateTaskMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<Task> & { id: string }) =>
+    mutationFn: (data: TaskInput & { id: string }) =>
       ApiClient.patch<Task>("/api/tasks", data),
     onMutate: async (updatedTask) => {
       const toastId = toast.loading("Updating task...");

@@ -59,6 +59,13 @@ export function BacklogContent({
     }
   };
 
+  const handleUpdateTag = (taskId: string, tagId: string | null) => {
+    updateTask.mutate({
+      id: taskId,
+      tagId,
+    } as any);
+  };
+
   return (
     <>
       <div className={compact ? "" : "w-full pb-20 bg-background"}>
@@ -86,6 +93,7 @@ export function BacklogContent({
             onToggleComplete={handleToggleComplete}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onUpdateTag={handleUpdateTag}
           />
         )}
       </div>

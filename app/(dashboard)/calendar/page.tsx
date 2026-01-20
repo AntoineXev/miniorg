@@ -84,6 +84,13 @@ export default function CalendarPage() {
     }
   };
 
+  const handleUpdateTag = (taskId: string, tagId: string | null) => {
+    updateTask.mutate({
+      id: taskId,
+      tagId,
+    } as any);
+  };
+
   const handleAddTaskToDay = (date: Date) => {
     openQuickAdd(date);
   };
@@ -212,6 +219,7 @@ export default function CalendarPage() {
                     onToggleComplete={handleToggleComplete}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onUpdateTag={handleUpdateTag}
                     onAddTask={() => handleAddTaskToDay(day.date)}
                     onTaskDrop={handleTaskDrop}
                     isLast={index === dayColumns.length - 1}
@@ -240,12 +248,13 @@ type DayColumnProps = {
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onEdit: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onUpdateTag: (taskId: string, tagId: string | null) => void;
   onAddTask: () => void;
   onTaskDrop: (taskId: string, newDate: Date, source?: string) => void;
   isLast: boolean;
 };
 
-function DayColumn({ day, onToggleComplete, onEdit, onDelete, onAddTask, onTaskDrop, isLast }: DayColumnProps) {
+function DayColumn({ day, onToggleComplete, onEdit, onDelete, onUpdateTag, onAddTask, onTaskDrop, isLast }: DayColumnProps) {
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
 
@@ -334,6 +343,7 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onAddTask, onTaskD
               onToggleComplete={onToggleComplete}
               onEdit={onEdit}
               onDelete={onDelete}
+              onUpdateTag={onUpdateTag}
             />
           ))}
         </AnimatePresence>
@@ -361,10 +371,11 @@ type DraggableTaskProps = {
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onEdit: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onUpdateTag: (taskId: string, tagId: string | null) => void;
 };
 
 const DraggableTask = forwardRef<HTMLDivElement, DraggableTaskProps>(
-  ({ task, onToggleComplete, onEdit, onDelete }, ref) => {
+  ({ task, onToggleComplete, onEdit, onDelete, onUpdateTag }, ref) => {
     const [isDragging, setIsDragging] = useState(false);
     const dragRef = useRef<HTMLDivElement>(null);
     const isCompleted = task.status === "done";
@@ -430,6 +441,7 @@ const DraggableTask = forwardRef<HTMLDivElement, DraggableTaskProps>(
           onToggleComplete={onToggleComplete}
           onEdit={onEdit}
           onDelete={onDelete}
+          onUpdateTag={onUpdateTag}
           showTime={false}
         />
       </motion.div>

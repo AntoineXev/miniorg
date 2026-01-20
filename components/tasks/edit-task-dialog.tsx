@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { UnifiedModal } from "@/components/ui/unified-modal";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, X, Trash2, Loader2 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Clock, Trash2, Loader2 } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/utils/task";
-import { format } from "date-fns";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
-import type { Task } from "@/lib/api/types";
+import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
+import { TagSelector } from "@/components/tags/tag-selector";
+import type { Task, Tag } from "@/lib/api/types";
 
 type EditTaskDialogProps = {
   task: Task | null;
@@ -29,11 +30,12 @@ export function EditTaskDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
-  const [specificDate, setSpecificDate] = useState<string>("");
+  const [specificDate, setSpecificDate] = useState<Date | undefined>(undefined);
   const [useSpecificDate, setUseSpecificDate] = useState(false);
   const [duration, setDuration] = useState<string>("30"); // Duration in minutes as string for input
   const [showMore, setShowMore] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
 
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
@@ -47,12 +49,12 @@ export function EditTaskDialog({
       setDescription(task.description || "");
       setDuration(task.duration?.toString() || "30");
       setIsCompleted(task.status === "done");
+      setSelectedTag(task.tag as Tag || null);
       
       if (task.scheduledDate) {
         setUseSpecificDate(true);
-        // Format date for input[type="date"]
         const date = new Date(task.scheduledDate);
-        setSpecificDate(format(date, "yyyy-MM-dd"));
+        setSpecificDate(date);
       } else {
         setUseSpecificDate(false);
         setDeadlineType(task.deadlineType || "next_3_days");
@@ -72,15 +74,20 @@ export function EditTaskDialog({
       title: title.trim(),
       description: description.trim() || null,
       deadlineType: useSpecificDate ? null : (deadlineType || null),
-      scheduledDate: useSpecificDate && specificDate ? new Date(specificDate) : null,
+      scheduledDate: useSpecificDate && specificDate ? specificDate : null,
       duration: duration ? parseInt(duration, 10) : null,
       status: isCompleted ? "done" : task.status,
+      tagId: selectedTag?.id || null,
     }, {
       onSuccess: () => {
         onOpenChange(false);
         onTaskUpdated?.();
       },
     });
+  };
+
+  const handleSelectTag = (tag: Tag | null) => {
+    setSelectedTag(tag);
   };
 
   const handleCheckboxChange = async (checked: boolean) => {
@@ -148,37 +155,33 @@ export function EditTaskDialog({
       onOpenChange={onOpenChange}
       headerValue={title}
       headerPlaceholder="Task title"
-      onHeaderChange={setTitle}
-      onKeyDown={handleTitleKeyDown}
+      customHeader={
+        <TagAutocomplete
+          value={title}
+          onChange={setTitle}
+          selectedTag={selectedTag}
+          onSelectTag={handleSelectTag}
+          placeholder="Task title"
+          onKeyDown={handleTitleKeyDown}
+        />
+      }
       showCheckbox={true}
       checkboxChecked={isCompleted}
       onCheckboxChange={handleCheckboxChange}
       showMoreExpanded={showMore}
       onShowMoreToggle={setShowMore}
       footerLeftActions={
-        <>
-          <Calendar className="h-4 w-4 text-muted-foreground" strokeWidth={1} />
-          
+        <div className="flex items-center w-full">
           {useSpecificDate ? (
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={specificDate}
-                onChange={(e) => setSpecificDate(e.target.value)}
-                className="h-8 text-sm w-auto"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setUseSpecificDate(false);
-                  setSpecificDate("");
-                }}
-                className="h-8 px-2"
-              >
-                <X className="h-3 w-3" strokeWidth={1} />
-              </Button>
-            </div>
+            <DatePicker
+              date={specificDate}
+              onDateChange={setSpecificDate}
+              onClear={() => {
+                setUseSpecificDate(false);
+                setSpecificDate(undefined);
+              }}
+              placeholder="Pick a date"
+            />
           ) : (
             <>
               <Select value={deadlineType} onValueChange={setDeadlineType}>
@@ -205,7 +208,7 @@ export function EditTaskDialog({
             </>
           )}
 
-          <div className="flex items-center gap-1.5 ml-2 border-l pl-3">
+          <div className="flex items-center gap-2 ml-3 border-l border-border pl-3">
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger className="h-8 text-sm border-0 focus:ring-0 w-auto">
                 <SelectValue />
@@ -223,7 +226,14 @@ export function EditTaskDialog({
               </SelectContent>
             </Select>
           </div>
-        </>
+          <div className="flex items-center gap-2 ml-3 border-l border-border pl-3">
+            <TagSelector
+              selectedTag={selectedTag}
+              onSelectTag={handleSelectTag}
+              showNoTagOption={true}
+            />
+          </div>
+        </div>
       }
       actionButtons={
         <>
@@ -273,16 +283,6 @@ export function EditTaskDialog({
         />
       </div>
 
-      <div>
-        <label className="text-xs text-muted-foreground mb-1.5 block">
-          Tags
-        </label>
-        <Input
-          placeholder="Coming soon..."
-          disabled
-          className="h-9 text-sm"
-        />
-      </div>
     </UnifiedModal>
   );
 }

@@ -6,6 +6,7 @@ export const tagKeys = {
   all: ["tags"] as const,
 };
 
+// Hook to fetch all tags with hierarchy
 export function useTagsQuery() {
   return useQuery({
     queryKey: tagKeys.all,
