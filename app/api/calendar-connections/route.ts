@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { getAuthorizedUser } from '@/lib/auth-tauri-server';
 
 // Schema pour la création/mise à jour de connexion
 const connectionSchema = z.object({
@@ -23,13 +23,15 @@ const updateSchema = z.object({
 // GET /api/calendar-connections - Liste des connexions de l'utilisateur
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const connections = await prisma.calendarConnection.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -46,8 +48,10 @@ export async function GET(request: NextRequest) {
 // POST /api/calendar-connections - Créer une connexion
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Vérifier si une connexion similaire existe déjà
     const existingConnection = await prisma.calendarConnection.findFirst({
       where: {
-        userId: session.user.id,
+        userId,
         provider: body.provider,
         calendarId: body.calendarId,
       },
@@ -72,12 +76,12 @@ export async function POST(request: NextRequest) {
 
     // Si c'est la première connexion, la définir comme export target par défaut
     const isFirstConnection = (await prisma.calendarConnection.count({
-      where: { userId: session.user.id },
+      where: { userId },
     })) === 0;
 
     const connection = await prisma.calendarConnection.create({
       data: {
-        userId: session.user.id,
+        userId,
         provider: body.provider,
         providerAccountId: body.providerAccountId,
         name: body.name,
@@ -106,8 +110,10 @@ export async function POST(request: NextRequest) {
 // PATCH /api/calendar-connections - Modifier une connexion
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -118,7 +124,7 @@ export async function PATCH(request: NextRequest) {
     const connection = await prisma.calendarConnection.findFirst({
       where: {
         id: body.id,
-        userId: session.user.id,
+        userId,
       },
     });
 
@@ -138,7 +144,7 @@ export async function PATCH(request: NextRequest) {
     if (body.isExportTarget === true) {
       await prisma.calendarConnection.updateMany({
         where: {
-          userId: session.user.id,
+          userId,
           id: { not: body.id },
         },
         data: {
@@ -171,8 +177,10 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/calendar-connections - Supprimer une connexion
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -190,7 +198,7 @@ export async function DELETE(request: NextRequest) {
     const connection = await prisma.calendarConnection.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        userId,
       },
     });
 
