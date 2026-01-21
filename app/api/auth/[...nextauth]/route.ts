@@ -3,12 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 const isTauriBuild = process.env.BUILD_TARGET === "tauri";
 
-// For static export (Tauri builds), provide empty params so the catch-all
-// route does not block `output: export`.
-export const dynamic = "force-static";
-export const dynamicParams = false;
+// Keep API dynamic for web/Cloudflare; only force-static when exporting for Tauri
+export const dynamic = isTauriBuild ? "force-static" : "force-dynamic";
+export const dynamicParams = !isTauriBuild;
 export async function generateStaticParams() {
-  return [];
+  return isTauriBuild ? [] : [];
 }
 
 export async function GET(req: NextRequest) {
