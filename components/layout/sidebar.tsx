@@ -23,6 +23,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
 
   return (
     <div 
+      data-tauri-drag-region={true}
       className={cn(
         "flex h-full flex-col transition-all duration-300",
         isCollapsed ? "w-16" : "w-52"

@@ -11,6 +11,10 @@
     "start": "next start",
     "lint": "next lint",
     "preview": "BUILD_TARGET=cloudflare opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "tauri": "tauri",
+    "tauri:dev": "BUILD_TARGET=tauri tauri dev",
+    "tauri:build": "BUILD_TARGET=tauri tauri build",
+    "build:tauri": "BUILD_TARGET=tauri next build",
     "db:generate": "prisma generate",
     "db:push": "prisma db push --url=\"file:./dev.db\"",
     "db:push:accept-data-loss": "prisma db push --url=\"file:./prisma/dev.db\" --accept-data-loss",
@@ -61,6 +65,11 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tauri-apps/plugin-notification": "^2.0.0",
+    "@tauri-apps/plugin-global-shortcut": "^2.0.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

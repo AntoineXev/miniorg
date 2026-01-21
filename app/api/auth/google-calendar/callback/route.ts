@@ -3,10 +3,16 @@ import { auth } from '@/lib/auth';
 import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 import { prisma } from '@/lib/prisma';
 
-export const dynamic = 'force-dynamic';
+// Note: 'force-dynamic' is commented out for Tauri static builds
+// export const dynamic = 'force-dynamic';
 
 // GET /api/auth/google-calendar/callback - Callback OAuth Google Calendar
 export async function GET(request: NextRequest) {
+  // For static export (Tauri), API routes are not supported
+  if (process.env.BUILD_TARGET === 'tauri') {
+    return NextResponse.json({ error: 'API routes not available in static export' }, { status: 501 });
+  }
+  
   try {
     const session = await auth();
     if (!session?.user?.id) {
