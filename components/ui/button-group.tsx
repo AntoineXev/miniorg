@@ -19,7 +19,6 @@ const ButtonGroup = forwardRef<HTMLDivElement, ButtonGroupProps>(
         ref={ref}
         className={cn(
           "inline-flex shadow-xs items-center rounded-full p-1 gap-1 border border-border/40 bg-card backdrop-blur-sm",
-          "dark:bg-zinc-900/50 dark:border-zinc-800/50",
           className
         )}
         {...props}
@@ -45,7 +44,7 @@ const ButtonGroupItem = forwardRef<HTMLButtonElement, ButtonGroupItemProps>(
           
           // Séparateur vertical court (ne prend pas toute la hauteur)
           "after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:translate-x-[200%]",
-          "after:h-4 after:w-px after:bg-border/40 dark:after:bg-zinc-700/50",
+          "after:h-4 after:w-px after:bg-border/40",
           "last:after:hidden",
           
           // Coins arrondis pour le premier et dernier bouton en hover
@@ -53,20 +52,20 @@ const ButtonGroupItem = forwardRef<HTMLButtonElement, ButtonGroupItemProps>(
           
           // Default variant - hover très subtil
           variant === "default" && [
-            "hover:bg-muted/10 dark:hover:bg-zinc-800/50",
+            "hover:bg-muted/20",
             "text-foreground/60 hover:text-foreground/80",
           ],
           
           // Primary variant (for "Today" button) - hover très subtil
           variant === "primary" && [
-            "hover:bg-muted/10 dark:hover:bg-zinc-800/50",
+            "hover:bg-muted/20",
             "text-foreground/70 hover:text-foreground/90",
             "font-semibold px-4",
           ],
           
           // Active state - plus prononcé
           active && [
-            "bg-zinc-200/50 dark:bg-zinc-800/80",
+            "bg-muted/40",
             "text-foreground",
             "shadow-sm shadow-primary/5",
           ],

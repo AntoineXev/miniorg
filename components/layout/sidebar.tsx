@@ -6,6 +6,7 @@ import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight } from "
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navigation = [
   { name: "Calendar", href: "/calendar", icon: SquareKanban },
@@ -66,7 +67,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 isActive
                   ? "text-primary bg-primary/5"
-                  : "text-muted-foreground hover:bg-gray-200/70",
+                  : "text-muted-foreground hover:bg-secondary",
                 isCollapsed && "justify-center"
               )}
               title={isCollapsed ? item.name : undefined}
@@ -78,8 +79,8 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
         })}
       </nav>
       
-      {/* User section at the bottom - Settings link */}
-      <div className="px-3 pb-4">
+      {/* User section at the bottom - Settings link and Theme toggle */}
+      <div className="px-3 pb-4 space-y-2">
         {session?.user && (
           <Link
             href="/settings"
@@ -87,7 +88,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
               pathname.startsWith("/settings")
                 ? "text-primary bg-primary/5"
-                : "text-muted-foreground hover:bg-gray-200/70",
+                : "text-muted-foreground hover:bg-secondary",
               isCollapsed && "justify-center"
             )}
             title={isCollapsed ? session.user.name || "Settings" : undefined}
@@ -100,6 +101,12 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
             )}
           </Link>
         )}
+        <div className={cn(
+          "flex items-center",
+          isCollapsed ? "justify-center" : "justify-start px-3"
+        )}>
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

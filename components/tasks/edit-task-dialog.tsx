@@ -241,7 +241,7 @@ export function EditTaskDialog({
             onClick={handleDelete}
             disabled={isDeleting || isSubmitting}
             variant="ghost"
-            className="shadow-lg bg-white border border-red-600 hover:bg-red-50"
+            className="shadow-lg bg-card border border-red-600 hover:bg-destructive/10"
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin text-red-600" strokeWidth={1} />

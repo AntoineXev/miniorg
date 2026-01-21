@@ -33,7 +33,7 @@ export function AnimatedCheckbox({
         !disabled && "cursor-pointer hover:scale-110",
         checked
           ? "bg-green-500 border-green-500 shadow-sm"
-          : "bg-transparent border-gray-300 hover:border-gray-400",
+          : "bg-transparent border-border hover:border-muted-foreground",
         className
       )}
     >

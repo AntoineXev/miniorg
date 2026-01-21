@@ -28,7 +28,7 @@ export function RightSidebarIconBar({
               "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
               isActive
                 ? "text-primary bg-primary/5"
-                : "text-muted-foreground hover:bg-gray-200/70"
+                : "text-muted-foreground hover:bg-secondary"
             )}
             title={panel.title}
           >

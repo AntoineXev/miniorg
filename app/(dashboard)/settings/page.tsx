@@ -20,7 +20,7 @@ function SettingsSection({ icon, title, subtitle, onClick, showChevron = true }:
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left"
+      className="w-full flex items-center gap-4 p-4 hover:bg-secondary transition-colors text-left"
     >
       <div className="flex-shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
@@ -107,7 +107,7 @@ export default function SettingsPage() {
           <Card className="overflow-hidden">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-3 p-4 text-red-600 hover:bg-red-50 transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-3 p-4 text-red-600 hover:bg-destructive/10 transition-colors font-medium"
             >
               <LogOut className="h-5 w-5" />
               <span>Se déconnecter</span>

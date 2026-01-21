@@ -58,7 +58,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   // Affiche un écran de chargement pendant la vérification
   if (status === "loading") {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-100">
+      <div className="flex h-screen items-center justify-center bg-background">
         <Loader size="lg" showText text="Chargement de votre session" />
       </div>
     );
@@ -70,7 +70,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-100">
+    <div className="flex h-screen overflow-hidden bg-secondary">
       <Sidebar 
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

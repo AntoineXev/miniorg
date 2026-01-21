@@ -64,7 +64,7 @@ export default function ProfilePage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   Nom complet
                 </label>
-                <div className="mt-1 p-3 bg-gray-50 rounded-lg border">
+                <div className="mt-1 p-3 bg-secondary rounded-lg border">
                   <p className="text-sm text-foreground">
                     {session?.user?.name || "Non renseigné"}
                   </p>
@@ -75,7 +75,7 @@ export default function ProfilePage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   Email
                 </label>
-                <div className="mt-1 p-3 bg-gray-50 rounded-lg border">
+                <div className="mt-1 p-3 bg-secondary rounded-lg border">
                   <p className="text-sm text-foreground">
                     {session?.user?.email || "Non renseigné"}
                   </p>
