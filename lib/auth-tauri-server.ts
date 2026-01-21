@@ -2,6 +2,12 @@ import { jwtVerify } from "jose";
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
+export function getTauriJwtSecret(): Uint8Array {
+  const secret =
+    process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "fallback-secret-key";
+  return new TextEncoder().encode(secret);
+}
+
 type TauriUser = {
   id: string;
   email?: string;
@@ -29,11 +35,7 @@ export async function getTauriUserFromRequest(
   const token = authHeader.slice("Bearer ".length).trim();
   if (!token) return null;
 
-  const secret = new TextEncoder().encode(
-    process.env.AUTH_SECRET ||
-      process.env.NEXTAUTH_SECRET ||
-      "fallback-secret-key"
-  );
+  const secret = getTauriJwtSecret();
 
   try {
     const { payload } = await jwtVerify(token, secret);

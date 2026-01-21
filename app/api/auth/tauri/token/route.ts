@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SignJWT } from "jose";
+import { getTauriJwtSecret } from "@/lib/auth-tauri-server";
 
 function buildCorsHeaders(origin: string | null): Headers {
   const headers = new Headers();
@@ -164,9 +165,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Generate JWT for Tauri app
-    const secret = new TextEncoder().encode(
-      process.env.AUTH_SECRET || "fallback-secret-key"
-    );
+    const secret = getTauriJwtSecret();
 
     const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
 
