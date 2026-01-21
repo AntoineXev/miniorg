@@ -1,15 +1,15 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
 import { NavButton } from "@/components/ui/nav-button";
 import { ArrowLeft, User } from "lucide-react";
+import { useTauriSession } from "@/providers/tauri-session";
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { session } = useTauriSession();
   const router = useRouter();
 
   const getUserInitials = () => {

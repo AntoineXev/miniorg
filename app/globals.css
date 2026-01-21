@@ -61,6 +61,26 @@
     }
   }
 
+  /* Zones draggables Tauri (ex: sidebar) */
+  body.platform-tauri [data-tauri-drag-region] {
+    -webkit-app-region: drag;
+  }
+
+  /* Désactiver le drag sur les éléments interactifs */
+  body.platform-tauri [data-tauri-drag-region="false"],
+  body.platform-tauri button,
+  body.platform-tauri a,
+  body.platform-tauri input,
+  body.platform-tauri textarea,
+  body.platform-tauri select,
+  body.platform-tauri label {
+    -webkit-app-region: no-drag;
+  }
+
+  [data-tauri-drag-region="false"] {
+    -webkit-app-region: no-drag;
+  }
+
   /* Fix pour l'icône de loading de Sonner - forcer à gauche */
 
 }

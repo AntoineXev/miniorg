@@ -84,6 +84,7 @@ fn main() {
             auth::get_auth_token,
             auth::set_auth_token,
             auth::clear_auth_token,
+            auth::start_oauth_listener,
             notifications::send_notification,
             notifications::request_notification_permission,
             calendar_sync::trigger_calendar_sync,

@@ -4,6 +4,9 @@
  */
 
 import { ApiClient } from "@/lib/api/client";
+import { getApiUrl, isTauri } from "@/lib/platform";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-shell";
 
 export interface TauriUser {
@@ -19,6 +22,23 @@ export interface TauriSession {
   expiresAt: number;
 }
 
+// Track the last redirect URI used so we can reuse it when exchanging the code
+let lastRedirectUri: string | null = null;
+
+/**
+ * Ask the Rust side to start a local loopback listener and return the redirect URI.
+ * Google accepts loopback redirects for desktop apps (not custom schemes).
+ */
+async function getLoopbackRedirectUri(): Promise<string> {
+  if (!isTauri()) {
+    throw new Error("Loopback OAuth redirect only available in Tauri");
+  }
+
+  const redirectUri = await invoke<string>("start_oauth_listener");
+  lastRedirectUri = redirectUri;
+  return redirectUri;
+}
+
 /**
  * Start OAuth flow - opens browser for Google login
  */
@@ -29,8 +49,10 @@ export async function startTauriOAuthFlow(): Promise<void> {
     throw new Error("Missing GOOGLE_CLIENT_ID_DESKTOP configuration - see NEXT_STEPS_TAURI.md");
   }
 
+  // Start loopback listener in Rust and get the redirect URI (http://127.0.0.1:<port>/callback)
+  const redirectUri = await getLoopbackRedirectUri();
+
   // Build OAuth URL
-  const redirectUri = "tauri://localhost";
   const scope = [
     "openid",
     "email",
@@ -61,16 +83,23 @@ export async function startTauriOAuthFlow(): Promise<void> {
  * Exchange OAuth code for JWT token
  */
 export async function exchangeCodeForToken(
-  code: string
+  code: string,
+  redirectUriOverride?: string
 ): Promise<TauriSession> {
-  const response = await fetch("/api/auth/tauri/token", {
+  const redirectUri = redirectUriOverride || lastRedirectUri;
+
+  if (!redirectUri) {
+    throw new Error("Missing redirect URI for token exchange");
+  }
+
+  const response = await fetch(getApiUrl("/api/auth/tauri/token"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       code,
-      redirect_uri: "tauri://localhost",
+      redirect_uri: redirectUri,
     }),
   });
 
@@ -152,14 +181,29 @@ export function listenForOAuthCallback(
   onCode: (code: string) => void,
   onError: (error: string) => void
 ): () => void {
-  // For now, we'll handle OAuth differently - the Rust backend will emit events
-  // that we can catch, but we need to set up the listeners properly
-  
-  // Temporary: just return an empty cleanup function
-  // The OAuth flow will be handled when we set up the desktop client
-  console.log("OAuth callback listener would be set up here");
-  
+  if (!isTauri()) {
+    return () => {};
+  }
+
+  let unlistenCode: (() => void) | null = null;
+  let unlistenError: (() => void) | null = null;
+
+  (async () => {
+    try {
+      unlistenCode = await listen<string>("oauth-code-received", (event) => {
+        onCode(event.payload);
+      });
+
+      unlistenError = await listen<string>("oauth-error", (event) => {
+        onError(event.payload);
+      });
+    } catch (error) {
+      console.error("Failed to register OAuth listeners:", error);
+    }
+  })();
+
   return () => {
-    console.log("OAuth callback listener cleanup");
+    if (unlistenCode) unlistenCode();
+    if (unlistenError) unlistenError();
   };
 }

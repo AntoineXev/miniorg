@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryProvider } from "@/providers/query-provider";
+import { PlatformProvider } from "@/providers/platform-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,12 +21,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <QueryProvider>
-          <TooltipProvider delayDuration={200}>
-            {children}
-          </TooltipProvider>
-          <Toaster position="bottom-center" />
-        </QueryProvider>
+        <PlatformProvider>
+          <QueryProvider>
+            <TooltipProvider delayDuration={200}>
+              {children}
+            </TooltipProvider>
+            <Toaster position="bottom-center" />
+          </QueryProvider>
+        </PlatformProvider>
       </body>
     </html>
   );

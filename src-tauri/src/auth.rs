@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Listener};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpListener,
+};
+use url::Url;
 
 // Global state to store the OAuth code
 struct OAuthState {
@@ -96,4 +101,85 @@ pub fn handle_deep_link(app: &AppHandle, url: String) {
             let _ = app.emit_to("main", "oauth-error", error.1.to_string());
         }
     }
+}
+
+/// Start a loopback HTTP listener for Google OAuth (desktop flow).
+/// Returns the redirect URI (http://127.0.0.1:<port>/callback) to use in the auth request.
+#[tauri::command]
+pub async fn start_oauth_listener(app_handle: AppHandle) -> Result<String, String> {
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .map_err(|e| format!("Failed to bind loopback listener: {}", e))?;
+
+    let port = listener
+        .local_addr()
+        .map_err(|e| format!("Failed to read loopback port: {}", e))?
+        .port();
+
+    let redirect_uri = format!("http://127.0.0.1:{}/callback", port);
+    let app_handle_clone = app_handle.clone();
+
+    tauri::async_runtime::spawn(async move {
+        // Accept a single request then close
+        if let Ok((mut socket, _)) = listener.accept().await {
+            let mut buffer = [0u8; 4096];
+            let mut request = String::new();
+
+            if let Ok(n) = socket.read(&mut buffer).await {
+                request = String::from_utf8_lossy(&buffer[..n]).into_owned();
+            }
+
+            let mut code: Option<String> = None;
+            let mut error: Option<String> = None;
+
+            if let Some(first_line) = request.lines().next() {
+                if let Some(path) = first_line.split_whitespace().nth(1) {
+                    if let Ok(parsed) = Url::parse(&format!("http://localhost{}", path)) {
+                        if let Some((_, c)) = parsed.query_pairs().find(|(k, _)| k == "code") {
+                            code = Some(c.into_owned());
+                        } else if let Some((_, e)) =
+                            parsed.query_pairs().find(|(k, _)| k == "error")
+                        {
+                            error = Some(e.into_owned());
+                        }
+                    }
+                }
+            }
+
+            // Always send a tiny HTML response to close the browser tab
+            let body = r#"
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>MiniOrg</title></head>
+  <body style="font-family: sans-serif; padding: 24px;">
+    <h2>Login received</h2>
+    <p>You can close this window and return to MiniOrg.</p>
+    <script>window.close();</script>
+  </body>
+</html>
+"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+
+            let _ = socket.write_all(response.as_bytes()).await;
+            let _ = socket.shutdown().await;
+
+            if let Some(code) = code {
+                let _ = app_handle_clone.emit_to("main", "oauth-code-received", code);
+            } else if let Some(err) = error {
+                let _ = app_handle_clone.emit_to("main", "oauth-error", err);
+            } else {
+                let _ = app_handle_clone.emit_to(
+                    "main",
+                    "oauth-error",
+                    "Invalid OAuth callback".to_string(),
+                );
+            }
+        }
+    });
+
+    Ok(redirect_uri)
 }

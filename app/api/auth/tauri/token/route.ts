@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SignJWT } from "jose";
 
+function buildCorsHeaders(origin: string | null): Headers {
+  const headers = new Headers();
+
+  // For simplicity, allow all origins (Tauri loopback + dev server).
+  // If you need to restrict, set CORS_ALLOW_ORIGIN and adjust logic.
+  headers.set("Access-Control-Allow-Origin", origin || "*");
+
+  headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  headers.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, x-requested-with"
+  );
+  headers.set("Access-Control-Allow-Credentials", "true");
+
+  return headers;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  const headers = buildCorsHeaders(origin);
+  return new NextResponse(null, { status: 204, headers });
+}
+
 /**
  * Exchange OAuth code for JWT token (Tauri desktop app)
  * 
@@ -10,14 +33,25 @@ import { SignJWT } from "jose";
  * the user in the database, and returns a JWT for session management.
  */
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  const corsHeaders = buildCorsHeaders(origin);
+
   try {
+
     const body = await req.json();
     const { code, redirect_uri } = body;
 
     if (!code) {
       return NextResponse.json(
         { error: "Missing authorization code" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    if (!redirect_uri) {
+      return NextResponse.json(
+        { error: "Missing redirect_uri" },
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -29,7 +63,7 @@ export async function POST(req: NextRequest) {
       console.error("Missing Google OAuth credentials");
       return NextResponse.json(
         { error: "Server configuration error" },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -43,7 +77,7 @@ export async function POST(req: NextRequest) {
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: redirect_uri || "tauri://localhost",
+        redirect_uri,
         grant_type: "authorization_code",
       }),
     });
@@ -53,7 +87,7 @@ export async function POST(req: NextRequest) {
       console.error("Failed to exchange code for tokens:", error);
       return NextResponse.json(
         { error: "Failed to authenticate with Google" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -73,7 +107,7 @@ export async function POST(req: NextRequest) {
     if (!userInfoResponse.ok) {
       return NextResponse.json(
         { error: "Failed to fetch user info" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -156,12 +190,12 @@ export async function POST(req: NextRequest) {
         name: user.name,
         image: user.image,
       },
-    });
+    }, { headers: corsHeaders });
   } catch (error: any) {
     console.error("Error in Tauri token exchange:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

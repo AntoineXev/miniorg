@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SessionProvider, useSession } from "next-auth/react";
+import { SessionProvider } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { RightSidebar, RightSidebarPanel } from "@/components/layout/right-sidebar";
 import { RightSidebarProvider, useRightSidebar } from "@/components/layout/right-sidebar/context";
@@ -15,11 +15,12 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { TauriSessionProvider, useTauriSession } from "@/providers/tauri-session";
 
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
-  const { data: session, status } = useSession();
+  const { session, status } = useTauriSession();
   const hasRedirected = useRef(false);
   const router = useRouter();
   
@@ -75,8 +76,8 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-hidden p-2">
-        <div className="flex h-full">
+      <div className="flex-1 overflow-hidden p-2" data-tauri-drag-region={true}>
+        <div className="flex h-full" data-tauri-drag-region={false}>
           <ResizablePanelGroup 
             orientation="horizontal" 
             className="flex-1 gap"
@@ -85,7 +86,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
           >
             {/* Main content */}
             <ResizablePanel id="main-content" defaultSize={75} minSize={40}>
-              <main className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
+              <main  className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
                 {children}
               </main>
             </ResizablePanel>
@@ -129,9 +130,11 @@ export default function DashboardLayout({
 }) {
   return (
     <SessionProvider>
-      <QuickAddTaskProvider>
-        <DashboardContent>{children}</DashboardContent>
-      </QuickAddTaskProvider>
+      <TauriSessionProvider>
+        <QuickAddTaskProvider>
+          <DashboardContent>{children}</DashboardContent>
+        </QuickAddTaskProvider>
+      </TauriSessionProvider>
     </SessionProvider>
   );
 }

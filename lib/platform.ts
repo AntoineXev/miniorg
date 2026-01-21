@@ -4,7 +4,10 @@
 
 declare global {
   interface Window {
-    __TAURI__?: any;
+    __TAURI__?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+    __TAURI_METADATA__?: unknown;
+    tauri?: unknown;
   }
 }
 
@@ -13,7 +16,22 @@ declare global {
  */
 export const isTauri = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return '__TAURI__' in window;
+  const w = window as unknown as Record<string, unknown>;
+
+  // Tauri v2 exposes several globals; dev mode can miss __TAURI__ on first paint
+  const hasGlobals =
+    !!w.__TAURI__ ||
+    !!w.__TAURI_INTERNALS__ ||
+    !!w.__TAURI_METADATA__ ||
+    !!w.tauri;
+
+  // UA fallback (Tauri injecte "Tauri" dans le userAgent)
+  const hasUserAgent =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.userAgent === 'string' &&
+    navigator.userAgent.toLowerCase().includes('tauri');
+
+  return hasGlobals || hasUserAgent;
 };
 
 /**

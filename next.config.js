@@ -6,6 +6,10 @@ const nextConfig = {
   // Static export for Tauri builds
   output: isTauri ? 'export' : undefined,
   distDir: isTauri ? 'out' : '.next',
+  // Ignore .ts route files during Tauri export so API routes are not included
+  pageExtensions: isTauri
+    ? ['tsx', 'jsx', 'mdx']
+    : ['ts', 'tsx', 'js', 'jsx', 'mdx'],
   
   // Skip API routes for static export (Tauri builds)
   ...(isTauri && {
