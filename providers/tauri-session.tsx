@@ -52,6 +52,7 @@ export function TauriSessionProvider({
   children: React.ReactNode;
 }) {
   const LOG_PREFIX = "[tauri-auth-debug]";
+  const shouldLog = process.env.NEXT_PUBLIC_TAURI_AUTH_DEBUG === "1";
   const isDesktop = isTauri();
   const router = useRouter();
   const oauthHandled = useRef(false);
@@ -65,18 +66,9 @@ export function TauriSessionProvider({
     "loading" | "authenticated" | "unauthenticated"
   >("loading");
 
-  // Mark Tauri client via cookie so middleware can bypass NextAuth redirect
-  useEffect(() => {
-    if (!isDesktop) return;
-    try {
-      document.cookie = "tauri-client=1; path=/; SameSite=Lax";
-    } catch (e) {
-      console.warn(LOG_PREFIX, "failed to set tauri-client cookie", e);
-    }
-  }, [isDesktop]);
-
   // Log environment info once
   useEffect(() => {
+    if (!shouldLog) return;
     const w = typeof window !== "undefined" ? (window as any) : undefined;
     const ua =
       typeof navigator !== "undefined" ? navigator.userAgent : "navigator-missing";
@@ -90,7 +82,7 @@ export function TauriSessionProvider({
         tauri: !!w?.tauri,
       },
     });
-  }, [isDesktop]);
+  }, [isDesktop, shouldLog]);
 
   // Load Tauri session on mount
   useEffect(() => {
@@ -99,30 +91,45 @@ export function TauriSessionProvider({
       return;
     }
 
-    const session = getTauriSession();
-    console.log(LOG_PREFIX, "load session from storage", session);
-    if (session) {
-      setTauriSession(session);
-      setTauriStatus("authenticated");
-    } else {
-      setTauriStatus("unauthenticated");
-    }
-  }, [isDesktop]);
+    let active = true;
+
+    (async () => {
+      const session = await getTauriSession();
+      if (shouldLog) {
+        console.log(LOG_PREFIX, "load session from storage", session);
+      }
+      if (!active) return;
+      if (session) {
+        setTauriSession(session);
+        setTauriStatus("authenticated");
+      } else {
+        setTauriStatus("unauthenticated");
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [isDesktop, shouldLog]);
 
   // Listen for OAuth callbacks (Tauri only)
   useEffect(() => {
     if (!isDesktop) return;
 
     const cleanup = listenForOAuthCallback(
-      async (code) => {
+      async (code, state) => {
         if (oauthHandled.current) return;
         oauthHandled.current = true;
         try {
-          console.log(LOG_PREFIX, "oauth callback received", { code });
+          if (shouldLog) {
+            console.log(LOG_PREFIX, "oauth callback received", { code });
+          }
           setTauriStatus("loading");
-          const session = await exchangeCodeForToken(code);
-          console.log(LOG_PREFIX, "token exchange success", session);
-          saveTauriSession(session);
+          const session = await exchangeCodeForToken(code, undefined, state);
+          if (shouldLog) {
+            console.log(LOG_PREFIX, "token exchange success", session);
+          }
+          await saveTauriSession(session);
           setTauriSession(session);
           setTauriStatus("authenticated");
           toast.success("Successfully logged in!");
@@ -148,7 +155,9 @@ export function TauriSessionProvider({
   useEffect(() => {
     if (!isDesktop) return;
     if (tauriStatus === "unauthenticated") {
-      console.log(LOG_PREFIX, "status unauthenticated, reset oauthHandled");
+      if (shouldLog) {
+        console.log(LOG_PREFIX, "status unauthenticated, reset oauthHandled");
+      }
       oauthHandled.current = false;
     }
   }, [isDesktop, tauriStatus]);
@@ -166,16 +175,21 @@ export function TauriSessionProvider({
         window.location.pathname.startsWith("/dashboard"));
 
     if (!isOnDashboard) {
-      console.log(LOG_PREFIX, "redirecting to backlog after auth", {
-        pathname: typeof window !== "undefined" ? window.location.pathname : "no-window",
-      });
+      if (shouldLog) {
+        console.log(LOG_PREFIX, "redirecting to backlog after auth", {
+          pathname:
+            typeof window !== "undefined" ? window.location.pathname : "no-window",
+        });
+      }
       router.push("/backlog");
     }
-  }, [isDesktop, tauriStatus, router]);
+  }, [isDesktop, tauriStatus, router, shouldLog]);
 
   // Login handler
   const login = async () => {
-    console.log(LOG_PREFIX, "login click", { isDesktop });
+    if (shouldLog) {
+      console.log(LOG_PREFIX, "login click", { isDesktop });
+    }
     if (isDesktop) {
       try {
         await startTauriOAuthFlow();
@@ -194,7 +208,7 @@ export function TauriSessionProvider({
   // Logout handler
   const logout = async () => {
     if (isDesktop) {
-      clearTauriSession();
+      await clearTauriSession();
       setTauriSession(null);
       setTauriStatus("unauthenticated");
       toast.success("Logged out successfully");
@@ -224,8 +238,9 @@ export function TauriSessionProvider({
   const status = isDesktop ? tauriStatus : webSession.status;
 
   useEffect(() => {
+    if (!shouldLog) return;
     console.log(LOG_PREFIX, "status changed", { status, session });
-  }, [status, session]);
+  }, [status, session, shouldLog]);
 
   return (
     <TauriSessionContext.Provider value={{ session, status, login, logout }}>

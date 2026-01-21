@@ -16,6 +16,8 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { TauriSessionProvider, useTauriSession } from "@/providers/tauri-session";
+import { cn } from "@/lib/utils";
+import { usePlatform } from "@/lib/hooks/use-platform";
 
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -23,7 +25,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const { session, status } = useTauriSession();
   const hasRedirected = useRef(false);
   const router = useRouter();
-  
+  const { isTauri } = usePlatform();
   // Load saved layout from localStorage
   const [defaultLayout, setDefaultLayout] = useState<{ [id: string]: number } | undefined>(() => {
     if (typeof window === "undefined") return undefined;
@@ -76,7 +78,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-hidden p-2" data-tauri-drag-region={true}>
+      <div data-tauri-drag-region={true} className={cn("flex-1 overflow-hidden", isTauri ? "p-6" : "p-2")}>
         <div className="flex h-full" data-tauri-drag-region={false}>
           <ResizablePanelGroup 
             orientation="horizontal" 

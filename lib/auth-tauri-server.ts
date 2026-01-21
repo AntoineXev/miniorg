@@ -1,12 +1,6 @@
-import { jwtVerify } from "jose";
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-
-export function getTauriJwtSecret(): Uint8Array {
-  const secret =
-    process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "fallback-secret-key";
-  return new TextEncoder().encode(secret);
-}
+import { verifyTauriJwt } from "@/lib/tauri-jwt";
 
 type TauriUser = {
   id: string;
@@ -35,10 +29,8 @@ export async function getTauriUserFromRequest(
   const token = authHeader.slice("Bearer ".length).trim();
   if (!token) return null;
 
-  const secret = getTauriJwtSecret();
-
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const payload = await verifyTauriJwt(token);
     const id = payload.sub as string | undefined;
     if (!id) return null;
     return {
@@ -48,7 +40,7 @@ export async function getTauriUserFromRequest(
       picture: payload.picture as string | undefined,
     };
   } catch (error) {
-    console.warn("[tauri-auth] invalid bearer token", error);
+    console.warn("[tauri-auth] invalid bearer token");
     return null;
   }
 }

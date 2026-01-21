@@ -1,21 +1,22 @@
 import { authEdge } from "@/lib/auth-edge";
+import { verifyTauriJwt } from "@/lib/tauri-jwt";
+import { buildCorsHeaders, isAllowedCorsOrigin } from "@/lib/utils/cors";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function buildCorsHeaders(origin: string | null): Headers {
-  const headers = new Headers();
-  // Echo the requesting origin so credentials are accepted.
-  headers.set("Access-Control-Allow-Origin", origin || "*");
-  headers.set(
-    "Access-Control-Allow-Methods",
-    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-  );
-  headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-requested-with"
-  );
-  headers.set("Access-Control-Allow-Credentials", "true");
-  return headers;
+async function hasValidTauriBearer(request: NextRequest): Promise<boolean> {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return false;
+  }
+  const token = authHeader.slice("Bearer ".length).trim();
+  if (!token) return false;
+  try {
+    await verifyTauriJwt(token);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -24,7 +25,15 @@ export async function middleware(request: NextRequest) {
 
   // Handle CORS for API routes (needed for Tauri → Cloudflare calls)
   if (pathname.startsWith("/api")) {
-    const corsHeaders = buildCorsHeaders(origin);
+    if (!isAllowedCorsOrigin(origin)) {
+      const headers = buildCorsHeaders(origin, { allowCredentials: false });
+      return new NextResponse("CORS origin not allowed", {
+        status: 403,
+        headers,
+      });
+    }
+
+    const corsHeaders = buildCorsHeaders(origin, { allowCredentials: true });
 
     if (request.method === "OPTIONS") {
       return new NextResponse(null, { status: 204, headers: corsHeaders });
@@ -35,14 +44,8 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const userAgent = request.headers.get("user-agent")?.toLowerCase() || "";
-  const isTauriUA = userAgent.includes("tauri");
-  const tauriCookie = request.cookies.get("tauri-client")?.value === "1";
-  const isTauriClient = isTauriUA || tauriCookie;
-
-  // Tauri client uses its own JWT; bypass NextAuth guard
-  if (isTauriClient) {
-    console.log("Tauri client detected; bypassing NextAuth guard");
+  // Tauri client uses its own JWT; bypass NextAuth guard only when valid
+  if (await hasValidTauriBearer(request)) {
     return NextResponse.next();
   }
 

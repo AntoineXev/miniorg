@@ -24,6 +24,57 @@ export interface TauriSession {
 
 // Track the last redirect URI used so we can reuse it when exchanging the code
 let lastRedirectUri: string | null = null;
+let lastCodeVerifier: string | null = null;
+let lastState: string | null = null;
+
+type StoredAuthToken = {
+  token: string;
+  expires_at?: number | null;
+};
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function sha256(input: string): Promise<Uint8Array> {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(digest);
+}
+
+async function createCodeVerifier(): Promise<string> {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64UrlEncode(bytes);
+}
+
+async function createCodeChallenge(verifier: string): Promise<string> {
+  const hashed = await sha256(verifier);
+  return base64UrlEncode(hashed);
+}
+
+async function fetchOAuthState(): Promise<string> {
+  const response = await fetch(getApiUrl("/api/auth/tauri/state"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to create OAuth state");
+  }
+
+  const data = await response.json();
+  return data.state as string;
+}
 
 /**
  * Ask the Rust side to start a local loopback listener and return the redirect URI.
@@ -51,6 +102,12 @@ export async function startTauriOAuthFlow(): Promise<void> {
 
   // Start loopback listener in Rust and get the redirect URI (http://127.0.0.1:<port>/callback)
   const redirectUri = await getLoopbackRedirectUri();
+  const state = await fetchOAuthState();
+  const codeVerifier = await createCodeVerifier();
+  const codeChallenge = await createCodeChallenge(codeVerifier);
+
+  lastCodeVerifier = codeVerifier;
+  lastState = state;
 
   // Build OAuth URL
   const scope = [
@@ -68,6 +125,9 @@ export async function startTauriOAuthFlow(): Promise<void> {
   authUrl.searchParams.set("scope", scope);
   authUrl.searchParams.set("access_type", "offline");
   authUrl.searchParams.set("prompt", "consent");
+  authUrl.searchParams.set("state", state);
+  authUrl.searchParams.set("code_challenge", codeChallenge);
+  authUrl.searchParams.set("code_challenge_method", "S256");
 
   // Open in default browser using Tauri's shell
   try {
@@ -84,12 +144,23 @@ export async function startTauriOAuthFlow(): Promise<void> {
  */
 export async function exchangeCodeForToken(
   code: string,
-  redirectUriOverride?: string
+  redirectUriOverride?: string,
+  stateOverride?: string
 ): Promise<TauriSession> {
   const redirectUri = redirectUriOverride || lastRedirectUri;
+  const codeVerifier = lastCodeVerifier;
+  const state = stateOverride || lastState;
 
   if (!redirectUri) {
     throw new Error("Missing redirect URI for token exchange");
+  }
+
+  if (!codeVerifier) {
+    throw new Error("Missing PKCE code verifier for token exchange");
+  }
+
+  if (!state) {
+    throw new Error("Missing OAuth state for token exchange");
   }
 
   const response = await fetch(getApiUrl("/api/auth/tauri/token"), {
@@ -101,6 +172,8 @@ export async function exchangeCodeForToken(
     body: JSON.stringify({
       code,
       redirect_uri: redirectUri,
+      code_verifier: codeVerifier,
+      state,
     }),
   });
 
@@ -113,6 +186,8 @@ export async function exchangeCodeForToken(
   
   // Store token in ApiClient
   ApiClient.setAuthToken(data.token);
+  lastCodeVerifier = null;
+  lastState = null;
 
   return {
     user: data.user,
@@ -122,56 +197,85 @@ export async function exchangeCodeForToken(
 }
 
 /**
- * Get current Tauri session from localStorage
+ * Refresh a valid Tauri session JWT
  */
-export function getTauriSession(): TauriSession | null {
-  if (typeof window === "undefined") return null;
+export async function refreshTauriSession(): Promise<TauriSession | null> {
+  if (!isTauri()) return null;
+  const session = await getTauriSession();
+  if (!session) return null;
 
-  const token = localStorage.getItem("miniorg_jwt_token");
-  const userJson = localStorage.getItem("miniorg_user");
-  const expiresAt = localStorage.getItem("miniorg_expires_at");
+  const response = await fetch(getApiUrl("/api/auth/tauri/refresh"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`,
+    },
+    credentials: "include",
+  });
 
-  if (!token || !userJson || !expiresAt) return null;
-
-  // Check if token is expired
-  const expiresAtNum = parseInt(expiresAt, 10);
-  if (Date.now() / 1000 > expiresAtNum) {
-    clearTauriSession();
+  if (!response.ok) {
     return null;
   }
 
-  try {
-    const user = JSON.parse(userJson);
-    return {
-      user,
-      token,
-      expiresAt: expiresAtNum,
-    };
-  } catch {
-    return null;
-  }
+  const data = await response.json();
+  const updatedSession: TauriSession = {
+    user: session.user,
+    token: data.token,
+    expiresAt: data.expires_at,
+  };
+  await saveTauriSession(updatedSession);
+  return updatedSession;
 }
 
 /**
- * Save Tauri session to localStorage
+ * Get current Tauri session from secure storage
  */
-export function saveTauriSession(session: TauriSession): void {
-  if (typeof window === "undefined") return;
+export async function getTauriSession(): Promise<TauriSession | null> {
+  if (typeof window === "undefined" || !isTauri()) return null;
 
-  localStorage.setItem("miniorg_jwt_token", session.token);
-  localStorage.setItem("miniorg_user", JSON.stringify(session.user));
-  localStorage.setItem("miniorg_expires_at", session.expiresAt.toString());
+  const stored = await invoke<StoredAuthToken | null>("get_auth_token");
+  if (!stored?.token || !stored.expires_at) return null;
+
+  const expiresAtNum = Number(stored.expires_at);
+  if (!Number.isFinite(expiresAtNum)) return null;
+
+  if (Date.now() / 1000 > expiresAtNum) {
+    await clearTauriSession();
+    return null;
+  }
+
+  const user = decodeUserFromJwt(stored.token);
+  if (!user) return null;
+
+  ApiClient.setAuthToken(stored.token);
+
+  return {
+    user,
+    token: stored.token,
+    expiresAt: expiresAtNum,
+  };
+}
+
+/**
+ * Save Tauri session to secure storage
+ */
+export async function saveTauriSession(session: TauriSession): Promise<void> {
+  if (typeof window === "undefined" || !isTauri()) return;
+
+  await invoke("set_auth_token", {
+    token: session.token,
+    expires_at: session.expiresAt,
+  });
+  ApiClient.setAuthToken(session.token);
 }
 
 /**
  * Clear Tauri session (logout)
  */
-export function clearTauriSession(): void {
-  if (typeof window === "undefined") return;
+export async function clearTauriSession(): Promise<void> {
+  if (typeof window === "undefined" || !isTauri()) return;
 
-  localStorage.removeItem("miniorg_jwt_token");
-  localStorage.removeItem("miniorg_user");
-  localStorage.removeItem("miniorg_expires_at");
+  await invoke("clear_auth_token");
   ApiClient.clearAuthToken();
 }
 
@@ -179,7 +283,7 @@ export function clearTauriSession(): void {
  * Listen for OAuth callback (deep link)
  */
 export function listenForOAuthCallback(
-  onCode: (code: string) => void,
+  onCode: (code: string, state?: string) => void,
   onError: (error: string) => void
 ): () => void {
   if (!isTauri()) {
@@ -191,9 +295,12 @@ export function listenForOAuthCallback(
 
   (async () => {
     try {
-      unlistenCode = await listen<string>("oauth-code-received", (event) => {
-        onCode(event.payload);
-      });
+      unlistenCode = await listen<{ code: string; state?: string }>(
+        "oauth-code-received",
+        (event) => {
+          onCode(event.payload.code, event.payload.state);
+        }
+      );
 
       unlistenError = await listen<string>("oauth-error", (event) => {
         onError(event.payload);
@@ -207,4 +314,25 @@ export function listenForOAuthCallback(
     if (unlistenCode) unlistenCode();
     if (unlistenError) unlistenError();
   };
+}
+
+function decodeUserFromJwt(token: string): TauriUser | null {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const payload = JSON.parse(atob(padded));
+    const id = payload.sub as string | undefined;
+    const email = typeof payload.email === "string" ? payload.email : null;
+    if (!id || !email) return null;
+    return {
+      id,
+      email,
+      name: typeof payload.name === "string" ? payload.name : null,
+      image: typeof payload.picture === "string" ? payload.picture : null,
+    };
+  } catch {
+    return null;
+  }
 }

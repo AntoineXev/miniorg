@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use keyring::Entry;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Listener};
 use tokio::{
@@ -28,8 +29,59 @@ pub struct AuthToken {
     pub expires_at: Option<i64>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct OAuthCallbackPayload {
+    pub code: String,
+    pub state: Option<String>,
+}
+
 // Store for persistent auth token
 static AUTH_TOKEN: Mutex<Option<AuthToken>> = Mutex::new(None);
+
+const KEYRING_SERVICE: &str = "miniorg";
+const KEYRING_USER: &str = "auth_token";
+
+fn keyring_entry() -> Result<Entry, String> {
+    Entry::new(KEYRING_SERVICE, KEYRING_USER).map_err(|e| e.to_string())
+}
+
+fn read_token_from_keyring() -> Result<Option<AuthToken>, String> {
+    let entry = keyring_entry()?;
+    match entry.get_password() {
+        Ok(value) => {
+            let token = serde_json::from_str::<AuthToken>(&value)
+                .map_err(|e| format!("Failed to parse stored token: {}", e))?;
+            Ok(Some(token))
+        }
+        Err(err) => {
+            let message = err.to_string();
+            if message.to_lowercase().contains("no entry") {
+                return Ok(None);
+            }
+            Ok(None)
+        }
+    }
+}
+
+fn write_token_to_keyring(token: &AuthToken) -> Result<(), String> {
+    let entry = keyring_entry()?;
+    let payload = serde_json::to_string(token).map_err(|e| e.to_string())?;
+    entry.set_password(&payload).map_err(|e| e.to_string())
+}
+
+fn clear_token_in_keyring() -> Result<(), String> {
+    let entry = keyring_entry()?;
+    match entry.delete_password() {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            let message = err.to_string();
+            if message.to_lowercase().contains("no entry") {
+                return Ok(());
+            }
+            Err(message)
+        }
+    }
+}
 
 /// Start OAuth flow by opening browser
 #[tauri::command]
@@ -67,15 +119,23 @@ pub async fn start_oauth_flow(
 #[tauri::command]
 pub fn get_auth_token() -> Result<Option<AuthToken>, String> {
     let token = AUTH_TOKEN.lock().unwrap();
-    Ok(token.clone())
+    if token.is_some() {
+        return Ok(token.clone());
+    }
+    drop(token);
+    let stored = read_token_from_keyring()?;
+    let mut token = AUTH_TOKEN.lock().unwrap();
+    *token = stored.clone();
+    Ok(stored)
 }
 
 /// Set auth token (after successful OAuth)
 #[tauri::command]
 pub fn set_auth_token(token: String, expires_at: Option<i64>) -> Result<(), String> {
     let mut auth_token = AUTH_TOKEN.lock().unwrap();
-    *auth_token = Some(AuthToken { token, expires_at });
-    println!("Auth token stored successfully");
+    let session = AuthToken { token, expires_at };
+    *auth_token = Some(session.clone());
+    write_token_to_keyring(&session)?;
     Ok(())
 }
 
@@ -84,7 +144,7 @@ pub fn set_auth_token(token: String, expires_at: Option<i64>) -> Result<(), Stri
 pub fn clear_auth_token() -> Result<(), String> {
     let mut auth_token = AUTH_TOKEN.lock().unwrap();
     *auth_token = None;
-    println!("Auth token cleared");
+    clear_token_in_keyring()?;
     Ok(())
 }
 
@@ -95,8 +155,15 @@ pub fn handle_deep_link(app: &AppHandle, url: String) {
     // Parse URL and extract OAuth code
     if let Ok(parsed_url) = url::Url::parse(&url) {
         if let Some(code) = parsed_url.query_pairs().find(|(key, _)| key == "code") {
-            // Emit event to frontend with the code
-            let _ = app.emit_to("main", "oauth-code-received", code.1.to_string());
+            let state = parsed_url
+                .query_pairs()
+                .find(|(key, _)| key == "state")
+                .map(|(_, value)| value.to_string());
+            let payload = OAuthCallbackPayload {
+                code: code.1.to_string(),
+                state,
+            };
+            let _ = app.emit_to("main", "oauth-code-received", payload);
         } else if let Some(error) = parsed_url.query_pairs().find(|(key, _)| key == "error") {
             let _ = app.emit_to("main", "oauth-error", error.1.to_string());
         }
@@ -131,12 +198,17 @@ pub async fn start_oauth_listener(app_handle: AppHandle) -> Result<String, Strin
 
             let mut code: Option<String> = None;
             let mut error: Option<String> = None;
+            let mut state: Option<String> = None;
 
             if let Some(first_line) = request.lines().next() {
                 if let Some(path) = first_line.split_whitespace().nth(1) {
                     if let Ok(parsed) = Url::parse(&format!("http://localhost{}", path)) {
                         if let Some((_, c)) = parsed.query_pairs().find(|(k, _)| k == "code") {
                             code = Some(c.into_owned());
+                            state = parsed
+                                .query_pairs()
+                                .find(|(k, _)| k == "state")
+                                .map(|(_, value)| value.into_owned());
                         } else if let Some((_, e)) =
                             parsed.query_pairs().find(|(k, _)| k == "error")
                         {
@@ -168,7 +240,8 @@ pub async fn start_oauth_listener(app_handle: AppHandle) -> Result<String, Strin
             let _ = socket.shutdown().await;
 
             if let Some(code) = code {
-                let _ = app_handle_clone.emit_to("main", "oauth-code-received", code);
+                let payload = OAuthCallbackPayload { code, state };
+                let _ = app_handle_clone.emit_to("main", "oauth-code-received", payload);
             } else if let Some(err) = error {
                 let _ = app_handle_clone.emit_to("main", "oauth-error", err);
             } else {

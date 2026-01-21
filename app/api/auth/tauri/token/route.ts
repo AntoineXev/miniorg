@@ -1,28 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { SignJWT } from "jose";
-import { getTauriJwtSecret } from "@/lib/auth-tauri-server";
-
-function buildCorsHeaders(origin: string | null): Headers {
-  const headers = new Headers();
-
-  // For simplicity, allow all origins (Tauri loopback + dev server).
-  // If you need to restrict, set CORS_ALLOW_ORIGIN and adjust logic.
-  headers.set("Access-Control-Allow-Origin", origin || "*");
-
-  headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-requested-with"
-  );
-  headers.set("Access-Control-Allow-Credentials", "true");
-
-  return headers;
-}
+import { SignJWT, jwtVerify } from "jose";
+import { buildCorsHeaders, isAllowedCorsOrigin } from "@/lib/utils/cors";
+import {
+  getTauriJwtSecret,
+  getTauriJwtIssuer,
+  getTauriJwtAudience,
+  getTauriStateAudience,
+} from "@/lib/tauri-jwt";
 
 export async function OPTIONS(req: NextRequest) {
   const origin = req.headers.get("origin");
-  const headers = buildCorsHeaders(origin);
+  if (!isAllowedCorsOrigin(origin)) {
+    const headers = buildCorsHeaders(origin, { allowCredentials: false });
+    return new NextResponse(null, { status: 403, headers });
+  }
+  const headers = buildCorsHeaders(origin, { allowCredentials: true });
   return new NextResponse(null, { status: 204, headers });
 }
 
@@ -35,12 +28,18 @@ export async function OPTIONS(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin");
-  const corsHeaders = buildCorsHeaders(origin);
+  if (!isAllowedCorsOrigin(origin)) {
+    const headers = buildCorsHeaders(origin, { allowCredentials: false });
+    return NextResponse.json(
+      { error: "CORS origin not allowed" },
+      { status: 403, headers }
+    );
+  }
+  const corsHeaders = buildCorsHeaders(origin, { allowCredentials: true });
 
   try {
-
     const body = await req.json();
-    const { code, redirect_uri } = body;
+    const { code, redirect_uri, code_verifier, state } = body;
 
     if (!code) {
       return NextResponse.json(
@@ -53,6 +52,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Missing redirect_uri" },
         { status: 400, headers: corsHeaders }
+      );
+    }
+
+    if (!code_verifier) {
+      return NextResponse.json(
+        { error: "Missing code_verifier" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    if (!state) {
+      return NextResponse.json(
+        { error: "Missing state" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    let redirectUrl: URL | null = null;
+    try {
+      redirectUrl = new URL(redirect_uri);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid redirect_uri" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const isLoopback =
+      redirectUrl.protocol === "http:" &&
+      (redirectUrl.hostname === "127.0.0.1" ||
+        redirectUrl.hostname === "localhost") &&
+      redirectUrl.pathname === "/callback";
+
+    if (!isLoopback) {
+      return NextResponse.json(
+        { error: "redirect_uri not allowed" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    try {
+      await jwtVerify(state, getTauriJwtSecret(), {
+        issuer: getTauriJwtIssuer(),
+        audience: getTauriStateAudience(),
+      });
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid OAuth state" },
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -80,6 +128,7 @@ export async function POST(req: NextRequest) {
         client_secret: clientSecret,
         redirect_uri,
         grant_type: "authorization_code",
+        code_verifier,
       }),
     });
 
@@ -113,7 +162,16 @@ export async function POST(req: NextRequest) {
     }
 
     const userInfo = await userInfoResponse.json();
-    const { id: googleId, email, name, picture } = userInfo;
+    const { id: googleId, email, name, picture, verified_email, email_verified } =
+      userInfo;
+
+    const isEmailVerified = Boolean(verified_email || email_verified);
+    if (!email || !isEmailVerified) {
+      return NextResponse.json(
+        { error: "Unverified email address" },
+        { status: 403, headers: corsHeaders }
+      );
+    }
 
     // Find or create user in database
     let user = await prisma.user.findUnique({
@@ -166,8 +224,9 @@ export async function POST(req: NextRequest) {
 
     // Generate JWT for Tauri app
     const secret = getTauriJwtSecret();
-
-    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
+    const issuer = getTauriJwtIssuer();
+    const audience = getTauriJwtAudience();
+    const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // 7 days
 
     const jwt = await new SignJWT({
       sub: user.id,
@@ -178,6 +237,8 @@ export async function POST(req: NextRequest) {
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime(expiresAt)
+      .setIssuer(issuer)
+      .setAudience(audience)
       .sign(secret);
 
     const res = NextResponse.json(
@@ -193,14 +254,6 @@ export async function POST(req: NextRequest) {
       },
       { headers: corsHeaders }
     );
-
-    // Tag client as Tauri so middleware can bypass NextAuth redirect
-    res.cookies.set({
-      name: "tauri-client",
-      value: "1",
-      path: "/",
-      sameSite: "lax",
-    });
 
     return res;
   } catch (error: any) {

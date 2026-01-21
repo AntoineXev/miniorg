@@ -1,7 +1,7 @@
 import { isTauri, getApiUrl } from "@/lib/platform";
 
-// Storage key for JWT token
-const JWT_TOKEN_KEY = "miniorg_jwt_token";
+// In-memory JWT token cache (Tauri only)
+let tauriTokenCache: string | null = null;
 
 // API Client wrapper for fetch with centralized error handling
 export class ApiClient {
@@ -10,7 +10,7 @@ export class ApiClient {
    */
   private static getAuthToken(): string | null {
     if (typeof window === "undefined" || !isTauri()) return null;
-    return localStorage.getItem(JWT_TOKEN_KEY);
+    return tauriTokenCache;
   }
 
   /**
@@ -18,7 +18,7 @@ export class ApiClient {
    */
   static setAuthToken(token: string): void {
     if (typeof window === "undefined" || !isTauri()) return;
-    localStorage.setItem(JWT_TOKEN_KEY, token);
+    tauriTokenCache = token;
   }
 
   /**
@@ -26,7 +26,7 @@ export class ApiClient {
    */
   static clearAuthToken(): void {
     if (typeof window === "undefined" || !isTauri()) return;
-    localStorage.removeItem(JWT_TOKEN_KEY);
+    tauriTokenCache = null;
   }
 
   /**
