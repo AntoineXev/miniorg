@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTagsQuery } from "@/lib/api/queries/tags";
 import type { Tag } from "@/lib/api/types";
@@ -27,11 +28,34 @@ export function TagSelector({
 }: TagSelectorProps) {
   const { data: tags } = useTagsQuery();
 
+  // Flatten tags with hierarchy: parent followed by its children
+  const flatTags = useMemo(() => {
+    if (!tags) return [];
+    
+    const result: Tag[] = [];
+    
+    tags.forEach((tag) => {
+      if (!tag.parentId) {
+        // Add parent
+        result.push(tag);
+        
+        // Add children right after parent
+        if (tag.children) {
+          tag.children.forEach((child) => {
+            result.push(child);
+          });
+        }
+      }
+    });
+    
+    return result;
+  }, [tags]);
+
   const handleChange = (value: string) => {
     if (value === "no-tag") {
       onSelectTag(null);
     } else {
-      const tag = tags?.find(t => t.id === value);
+      const tag = flatTags.find(t => t.id === value);
       onSelectTag(tag || null);
     }
   };
@@ -54,7 +78,7 @@ export function TagSelector({
               <TagDisplay className="text-muted-foreground" tag={null} placeholder="No tag" />
             </SelectItem>
           )}
-          {tags?.map((tag) => (
+          {flatTags.map((tag) => (
             <SelectItem key={tag.id} value={tag.id} hideIndicator>
               <TagDisplay className={cn(tag.parentId && 'ml-4')} tag={tag} />
             </SelectItem>
