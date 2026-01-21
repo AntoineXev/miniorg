@@ -1,12 +1,22 @@
 "use client";
 
 import { signIn, SessionProvider } from "next-auth/react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { isTauri } from "@/lib/platform";
 import { TauriSessionProvider, useTauriSession } from "@/providers/tauri-session";
 
 function LoginContent() {
-  const { login } = useTauriSession();
+  const { login, status } = useTauriSession();
+  const router = useRouter();
+
+  // If already authenticated (Tauri JWT), skip login page
+  useEffect(() => {
+    if (status === "authenticated" && isTauri()) {
+      router.replace("/backlog");
+    }
+  }, [status, router]);
 
   const handleLogin = () => {
     if (isTauri()) {

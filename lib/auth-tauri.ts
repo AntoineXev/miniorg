@@ -97,6 +97,7 @@ export async function exchangeCodeForToken(
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify({
       code,
       redirect_uri: redirectUri,

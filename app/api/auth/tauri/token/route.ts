@@ -181,16 +181,29 @@ export async function POST(req: NextRequest) {
       .setExpirationTime(expiresAt)
       .sign(secret);
 
-    return NextResponse.json({
-      token: jwt,
-      expires_at: expiresAt,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        image: user.image,
+    const res = NextResponse.json(
+      {
+        token: jwt,
+        expires_at: expiresAt,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        },
       },
-    }, { headers: corsHeaders });
+      { headers: corsHeaders }
+    );
+
+    // Tag client as Tauri so middleware can bypass NextAuth redirect
+    res.cookies.set({
+      name: "tauri-client",
+      value: "1",
+      path: "/",
+      sameSite: "lax",
+    });
+
+    return res;
   } catch (error: any) {
     console.error("Error in Tauri token exchange:", error);
     return NextResponse.json(
