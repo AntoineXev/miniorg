@@ -74,7 +74,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div data-tauri-drag-region={true} className={cn("flex-1 overflow-hidden", isTauri ? "p-6" : "p-2")}>
+      <div data-tauri-drag-region={true} className={cn("flex-1 overflow-hidden", isTauri ? "p-2 pt-6" : "p-2")}>
         <div className="flex h-full" data-tauri-drag-region={false}>
           <ResizablePanelGroup 
             orientation="horizontal" 

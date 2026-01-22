@@ -77,8 +77,6 @@ export async function middleware(request: NextRequest) {
   const session = await authEdge();
 
   if (await hasValidTauriToken(request)) {
-    console.log("request", request);
-    console.log("valid tauri token");
     return NextResponse.next();
   }
 
