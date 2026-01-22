@@ -18,9 +18,7 @@ import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-d
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview";
 import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview";
-import { preserveOffsetOnSource } from "@atlaskit/pragmatic-drag-and-drop/element/preserve-offset-on-source";
 import { useQuickAddTask } from "@/providers/quick-add-task";
-import { toast } from "sonner";
 import { Loader } from "@/components/ui/loader";
 
 type DayColumn = {
@@ -208,7 +206,7 @@ export default function CalendarPage() {
           <div className="min-w-max h-full">
             <div className="grid gap-0 h-full" style={{ gridTemplateColumns: `repeat(${numDays}, minmax(300px, 1fr))` }}>
               {isLoading ? (
-                <div className="col-span-full flex items-center justify-center h-full">
+                <div className="col-span-full w-full h-full flex items-center justify-center">
                   <Loader showText text="Loading calendar" />
                 </div>
               ) : (
