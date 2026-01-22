@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SessionProvider } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { RightSidebar, RightSidebarPanel } from "@/components/layout/right-sidebar";
 import { RightSidebarProvider, useRightSidebar } from "@/components/layout/right-sidebar/context";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { useRouter } from "next/navigation";
-import { QuickAddTaskProvider } from "@/providers/quick-add-task";
 import { toast } from "sonner";
 import { Loader } from "@/components/ui/loader";
 import {
@@ -15,7 +13,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { TauriSessionProvider, useTauriSession } from "@/providers/tauri-session";
+import { useTauriSession } from "@/providers/tauri-session";
 import { cn } from "@/lib/utils";
 import { usePlatform } from "@/lib/hooks/use-platform";
 
@@ -42,7 +40,6 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Vérifie si la session est chargée et si l'utilisateur n'est pas authentifié
     if (status === "loading") return; // Attend que la session soit chargée
-    
     if ((status === "unauthenticated" || !session?.user) && !hasRedirected.current) {
       hasRedirected.current = true;
       
@@ -53,7 +50,6 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
           description: "Pour des raisons de sécurité vous avez été déconnecté"
         }
       );
-      
       router.push("/login");
     }
   }, [status, session, router]);
@@ -130,13 +126,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <SessionProvider>
-      <TauriSessionProvider>
-        <QuickAddTaskProvider>
-          <DashboardContent>{children}</DashboardContent>
-        </QuickAddTaskProvider>
-      </TauriSessionProvider>
-    </SessionProvider>
-  );
+  return <DashboardContent>{children}</DashboardContent>;
 }

@@ -105,11 +105,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Get Google OAuth credentials for desktop app
-    const clientId = process.env.GOOGLE_CLIENT_ID_DESKTOP || process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET;
-
+    const clientId =
+      process.env.GOOGLE_CLIENT_ID_DESKTOP || process.env.GOOGLE_CLIENT_ID;
+    const clientSecret =
+      process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-      console.error("Missing Google OAuth credentials");
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500, headers: corsHeaders }
@@ -254,6 +254,17 @@ export async function POST(req: NextRequest) {
       },
       { headers: corsHeaders }
     );
+
+    const isSecure = req.nextUrl.protocol === "https:";
+    res.cookies.set({
+      name: "tauri-session",
+      value: jwt,
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+    });
 
     return res;
   } catch (error: any) {

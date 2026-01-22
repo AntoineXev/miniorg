@@ -1,17 +1,16 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryProvider } from "@/providers/query-provider";
 import { PlatformProvider } from "@/providers/platform-provider";
+import { SessionProvider } from "next-auth/react";
+import { TauriSessionProvider } from "@/providers/tauri-session";
+import { QuickAddTaskProvider } from "@/providers/quick-add-task";
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "MiniOrg - Life Planner",
-  description: "A minimal, clean life planner for modern professionals",
-};
 
 export default function RootLayout({
   children,
@@ -21,14 +20,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <PlatformProvider>
-          <QueryProvider>
-            <TooltipProvider delayDuration={200}>
-              {children}
-            </TooltipProvider>
-            <Toaster position="bottom-center" />
-          </QueryProvider>
-        </PlatformProvider>
+        <SessionProvider>
+          <TauriSessionProvider>
+            <QuickAddTaskProvider>
+              <PlatformProvider>
+                <QueryProvider>
+                  <TooltipProvider delayDuration={200}>
+                    {children}
+                  </TooltipProvider>
+                  <Toaster position="bottom-center" />
+                </QueryProvider>
+              </PlatformProvider>
+            </QuickAddTaskProvider>
+          </TauriSessionProvider>
+        </SessionProvider>
       </body>
     </html>
   );

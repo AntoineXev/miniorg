@@ -56,6 +56,7 @@ export function TauriSessionProvider({
   const isDesktop = isTauri();
   const router = useRouter();
   const oauthHandled = useRef(false);
+  const lastOAuthCode = useRef<string | null>(null);
 
   // Web session (NextAuth)
   const webSession = useNextAuthSession();
@@ -100,8 +101,8 @@ export function TauriSessionProvider({
       }
       if (!active) return;
       if (session) {
-        setTauriSession(session);
         setTauriStatus("authenticated");
+        setTauriSession(session);
       } else {
         setTauriStatus("unauthenticated");
       }
@@ -118,8 +119,17 @@ export function TauriSessionProvider({
 
     const cleanup = listenForOAuthCallback(
       async (code, state) => {
+        if (lastOAuthCode.current === code) {
+          if (shouldLog) {
+            console.log(LOG_PREFIX, "duplicate oauth code ignored", {
+              codePrefix: code.slice(0, 8),
+            });
+          }
+          return;
+        }
         if (oauthHandled.current) return;
         oauthHandled.current = true;
+        lastOAuthCode.current = code;
         try {
           if (shouldLog) {
             console.log(LOG_PREFIX, "oauth callback received", { code });
@@ -166,7 +176,6 @@ export function TauriSessionProvider({
   useEffect(() => {
     if (!isDesktop) return;
     if (tauriStatus !== "authenticated") return;
-
     // Avoid running if already on dashboard
     const isOnDashboard =
       typeof window !== "undefined" &&
@@ -201,7 +210,7 @@ export function TauriSessionProvider({
       }
     } else {
       // For web, redirect to NextAuth login
-      window.location.href = "/login";
+      router.push("/login");
     }
   };
 

@@ -109,6 +109,13 @@ export async function startTauriOAuthFlow(): Promise<void> {
   lastCodeVerifier = codeVerifier;
   lastState = state;
 
+  console.info("[tauri-auth] oauth start", {
+    redirectUri,
+    statePrefix: state.slice(0, 8),
+    codeChallengePrefix: codeChallenge.slice(0, 8),
+    codeVerifierLength: codeVerifier.length,
+  });
+
   // Build OAuth URL
   const scope = [
     "openid",
@@ -162,6 +169,13 @@ export async function exchangeCodeForToken(
   if (!state) {
     throw new Error("Missing OAuth state for token exchange");
   }
+
+  console.info("[tauri-auth] exchange code", {
+    codePrefix: code.slice(0, 8),
+    redirectUri,
+    statePrefix: state.slice(0, 8),
+    codeVerifierLength: codeVerifier.length,
+  });
 
   const response = await fetch(getApiUrl("/api/auth/tauri/token"), {
     method: "POST",
@@ -275,6 +289,7 @@ export async function saveTauriSession(session: TauriSession): Promise<void> {
 export async function clearTauriSession(): Promise<void> {
   if (typeof window === "undefined" || !isTauri()) return;
 
+  console.log("clearing tauri session");
   await invoke("clear_auth_token");
   ApiClient.clearAuthToken();
 }
@@ -292,6 +307,12 @@ export function listenForOAuthCallback(
 
   let unlistenCode: (() => void) | null = null;
   let unlistenError: (() => void) | null = null;
+  let active = true;
+
+  if ((listenForOAuthCallback as any).__activeListener) {
+    return () => {};
+  }
+  (listenForOAuthCallback as any).__activeListener = true;
 
   (async () => {
     try {
@@ -301,16 +322,27 @@ export function listenForOAuthCallback(
           onCode(event.payload.code, event.payload.state);
         }
       );
+      if (!active && unlistenCode) {
+        unlistenCode();
+        unlistenCode = null;
+        return;
+      }
 
       unlistenError = await listen<string>("oauth-error", (event) => {
         onError(event.payload);
       });
+      if (!active && unlistenError) {
+        unlistenError();
+        unlistenError = null;
+      }
     } catch (error) {
       console.error("Failed to register OAuth listeners:", error);
     }
   })();
 
   return () => {
+    active = false;
+    (listenForOAuthCallback as any).__activeListener = false;
     if (unlistenCode) unlistenCode();
     if (unlistenError) unlistenError();
   };

@@ -19,6 +19,31 @@ async function hasValidTauriBearer(request: NextRequest): Promise<boolean> {
   }
 }
 
+async function hasValidTauriToken(request: NextRequest): Promise<boolean> {
+  // 1) Bearer token (API / fetch)
+  const authHeader = request.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (token) {
+      try {
+        await verifyTauriJwt(token);
+        return true;
+      } catch {}
+    }
+  }
+
+  // 2) Cookie token (navigation / router)
+  const cookieToken = request.cookies.get("tauri-session")?.value;
+  if (cookieToken) {
+    try {
+      await verifyTauriJwt(cookieToken);
+      return true;
+    } catch {}
+  }
+
+  return false;
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const origin = request.headers.get("origin");
@@ -50,6 +75,12 @@ export async function middleware(request: NextRequest) {
   }
 
   const session = await authEdge();
+
+  if (await hasValidTauriToken(request)) {
+    console.log("request", request);
+    console.log("valid tauri token");
+    return NextResponse.next();
+  }
 
   // Liste des routes protégées (dashboard)
   const protectedRoutes = ["/backlog", "/calendar", "/today", "/settings"];
