@@ -197,7 +197,14 @@ export async function exchangeCodeForToken(
   }
 
   const data = await response.json();
-  
+
+  console.log("[tauri-auth] exchangeCodeForToken response", {
+    hasToken: !!data.token,
+    expires_at: data.expires_at,
+    expires_at_type: typeof data.expires_at,
+    user: data.user?.email,
+  });
+
   // Store token in ApiClient
   ApiClient.setAuthToken(data.token);
   lastCodeVerifier = null;
@@ -245,22 +252,60 @@ export async function refreshTauriSession(): Promise<TauriSession | null> {
  * Get current Tauri session from secure storage
  */
 export async function getTauriSession(): Promise<TauriSession | null> {
-  if (typeof window === "undefined" || !isTauri()) return null;
+  console.log("[tauri-auth] getTauriSession called", {
+    hasWindow: typeof window !== "undefined",
+    isTauri: isTauri()
+  });
 
-  const stored = await invoke<StoredAuthToken | null>("get_auth_token");
-  if (!stored?.token || !stored.expires_at) return null;
+  if (typeof window === "undefined" || !isTauri()) {
+    console.log("[tauri-auth] Not in Tauri environment, returning null");
+    return null;
+  }
 
-  const expiresAtNum = Number(stored.expires_at);
-  if (!Number.isFinite(expiresAtNum)) return null;
+  let stored: StoredAuthToken | null;
+  try {
+    console.log("[tauri-auth] Invoking get_auth_token...");
+    stored = await invoke<StoredAuthToken | null>("get_auth_token");
+    console.log("[tauri-auth] get_auth_token returned:", JSON.stringify(stored));
+  } catch (error) {
+    console.error("[tauri-auth] Keychain access error:", error);
+    return null;
+  }
 
-  if (Date.now() / 1000 > expiresAtNum) {
+  if (!stored?.token) {
+    console.log("[tauri-auth] No token in storage");
+    return null;
+  }
+
+  // Try to get expires_at from storage, or extract from JWT payload
+  let expiresAtNum = stored.expires_at ? Number(stored.expires_at) : null;
+
+  if (!expiresAtNum || !Number.isFinite(expiresAtNum)) {
+    // Extract exp from JWT payload as fallback
+    const payload = decodeJwtPayload(stored.token);
+    if (payload?.exp) {
+      expiresAtNum = payload.exp;
+      console.log("[tauri-auth] Using exp from JWT payload:", expiresAtNum);
+    } else {
+      console.log("[tauri-auth] No valid expires_at and no exp in JWT");
+      return null;
+    }
+  }
+
+  const now = Date.now() / 1000;
+  if (now > expiresAtNum) {
+    console.log("[tauri-auth] Token expired", { now, expiresAt: expiresAtNum, diff: now - expiresAtNum });
     await clearTauriSession();
     return null;
   }
 
   const user = decodeUserFromJwt(stored.token);
-  if (!user) return null;
+  if (!user) {
+    console.error("[tauri-auth] Failed to decode user from JWT");
+    return null;
+  }
 
+  console.log("[tauri-auth] Session valid, returning user:", user.email);
   ApiClient.setAuthToken(stored.token);
 
   return {
@@ -276,9 +321,16 @@ export async function getTauriSession(): Promise<TauriSession | null> {
 export async function saveTauriSession(session: TauriSession): Promise<void> {
   if (typeof window === "undefined" || !isTauri()) return;
 
+  console.log("[tauri-auth] saveTauriSession called", {
+    hasToken: !!session.token,
+    expiresAt: session.expiresAt,
+    expiresAtType: typeof session.expiresAt,
+  });
+
+  // Tauri v2 converts snake_case params to camelCase, so use expiresAt not expires_at
   await invoke("set_auth_token", {
     token: session.token,
-    expires_at: session.expiresAt,
+    expiresAt: session.expiresAt,
   });
   ApiClient.setAuthToken(session.token);
 }
@@ -348,23 +400,28 @@ export function listenForOAuthCallback(
   };
 }
 
-function decodeUserFromJwt(token: string): TauriUser | null {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const parts = token.split(".");
   if (parts.length < 2) return null;
   try {
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-    const payload = JSON.parse(atob(padded));
-    const id = payload.sub as string | undefined;
-    const email = typeof payload.email === "string" ? payload.email : null;
-    if (!id || !email) return null;
-    return {
-      id,
-      email,
-      name: typeof payload.name === "string" ? payload.name : null,
-      image: typeof payload.picture === "string" ? payload.picture : null,
-    };
+    return JSON.parse(atob(padded));
   } catch {
     return null;
   }
+}
+
+function decodeUserFromJwt(token: string): TauriUser | null {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+  const id = payload.sub as string | undefined;
+  const email = typeof payload.email === "string" ? payload.email : null;
+  if (!id || !email) return null;
+  return {
+    id,
+    email,
+    name: typeof payload.name === "string" ? payload.name : null,
+    image: typeof payload.picture === "string" ? payload.picture : null,
+  };
 }

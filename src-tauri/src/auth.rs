@@ -51,13 +51,14 @@ fn read_token_from_keyring() -> Result<Option<AuthToken>, String> {
         Ok(value) => {
             let token = serde_json::from_str::<AuthToken>(&value)
                 .map_err(|e| format!("Failed to parse stored token: {}", e))?;
+            println!("[keyring] Successfully read token from keyring");
             Ok(Some(token))
         }
         Err(err) => {
             let message = err.to_string();
-            if message.to_lowercase().contains("no entry") {
-                return Ok(None);
-            }
+            // Log ALL errors for debugging
+            println!("[keyring] Keyring error: {}", message);
+            // Return None for any error - don't break the flow
             Ok(None)
         }
     }
@@ -120,10 +121,18 @@ pub async fn start_oauth_flow(
 pub fn get_auth_token() -> Result<Option<AuthToken>, String> {
     let token = AUTH_TOKEN.lock().unwrap();
     if token.is_some() {
+        println!("[keyring] Returning cached token from memory");
         return Ok(token.clone());
     }
     drop(token);
+
+    println!("[keyring] No cached token, reading from keyring...");
     let stored = read_token_from_keyring()?;
+
+    if stored.is_some() {
+        println!("[keyring] Token retrieved from keyring, caching in memory");
+    }
+
     let mut token = AUTH_TOKEN.lock().unwrap();
     *token = stored.clone();
     Ok(stored)
@@ -132,10 +141,12 @@ pub fn get_auth_token() -> Result<Option<AuthToken>, String> {
 /// Set auth token (after successful OAuth)
 #[tauri::command]
 pub fn set_auth_token(token: String, expires_at: Option<i64>) -> Result<(), String> {
+    println!("[keyring] set_auth_token called, expires_at: {:?}", expires_at);
     let mut auth_token = AUTH_TOKEN.lock().unwrap();
     let session = AuthToken { token, expires_at };
     *auth_token = Some(session.clone());
     write_token_to_keyring(&session)?;
+    println!("[keyring] Token saved to keyring successfully");
     Ok(())
 }
 
