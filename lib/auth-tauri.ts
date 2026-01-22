@@ -198,13 +198,6 @@ export async function exchangeCodeForToken(
 
   const data = await response.json();
 
-  console.log("[tauri-auth] exchangeCodeForToken response", {
-    hasToken: !!data.token,
-    expires_at: data.expires_at,
-    expires_at_type: typeof data.expires_at,
-    user: data.user?.email,
-  });
-
   // Store token in ApiClient
   ApiClient.setAuthToken(data.token);
   lastCodeVerifier = null;
@@ -252,60 +245,38 @@ export async function refreshTauriSession(): Promise<TauriSession | null> {
  * Get current Tauri session from secure storage
  */
 export async function getTauriSession(): Promise<TauriSession | null> {
-  console.log("[tauri-auth] getTauriSession called", {
-    hasWindow: typeof window !== "undefined",
-    isTauri: isTauri()
-  });
-
-  if (typeof window === "undefined" || !isTauri()) {
-    console.log("[tauri-auth] Not in Tauri environment, returning null");
-    return null;
-  }
+  if (typeof window === "undefined" || !isTauri()) return null;
 
   let stored: StoredAuthToken | null;
   try {
-    console.log("[tauri-auth] Invoking get_auth_token...");
     stored = await invoke<StoredAuthToken | null>("get_auth_token");
-    console.log("[tauri-auth] get_auth_token returned:", JSON.stringify(stored));
   } catch (error) {
     console.error("[tauri-auth] Keychain access error:", error);
     return null;
   }
 
-  if (!stored?.token) {
-    console.log("[tauri-auth] No token in storage");
-    return null;
-  }
+  if (!stored?.token) return null;
 
-  // Try to get expires_at from storage, or extract from JWT payload
+  // Try to get expires_at from storage, or extract from JWT payload as fallback
   let expiresAtNum = stored.expires_at ? Number(stored.expires_at) : null;
 
   if (!expiresAtNum || !Number.isFinite(expiresAtNum)) {
-    // Extract exp from JWT payload as fallback
     const payload = decodeJwtPayload(stored.token);
     if (payload?.exp) {
-      expiresAtNum = payload.exp;
-      console.log("[tauri-auth] Using exp from JWT payload:", expiresAtNum);
+      expiresAtNum = payload.exp as number;
     } else {
-      console.log("[tauri-auth] No valid expires_at and no exp in JWT");
       return null;
     }
   }
 
-  const now = Date.now() / 1000;
-  if (now > expiresAtNum) {
-    console.log("[tauri-auth] Token expired", { now, expiresAt: expiresAtNum, diff: now - expiresAtNum });
+  if (Date.now() / 1000 > expiresAtNum) {
     await clearTauriSession();
     return null;
   }
 
   const user = decodeUserFromJwt(stored.token);
-  if (!user) {
-    console.error("[tauri-auth] Failed to decode user from JWT");
-    return null;
-  }
+  if (!user) return null;
 
-  console.log("[tauri-auth] Session valid, returning user:", user.email);
   ApiClient.setAuthToken(stored.token);
 
   return {
@@ -321,13 +292,7 @@ export async function getTauriSession(): Promise<TauriSession | null> {
 export async function saveTauriSession(session: TauriSession): Promise<void> {
   if (typeof window === "undefined" || !isTauri()) return;
 
-  console.log("[tauri-auth] saveTauriSession called", {
-    hasToken: !!session.token,
-    expiresAt: session.expiresAt,
-    expiresAtType: typeof session.expiresAt,
-  });
-
-  // Tauri v2 converts snake_case params to camelCase, so use expiresAt not expires_at
+  // Tauri v2 converts snake_case params to camelCase
   await invoke("set_auth_token", {
     token: session.token,
     expiresAt: session.expiresAt,
@@ -341,7 +306,6 @@ export async function saveTauriSession(session: TauriSession): Promise<void> {
 export async function clearTauriSession(): Promise<void> {
   if (typeof window === "undefined" || !isTauri()) return;
 
-  console.log("clearing tauri session");
   await invoke("clear_auth_token");
   ApiClient.clearAuthToken();
 }
