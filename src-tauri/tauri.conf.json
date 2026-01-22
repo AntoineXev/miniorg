@@ -67,6 +67,12 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "deep-link": {
+      "mobile": [],
+      "desktop": {
+        "schemes": ["miniorg"]
+      }
     }
   }
 }

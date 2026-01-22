@@ -213,15 +213,101 @@ pub async fn start_oauth_listener(app_handle: AppHandle) -> Result<String, Strin
                 }
             }
 
-            // Always send a tiny HTML response to close the browser tab
+            // Send HTML response with link to open the app (matching MiniOrg design)
             let body = r#"
 <!doctype html>
 <html>
-  <head><meta charset="utf-8"><title>MiniOrg</title></head>
-  <body style="font-family: sans-serif; padding: 24px;">
-    <h2>Login received</h2>
-    <p>You can close this window and return to MiniOrg.</p>
-    <script>window.close();</script>
+  <head>
+    <meta charset="utf-8">
+    <title>MiniOrg</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: hsl(40 10% 98%);
+        color: hsl(0 0% 12%);
+      }
+      .container {
+        width: 100%;
+        max-width: 28rem;
+        padding: 2rem;
+        text-align: center;
+      }
+      .icon {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 1.5rem;
+        background: hsl(142 76% 36%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .icon svg {
+        width: 24px;
+        height: 24px;
+        color: white;
+      }
+      h1 {
+        font-size: 2.25rem;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        color: hsl(0 0% 45%);
+        margin: 0 0 2.5rem;
+      }
+      .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: white;
+        border: 1px solid hsl(0 0% 90%);
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: hsl(0 0% 12%);
+        text-decoration: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        transition: background 0.2s;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: hsl(0 0% 96%);
+      }
+      .hint {
+        font-size: 0.875rem;
+        color: hsl(0 0% 45%);
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">
+        <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h1>MiniOrg</h1>
+      <p>Connexion réussie</p>
+      <a href="miniorg://open" class="btn">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        Ouvrir MiniOrg
+      </a>
+      <p class="hint">Vous pouvez fermer cet onglet</p>
+    </div>
   </body>
 </html>
 "#;

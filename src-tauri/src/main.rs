@@ -10,13 +10,21 @@ use tauri::{
     Manager
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use tauri_plugin_deep_link::DeepLinkExt;
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .setup(|app| {        
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            // Handle deep links - focus the main window when a deep link is received
+            #[cfg(desktop)]
+            app.deep_link().on_open_url(|event| {
+                // Deep link received, the app will be focused automatically
+                // The URL is available in event.urls() if we need to handle specific routes
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
