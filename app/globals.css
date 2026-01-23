@@ -32,7 +32,7 @@
     @apply border-border;
   }
   html, body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     overscroll-behavior: none;
   }
