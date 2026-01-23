@@ -206,24 +206,9 @@ export async function PATCH(request: NextRequest) {
     
     if (finalStatus === "done" && !existingTask.completedAt) {
       // Task is being marked as done - set completedAt
+      // Note: We keep the original scheduledDate even if it's in the past,
+      // so that uncompleting the task returns it to its original overdue state
       updateData.completedAt = new Date();
-      
-      // If task has a scheduled date in the past, update it to today
-      const taskScheduledDate = newScheduledDate || existingTask.scheduledDate;
-      if (taskScheduledDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const scheduledDate = new Date(taskScheduledDate);
-        scheduledDate.setHours(0, 0, 0, 0);
-        
-        if (scheduledDate < today) {
-          // Update scheduled date to today (preserving time if there was one)
-          const originalTime = new Date(taskScheduledDate);
-          const updatedDate = new Date();
-          updatedDate.setHours(originalTime.getHours(), originalTime.getMinutes(), originalTime.getSeconds(), originalTime.getMilliseconds());
-          updateData.scheduledDate = updatedDate;
-        }
-      }
     } else if (finalStatus !== "done" && existingTask.completedAt) {
       // Task is being unmarked as done - clear completedAt
       updateData.completedAt = null;
