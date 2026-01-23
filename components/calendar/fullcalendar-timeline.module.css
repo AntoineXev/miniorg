@@ -1,0 +1,149 @@
+/* FullCalendar Timeline Styles */
+.container {
+  /* Container class for scoping */
+}
+
+/* Hide default header */
+.container :global(.fc-header-toolbar) {
+  display: none !important;
+}
+
+/* Base styles */
+.container :global(.fc) {
+  --fc-border-color: hsl(var(--border) / 0.4);
+  --fc-today-bg-color: transparent;
+  --fc-now-indicator-color: #ef4444;
+  --fc-event-border-color: transparent;
+  font-family: inherit;
+}
+
+/* Time axis styling */
+.container :global(.fc-timegrid-slot) {
+  height: 32px !important;
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
+}
+
+.container :global(.fc-timegrid-slot-label) {
+  width: 56px !important;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground) / 0.6);
+  padding: 4px 8px;
+  border: none !important;
+  background: transparent !important;
+}
+
+.container :global(.fc-timegrid-slot-label:hover) {
+  background: transparent !important;
+}
+
+.container :global(.fc-timegrid-slot-label-cushion) {
+  padding: 0;
+}
+
+/* Hide the half-hour labels */
+.container :global(.fc-timegrid-slot-label:has(.fc-timegrid-slot-label-cushion:empty)) {
+  visibility: hidden;
+}
+
+/* Column styling */
+.container :global(.fc-timegrid-col) {
+  border-left: none !important;
+}
+
+/* Hide day header */
+.container :global(.fc-col-header) {
+  display: none;
+}
+
+/* Event styling */
+.container :global(.fc-event) {
+  border-radius: 4px;
+  border: none !important;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.container :global(.fc-event:hover) {
+  transform: scale(1.01);
+}
+
+.container :global(.fc-event-main) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.container :global(.fc-event-main-frame) {
+  height: 100%;
+}
+
+.container :global(.fc-event .fc-event-content) {
+  color: white !important;
+}
+
+/* Resize handles */
+.container :global(.fc-event-resizer) {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 10;
+}
+
+.container :global(.fc-event-resizer-start) {
+  top: 0;
+}
+
+.container :global(.fc-event-resizer-end) {
+  bottom: 0;
+}
+
+/* Now indicator */
+.container :global(.fc-timegrid-now-indicator-line) {
+  border-color: #ef4444;
+  border-width: 1px;
+}
+
+.container :global(.fc-timegrid-now-indicator-arrow) {
+  display: none;
+}
+
+/* Hide scrollbar */
+.container :global(.fc-scroller) {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.container :global(.fc-scroller::-webkit-scrollbar) {
+  display: none; /* Chrome/Safari */
+}
+
+/* Slot hover effect (only on event lanes, not labels) */
+.container :global(.fc-timegrid-slot-lane:hover) {
+  background: hsl(var(--muted) / 0.1);
+}
+
+/* Remove borders from container */
+.container :global(.fc-scrollgrid) {
+  border: none !important;
+}
+
+.container :global(.fc-scrollgrid-section > td) {
+  border: none !important;
+}
+
+/* Event dragging */
+.container :global(.fc-event-dragging) {
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 50 !important;
+}
+
+.container :global(.fc-event-resizing) {
+  opacity: 0.8;
+}
+
+/* Hide mirror element's default styling */
+.container :global(.fc-event-mirror) {
+  opacity: 0.5;
+}

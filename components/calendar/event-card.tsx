@@ -4,27 +4,19 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { isPast } from "date-fns";
 import { calculateDuration } from "@/lib/utils/calendar";
+import { getEventColor, getEventLightBackground } from "@/lib/utils/event-colors";
+import { MIN_EVENT_HEIGHT_PX } from "@/lib/constants/calendar";
 import { Calendar } from "lucide-react";
+import type { CalendarEvent } from "@/lib/api/types";
 
-export type CalendarEvent = {
-  id: string;
-  title: string;
-  description?: string | null;
+/** CalendarEvent with parsed Date objects (not strings) */
+export type ParsedCalendarEvent = Omit<CalendarEvent, 'startTime' | 'endTime'> & {
   startTime: Date;
   endTime: Date;
-  taskId?: string | null;
-  color?: string | null;
-  isCompleted: boolean;
-  source: string;
-  task?: {
-    id: string;
-    title: string;
-    tags?: Array<{ id: string; name: string; color: string }>;
-  } | null;
 };
 
 export type EventCardProps = {
-  event: CalendarEvent;
+  event: ParsedCalendarEvent;
   onClick?: (eventId: string) => void;
   style?: React.CSSProperties;
   className?: string;
@@ -41,23 +33,16 @@ export function EventCard({
   compact = false,
   pixelsPerMinute,
 }: EventCardProps) {
-  // Déterminer la couleur selon les règles:
-  // - Si lié à une tâche -> couleur primaire miniorg
-  // - Sinon -> couleur du calendrier (gris par défaut pour miniorg)
-  const eventColor = event.taskId 
-    ? "hsl(17 78% 62%)" // Couleur primaire miniorg
-    : event.color || "#9ca3af"; // Couleur du calendrier ou gris par défaut
-  
-  // Vérifier si l'événement est passé
+  const eventColor = getEventColor(event);
+  const backgroundColor = getEventLightBackground(event);
   const isPastEvent = isPast(event.endTime);
-  
-  // Calculer la hauteur en fonction de la durée si pixelsPerMinute est spécifié
+
+  // Calculate height based on duration if pixelsPerMinute is specified
   let heightStyle: React.CSSProperties | undefined;
   if (pixelsPerMinute !== undefined) {
     const durationMinutes = calculateDuration(event.startTime, event.endTime);
     const calculatedHeight = durationMinutes * pixelsPerMinute;
-    const minHeight = 24; // Hauteur minimale pour qu'on puisse voir le titre
-    const height = Math.max(calculatedHeight, minHeight);
+    const height = Math.max(calculatedHeight, MIN_EVENT_HEIGHT_PX);
     heightStyle = { height: `${height}px` };
   }
 
@@ -82,7 +67,7 @@ export function EventCard({
         )}
         style={{
           borderColor: eventColor,
-          backgroundColor: `${eventColor}10`,
+          backgroundColor,
         }}
         onClick={() => onClick?.(event.id)}
       >

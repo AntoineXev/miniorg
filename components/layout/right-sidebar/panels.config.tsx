@@ -1,5 +1,5 @@
 import { CalendarClock, ClipboardList } from "lucide-react";
-import { TimelineSidebar } from "@/components/calendar/timeline-sidebar";
+import { FullCalendarTimeline } from "@/components/calendar/fullcalendar-timeline";
 import { BacklogSidebar } from "@/components/backlog/backlog-sidebar";
 import { LucideIcon } from "lucide-react";
 
@@ -15,7 +15,7 @@ export const PANELS: Panel[] = [
     id: "timeline",
     title: "Timeline",
     icon: CalendarClock,
-    component: TimelineSidebar,
+    component: FullCalendarTimeline,
   },
   {
     id: "backlog",

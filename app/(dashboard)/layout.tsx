@@ -21,6 +21,7 @@ import { useTauriTaskHandler } from "@/lib/hooks/use-tauri-task-handler";
 import { QuickAddWindow } from "@/components/layout/quick-add-window";
 import { isTauri } from "@/lib/platform";
 import { listen, TauriEvents } from "@/lib/tauri/events";
+import { TimelineDragProvider } from "@/lib/contexts/timeline-drag-context";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
@@ -142,7 +143,9 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
 function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <RightSidebarProvider>
-      <DashboardContentInner>{children}</DashboardContentInner>
+      <TimelineDragProvider>
+        <DashboardContentInner>{children}</DashboardContentInner>
+      </TimelineDragProvider>
     </RightSidebarProvider>
   );
 }
