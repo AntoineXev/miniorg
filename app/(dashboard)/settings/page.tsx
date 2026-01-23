@@ -1,15 +1,15 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
 import { User, Calendar, Hash, LogOut, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useTauriSession } from "@/providers/tauri-session";
+import type { ReactNode } from "react";
 
 type SettingsSectionProps = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   subtitle?: string;
   onClick: () => void;
@@ -37,11 +37,11 @@ function SettingsSection({ icon, title, subtitle, onClick, showChevron = true }:
 }
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { session, logout } = useTauriSession();
   const router = useRouter();
 
   const handleLogout = () => {
-    signOut({ callbackUrl: "/login" });
+    logout();
   };
 
   const getUserInitials = () => {

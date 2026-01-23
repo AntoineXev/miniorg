@@ -1,8 +1,24 @@
 /** @type {import('next').NextConfig} */
+const isTauri = process.env.BUILD_TARGET === 'tauri'
 const isCloudflare = process.env.BUILD_TARGET === 'cloudflare'
 
 const nextConfig = {
+  // Static export for Tauri builds
+  output: isTauri ? 'export' : undefined,
+  distDir: isTauri ? 'out' : '.next',
+  // Ignore .ts route files during Tauri export so API routes are not included
+  pageExtensions: isTauri
+    ? ['tsx', 'jsx', 'mdx']
+    : ['ts', 'tsx', 'js', 'jsx', 'mdx'],
+  
+  // Skip API routes for static export (Tauri builds)
+  ...(isTauri && {
+    trailingSlash: true,
+  }),
+  
   images: {
+    // Disable image optimization for static export (Tauri)
+    unoptimized: isTauri,
     remotePatterns: [
       {
         protocol: 'https',
@@ -40,6 +56,14 @@ const nextConfig = {
         'net': false,
         'tls': false,
         'crypto': false,
+      };
+    } else if (isTauri) {
+      // Build Tauri: skip API routes and server-side dependencies
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'fs': false,
+        'net': false,
+        'tls': false,
       };
     } else {
       // Build dev/local: externaliser normalement

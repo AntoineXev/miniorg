@@ -10,6 +10,7 @@ import { deadlineTypeLabels } from "@/lib/utils/task";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
 import { TagSelector } from "@/components/tags/tag-selector";
+import { usePlatform } from "@/lib/hooks/use-platform";
 import type { Task, Tag } from "@/lib/api/types";
 
 type EditTaskDialogProps = {
@@ -39,6 +40,7 @@ export function EditTaskDialog({
 
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
+  const { isTauri } = usePlatform();
   const isSubmitting = updateTask.isPending;
   const isDeleting = deleteTask.isPending;
 
@@ -181,6 +183,7 @@ export function EditTaskDialog({
                 setSpecificDate(undefined);
               }}
               placeholder="Pick a date"
+              usePortal={!isTauri}
             />
           ) : (
             <>

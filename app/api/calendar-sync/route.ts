@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { CalendarService } from '@/lib/calendar/calendar-service';
 import { z } from 'zod';
+import { getAuthorizedUser } from '@/lib/auth-tauri-server';
 
 const syncSchema = z.object({
   startDate: z.string().datetime().optional(),
@@ -12,8 +12,10 @@ const syncSchema = z.object({
 // POST /api/calendar-sync - Synchroniser tous les calendriers actifs de l'utilisateur
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Récupérer tous les calendriers actifs de l'utilisateur
     const connections = await prisma.calendarConnection.findMany({
       where: {
-        userId: session.user.id,
+        userId,
         isActive: true,
       },
     });

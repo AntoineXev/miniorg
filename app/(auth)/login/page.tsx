@@ -1,9 +1,33 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, SessionProvider } from "next-auth/react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { isTauri } from "@/lib/platform";
+import { TauriSessionProvider, useTauriSession } from "@/providers/tauri-session";
 
-export default function LoginPage() {
+function LoginContent() {
+  const { login, status } = useTauriSession();
+  const router = useRouter();
+
+  // If already authenticated (Tauri JWT), skip login page
+  useEffect(() => {
+    if (status === "authenticated" && isTauri()) {
+      router.replace("/backlog");
+    }
+  }, [status, router]);
+
+  const handleLogin = () => {
+    if (isTauri()) {
+      // Tauri desktop flow: open browser for OAuth then exchange code via API
+      void login();
+    } else {
+      // Web: standard NextAuth flow
+      signIn("google", { callbackUrl: "/backlog" });
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -22,7 +46,7 @@ export default function LoginPage() {
 
       <div className="mt-10">
         <button
-          onClick={() => signIn("google", { callbackUrl: "/backlog" })}
+          onClick={handleLogin}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-border rounded-lg hover:bg-secondary transition-colors duration-200 font-medium text-foreground shadow-sm"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -47,5 +71,15 @@ export default function LoginPage() {
         </button>
       </div>
     </motion.div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <SessionProvider>
+      <TauriSessionProvider>
+        <LoginContent />
+      </TauriSessionProvider>
+    </SessionProvider>
   );
 }

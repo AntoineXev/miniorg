@@ -45,3 +45,11 @@ next-env.d.ts
 /prisma/dev.db-journal
 
 dev.db
+
+# tauri
+/src-tauri/target/
+/src-tauri/WixTools/
+/src-tauri/gen/
+/src-tauri/*.log
+
+.env.tauri

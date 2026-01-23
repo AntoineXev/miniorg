@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SessionProvider, useSession } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { RightSidebar, RightSidebarPanel } from "@/components/layout/right-sidebar";
 import { RightSidebarProvider, useRightSidebar } from "@/components/layout/right-sidebar/context";
 import { QuickAddTask } from "@/components/tasks/quick-add-task";
 import { useRouter } from "next/navigation";
-import { QuickAddTaskProvider } from "@/providers/quick-add-task";
 import { toast } from "sonner";
 import { Loader } from "@/components/ui/loader";
 import {
@@ -15,21 +13,28 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-
+import { useTauriSession } from "@/providers/tauri-session";
+import { cn } from "@/lib/utils";
+import { usePlatform } from "@/lib/hooks/use-platform";
+import { useTauriQuerySync } from "@/lib/hooks/use-tauri-query-sync";
+import { QuickAddWindow } from "@/components/layout/quick-add-window";
+import { isTauri } from "@/lib/platform";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
-  const { data: session, status } = useSession();
+  const { session, status } = useTauriSession();
   const hasRedirected = useRef(false);
   const router = useRouter();
-  
+  const { isTauri } = usePlatform();
+
+  // Sync React Query cache across Tauri windows
+  useTauriQuerySync();
   // Load saved layout from localStorage
   const [defaultLayout, setDefaultLayout] = useState<{ [id: string]: number } | undefined>(() => {
     if (typeof window === "undefined") return undefined;
     const saved = localStorage.getItem("miniorg-dashboard-layout");
     return saved ? JSON.parse(saved) : undefined;
   });
-
   // Save layout changes to localStorage
   const handleLayoutChange = (layout: { [id: string]: number }) => {
     if (typeof window === "undefined") return;
@@ -39,7 +44,6 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Vérifie si la session est chargée et si l'utilisateur n'est pas authentifié
     if (status === "loading") return; // Attend que la session soit chargée
-    
     if ((status === "unauthenticated" || !session?.user) && !hasRedirected.current) {
       hasRedirected.current = true;
       
@@ -50,7 +54,6 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
           description: "Pour des raisons de sécurité vous avez été déconnecté"
         }
       );
-      
       router.push("/login");
     }
   }, [status, session, router]);
@@ -75,8 +78,8 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-hidden p-2">
-        <div className="flex h-full">
+      <div data-tauri-drag-region={true} className={cn("flex-1 overflow-hidden", isTauri ? "p-2 pt-6" : "p-2")}>
+        <div className="flex h-full" data-tauri-drag-region={false}>
           <ResizablePanelGroup 
             orientation="horizontal" 
             className="flex-1 gap"
@@ -85,7 +88,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
           >
             {/* Main content */}
             <ResizablePanel id="main-content" defaultSize={75} minSize={40}>
-              <main className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
+              <main  className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
                 {children}
               </main>
             </ResizablePanel>
@@ -127,11 +130,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <SessionProvider>
-      <QuickAddTaskProvider>
-        <DashboardContent>{children}</DashboardContent>
-      </QuickAddTaskProvider>
-    </SessionProvider>
-  );
+  const [windowLabel, setWindowLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isTauri()) {
+      import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+        setWindowLabel(getCurrentWindow().label);
+      });
+    } else {
+      // Not Tauri, treat as main window
+      setWindowLabel("main");
+    }
+  }, []);
+
+  // Don't render until we know the window label
+  if (windowLabel === null) {
+    return null;
+  }
+
+  return windowLabel === "main" ? <DashboardContent>{children}</DashboardContent> : <QuickAddWindow />;
 }

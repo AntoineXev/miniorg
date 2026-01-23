@@ -70,7 +70,7 @@ export function BacklogContent({
     <>
       <div className={compact ? "" : "w-full pb-20 bg-background"}>
         {isLoading ? (
-          <div className="text-center py-12">
+          <div className="w-full h-full flex items-center justify-center text-center py-12">
             <Loader showText text="Loading tasks" />
           </div>
         ) : filteredTasks.length === 0 ? (

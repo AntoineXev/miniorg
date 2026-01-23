@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { CalendarService } from "@/lib/calendar/calendar-service";
+import { getAuthorizedUser } from "@/lib/auth-tauri-server";
 
 // Schema for calendar event creation/update
 const calendarEventSchema = z.object({
@@ -36,8 +36,10 @@ function determineTaskStatus(scheduledDate: Date | null | undefined, currentStat
 // GET /api/calendar-events - Fetch all calendar events for authenticated user
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
     const taskId = searchParams.get("taskId");
 
     const where: any = {
-      userId: session.user.id,
+      userId,
     };
 
     // Filter by date range
@@ -91,8 +93,10 @@ export async function GET(request: NextRequest) {
 // POST /api/calendar-events - Create a new calendar event
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -104,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // If taskId is provided, update the task's scheduledDate and auto-determine status
     if (body.taskId) {
-      const task = await prisma.task.findUnique({ where: { id: body.taskId } });
+      const task = await prisma.task.findUnique({ where: { id: body.taskId, userId } });
       if (task) {
         await prisma.task.update({
           where: { id: body.taskId },
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
         ...body,
         startTime,
         endTime,
-        userId: session.user.id,
+        userId,
       },
       include: {
         task: {
@@ -135,7 +139,7 @@ export async function POST(request: NextRequest) {
     // Check if there's an export target connection and export the event
     const exportConnection = await prisma.calendarConnection.findFirst({
       where: {
-        userId: session.user.id,
+        userId,
         isExportTarget: true,
         isActive: true,
       },
@@ -187,8 +191,10 @@ export async function POST(request: NextRequest) {
 // PATCH /api/calendar-events - Update a calendar event
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -201,7 +207,7 @@ export async function PATCH(request: NextRequest) {
 
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
       include: { connection: true },
     });
 
@@ -244,7 +250,7 @@ export async function PATCH(request: NextRequest) {
               scheduledDate: startTime,
               duration: durationMinutes,
               status: "done", // Mark as done since we're completing the event
-              userId: session.user.id,
+              userId,
             },
           });
 
@@ -253,17 +259,19 @@ export async function PATCH(request: NextRequest) {
         } else {
           // Event already has a task, mark it as done
           await prisma.task.update({
-            where: { id: existingEvent.taskId },
+            where: { id: existingEvent.taskId, userId },
             data: { status: "done" },
           });
         }
       } else if (isUncompleting && existingEvent.taskId) {
         // If event is being uncompleted and has a task, update task status
-        const task = await prisma.task.findUnique({ where: { id: existingEvent.taskId } });
+        const task = await prisma.task.findUnique({
+          where: { id: existingEvent.taskId, userId },
+        });
         if (task) {
           // Set status based on whether it has a scheduledDate
           await prisma.task.update({
-            where: { id: existingEvent.taskId },
+            where: { id: existingEvent.taskId, userId },
             data: {
               status: task.scheduledDate ? "planned" : "backlog",
             },
@@ -274,10 +282,12 @@ export async function PATCH(request: NextRequest) {
 
     // If startTime is being updated and event is linked to a task, update task's scheduledDate and status
     if (updateData.startTime && existingEvent.taskId) {
-      const task = await prisma.task.findUnique({ where: { id: existingEvent.taskId } });
+      const task = await prisma.task.findUnique({
+        where: { id: existingEvent.taskId, userId },
+      });
       if (task) {
         await prisma.task.update({
-          where: { id: existingEvent.taskId },
+          where: { id: existingEvent.taskId, userId },
           data: {
             scheduledDate: updateData.startTime,
             status: determineTaskStatus(updateData.startTime, task.status),
@@ -288,11 +298,13 @@ export async function PATCH(request: NextRequest) {
 
     // If taskId is being linked (from null to a taskId), update the task
     if ('taskId' in updates && updates.taskId && !existingEvent.taskId) {
-      const task = await prisma.task.findUnique({ where: { id: updates.taskId } });
+      const task = await prisma.task.findUnique({
+        where: { id: updates.taskId, userId },
+      });
       if (task) {
         const newScheduledDate = updateData.startTime || existingEvent.startTime;
         await prisma.task.update({
-          where: { id: updates.taskId },
+          where: { id: updates.taskId, userId },
           data: {
             scheduledDate: newScheduledDate,
             status: determineTaskStatus(newScheduledDate, task.status),
@@ -307,7 +319,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const event = await prisma.calendarEvent.update({
-      where: { id },
+      where: { id, userId },
       data: updateData,
       include: {
         task: {
@@ -346,8 +358,10 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/calendar-events - Delete a calendar event
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -360,7 +374,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify event belongs to user
     const existingEvent = await prisma.calendarEvent.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
       include: { task: true, connection: true },
     });
 
@@ -382,7 +396,7 @@ export async function DELETE(request: NextRequest) {
     // If event is linked to a task, clear scheduledDate and auto-determine status
     if (existingEvent.taskId && existingEvent.task) {
       await prisma.task.update({
-        where: { id: existingEvent.taskId },
+        where: { id: existingEvent.taskId, userId },
         data: {
           scheduledDate: null,
           status: determineTaskStatus(null, existingEvent.task.status),

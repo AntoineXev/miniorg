@@ -6,6 +6,11 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/auth/google-calendar - Initier l'authentification OAuth Google Calendar
 export async function GET(request: NextRequest) {
+  // For static export (Tauri), API routes are not supported
+  if (process.env.BUILD_TARGET === 'tauri') {
+    return NextResponse.json({ error: 'API routes not available in static export' }, { status: 501 });
+  }
+  
   try {
     const session = await auth();
     if (!session?.user?.id) {

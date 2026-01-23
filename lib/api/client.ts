@@ -1,9 +1,69 @@
+import { isTauri, getApiUrl } from "@/lib/platform";
+
+// In-memory JWT token cache (Tauri only)
+let tauriTokenCache: string | null = null;
+
 // API Client wrapper for fetch with centralized error handling
 export class ApiClient {
+  /**
+   * Get the stored JWT token (Tauri only)
+   */
+  private static getAuthToken(): string | null {
+    if (typeof window === "undefined" || !isTauri()) return null;
+    return tauriTokenCache;
+  }
+
+  /**
+   * Set the JWT token (Tauri only)
+   */
+  static setAuthToken(token: string): void {
+    if (typeof window === "undefined" || !isTauri()) return;
+    tauriTokenCache = token;
+  }
+
+  /**
+   * Clear the JWT token (logout)
+   */
+  static clearAuthToken(): void {
+    if (typeof window === "undefined" || !isTauri()) return;
+    tauriTokenCache = null;
+  }
+
+  /**
+   * Get headers with auth token if in Tauri mode
+   */
+  private static getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add JWT token for Tauri requests
+    if (isTauri()) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    }
+
+    return headers;
+  }
+
+  /**
+   * Normalize URL for the current platform
+   */
+  private static normalizeUrl(url: string): string {
+    if (isTauri()) {
+      return getApiUrl(url);
+    }
+    return url;
+  }
+
   static async get<T>(url: string): Promise<T> {
-    const res = await fetch(url, {
+    const normalizedUrl = this.normalizeUrl(url);
+    const res = await fetch(normalizedUrl, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders(),
+      credentials: "include",
     });
     if (!res.ok) {
       const error = await res.text();
@@ -13,10 +73,12 @@ export class ApiClient {
   }
 
   static async post<T>(url: string, data: any): Promise<T> {
-    const res = await fetch(url, {
+    const normalizedUrl = this.normalizeUrl(url);
+    const res = await fetch(normalizedUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
+      credentials: "include",
     });
     if (!res.ok) {
       const error = await res.text();
@@ -26,10 +88,12 @@ export class ApiClient {
   }
 
   static async patch<T>(url: string, data: any): Promise<T> {
-    const res = await fetch(url, {
+    const normalizedUrl = this.normalizeUrl(url);
+    const res = await fetch(normalizedUrl, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
+      credentials: "include",
     });
     if (!res.ok) {
       const error = await res.text();
@@ -39,9 +103,11 @@ export class ApiClient {
   }
 
   static async delete(url: string): Promise<void> {
-    const res = await fetch(url, {
+    const normalizedUrl = this.normalizeUrl(url);
+    const res = await fetch(normalizedUrl, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders(),
+      credentials: "include",
     });
     if (!res.ok) {
       const error = await res.text();

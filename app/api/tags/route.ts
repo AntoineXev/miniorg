@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAuthorizedUser } from "@/lib/auth-tauri-server";
 
 // GET /api/tags - Fetch all tags for authenticated user with hierarchy
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const tags = await prisma.tag.findMany({
       where: {
-        userId: session.user.id,
+        userId,
       },
       include: {
         children: {
@@ -36,8 +38,10 @@ export async function GET(request: NextRequest) {
 // POST /api/tags - Create a new tag (channel or sub-channel)
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -52,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (isDefault) {
       await prisma.tag.updateMany({
         where: {
-          userId: session.user.id,
+          userId,
           isDefault: true,
         },
         data: {
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
         isPersonal: isPersonal || false,
         isDefault: isDefault || false,
         parentId: parentId || null,
-        userId: session.user.id,
+        userId,
       },
       include: {
         children: true,
@@ -88,8 +92,10 @@ export async function POST(request: NextRequest) {
 // PATCH /api/tags - Update a tag
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -107,7 +113,7 @@ export async function PATCH(request: NextRequest) {
     const existingTag = await prisma.tag.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        userId,
       },
     });
 
@@ -119,7 +125,7 @@ export async function PATCH(request: NextRequest) {
     if (isDefault && !existingTag.isDefault) {
       await prisma.tag.updateMany({
         where: {
-          userId: session.user.id,
+          userId,
           isDefault: true,
         },
         data: {
@@ -155,8 +161,10 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/tags - Delete a tag (cascades to children and unlinks from tasks)
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    const userId = authResult?.userId;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -171,7 +179,7 @@ export async function DELETE(request: NextRequest) {
     const existingTag = await prisma.tag.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        userId,
       },
     });
 
