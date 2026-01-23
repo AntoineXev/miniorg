@@ -3,8 +3,7 @@ import { auth } from '@/lib/auth';
 import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 import { prisma } from '@/lib/prisma';
 
-// Note: 'force-dynamic' is commented out for Tauri static builds
-// export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 // GET /api/auth/google-calendar/callback - Callback OAuth Google Calendar
 export async function GET(request: NextRequest) {

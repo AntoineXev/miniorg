@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 
-// Note: 'force-dynamic' is commented out for Tauri static builds
-// export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 // GET /api/auth/google-calendar - Initier l'authentification OAuth Google Calendar
 export async function GET(request: NextRequest) {

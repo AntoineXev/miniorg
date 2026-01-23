@@ -17,8 +17,8 @@ import { useTauriSession } from "@/providers/tauri-session";
 import { cn } from "@/lib/utils";
 import { usePlatform } from "@/lib/hooks/use-platform";
 import { useTauriQuerySync } from "@/lib/hooks/use-tauri-query-sync";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { QuickAddWindow } from "@/components/layout/quick-add-window";
+import { isTauri } from "@/lib/platform";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
@@ -130,7 +130,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const windowLabel = getCurrentWindow().label;
-  
-  return (windowLabel === "main" ? <DashboardContent>{children}</DashboardContent> : <QuickAddWindow />);
+  const [windowLabel, setWindowLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isTauri()) {
+      import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+        setWindowLabel(getCurrentWindow().label);
+      });
+    } else {
+      // Not Tauri, treat as main window
+      setWindowLabel("main");
+    }
+  }, []);
+
+  // Don't render until we know the window label
+  if (windowLabel === null) {
+    return null;
+  }
+
+  return windowLabel === "main" ? <DashboardContent>{children}</DashboardContent> : <QuickAddWindow />;
 }
