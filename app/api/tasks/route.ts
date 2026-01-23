@@ -102,19 +102,38 @@ export async function POST(request: NextRequest) {
     const body = taskSchema.parse(json);
 
     const scheduledDate = body.scheduledDate ? new Date(body.scheduledDate) : null;
-    
+
     // Automatically determine status based on scheduledDate
     // Unless explicitly set to "done" by the client
     const status = determineTaskStatus(scheduledDate, body.status);
 
+    // Extract tagId separately - use undefined instead of null for Prisma optional relations
+    const { tagId, ...restBody } = body;
+
+    const createData = {
+      title: restBody.title,
+      description: restBody.description || null,
+      status,
+      userId,
+      scheduledDate,
+      deadlineType: restBody.deadlineType || null,
+      deadlineSetAt: body.deadlineSetAt ? new Date(body.deadlineSetAt) : body.deadlineType ? new Date() : null,
+      duration: restBody.duration || null,
+      // Only set tagId if it's a valid non-empty string
+      ...(tagId && typeof tagId === 'string' && tagId.length > 0 ? { tagId } : {}),
+    };
+
+    console.log("Creating task with data:", JSON.stringify(createData, null, 2));
+
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      console.error("User not found in database:", userId);
+      return NextResponse.json({ error: "User not found - please log out and log back in" }, { status: 401 });
+    }
+
     const task = await prisma.task.create({
-      data: {
-        ...body,
-        status,
-        userId,
-        scheduledDate,
-        deadlineSetAt: body.deadlineSetAt ? new Date(body.deadlineSetAt) : body.deadlineType ? new Date() : null,
-      },
+      data: createData,
       include: {
         tag: true,
         calendarEvents: {
@@ -163,10 +182,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    const taskData = updates;
-
     // Prepare update data, handling null values correctly
+    const { tagId, ...taskData } = updates;
     const updateData: any = { ...taskData };
+
+    // Handle tagId - only include if explicitly provided in updates
+    // null means "remove tag", undefined/missing means "don't change"
+    if ('tagId' in updates) {
+      updateData.tagId = tagId || null; // Convert empty string to null as well
+    }
     
     // Handle scheduledDate - convert to Date if string, keep null if null
     if ('scheduledDate' in updates) {

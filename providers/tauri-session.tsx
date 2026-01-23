@@ -113,53 +113,71 @@ export function TauriSessionProvider({
     };
   }, [isDesktop, shouldLog]);
 
-  // Listen for OAuth callbacks (Tauri only)
+  // Listen for OAuth callbacks (Tauri only, main window only)
+  // The quick-add window should NOT process OAuth callbacks since it doesn't have
+  // the redirect URI and code verifier that were set when the flow started.
   useEffect(() => {
     if (!isDesktop) return;
 
-    const cleanup = listenForOAuthCallback(
-      async (code, state) => {
-        if (lastOAuthCode.current === code) {
-          if (shouldLog) {
-            console.log(LOG_PREFIX, "duplicate oauth code ignored", {
-              codePrefix: code.slice(0, 8),
-            });
-          }
-          return;
+    let cleanup: (() => void) | null = null;
+
+    (async () => {
+      // Only listen in the main window - quick-add window doesn't have the OAuth context
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const windowLabel = getCurrentWindow().label;
+      if (windowLabel !== "main") {
+        if (shouldLog) {
+          console.log(LOG_PREFIX, "skipping oauth listener (not main window)", { windowLabel });
         }
-        if (oauthHandled.current) return;
-        oauthHandled.current = true;
-        lastOAuthCode.current = code;
-        try {
-          if (shouldLog) {
-            console.log(LOG_PREFIX, "oauth callback received", { code });
+        return;
+      }
+
+      cleanup = listenForOAuthCallback(
+        async (code, state) => {
+          if (lastOAuthCode.current === code) {
+            if (shouldLog) {
+              console.log(LOG_PREFIX, "duplicate oauth code ignored", {
+                codePrefix: code.slice(0, 8),
+              });
+            }
+            return;
           }
-          setTauriStatus("loading");
-          const session = await exchangeCodeForToken(code, undefined, state);
-          if (shouldLog) {
-            console.log(LOG_PREFIX, "token exchange success", session);
+          if (oauthHandled.current) return;
+          oauthHandled.current = true;
+          lastOAuthCode.current = code;
+          try {
+            if (shouldLog) {
+              console.log(LOG_PREFIX, "oauth callback received", { code });
+            }
+            setTauriStatus("loading");
+            const session = await exchangeCodeForToken(code, undefined, state);
+            if (shouldLog) {
+              console.log(LOG_PREFIX, "token exchange success", session);
+            }
+            await saveTauriSession(session);
+            setTauriSession(session);
+            setTauriStatus("authenticated");
+            toast.success("Successfully logged in!");
+            // Redirect immediately after successful auth
+            router.push("/backlog");
+          } catch (error: any) {
+            console.error("OAuth exchange error:", error);
+            toast.error("Failed to log in: " + error.message);
+            setTauriStatus("unauthenticated");
           }
-          await saveTauriSession(session);
-          setTauriSession(session);
-          setTauriStatus("authenticated");
-          toast.success("Successfully logged in!");
-          // Redirect immediately after successful auth
-          router.push("/backlog");
-        } catch (error: any) {
-          console.error("OAuth exchange error:", error);
-          toast.error("Failed to log in: " + error.message);
+        },
+        (error) => {
+          console.error("OAuth error:", error);
+          toast.error("Authentication error: " + error);
           setTauriStatus("unauthenticated");
         }
-      },
-      (error) => {
-        console.error("OAuth error:", error);
-        toast.error("Authentication error: " + error);
-        setTauriStatus("unauthenticated");
-      }
-    );
+      );
+    })();
 
-    return cleanup;
-  }, [isDesktop]);
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [isDesktop, shouldLog]);
 
   // Reset the "handled" flag when we explicitly log out or lose session
   useEffect(() => {

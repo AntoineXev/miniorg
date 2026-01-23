@@ -17,6 +17,7 @@ import { useTauriSession } from "@/providers/tauri-session";
 import { cn } from "@/lib/utils";
 import { usePlatform } from "@/lib/hooks/use-platform";
 import { useTauriQuerySync } from "@/lib/hooks/use-tauri-query-sync";
+import { useTauriTaskHandler } from "@/lib/hooks/use-tauri-task-handler";
 import { QuickAddWindow } from "@/components/layout/quick-add-window";
 import { isTauri } from "@/lib/platform";
 import { listen, TauriEvents } from "@/lib/tauri/events";
@@ -30,6 +31,9 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
 
   // Sync React Query cache across Tauri windows
   useTauriQuerySync();
+
+  // Handle task creation requests from quick-add window
+  useTauriTaskHandler();
 
   // Listen for navigation events from other Tauri windows
   useEffect(() => {

@@ -37,6 +37,7 @@ export function EditTaskDialog({
   const [showMore, setShowMore] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
@@ -52,7 +53,8 @@ export function EditTaskDialog({
       setDuration(task.duration?.toString() || "30");
       setIsCompleted(task.status === "done");
       setSelectedTag(task.tag as Tag || null);
-      
+      setShowDeleteConfirm(false);
+
       if (task.scheduledDate) {
         setUseSpecificDate(true);
         const date = new Date(task.scheduledDate);
@@ -61,11 +63,18 @@ export function EditTaskDialog({
         setUseSpecificDate(false);
         setDeadlineType(task.deadlineType || "next_3_days");
       }
-      
+
       // Always expand "show more" by default
       setShowMore(true);
     }
   }, [task]);
+
+  // Reset delete confirmation when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setShowDeleteConfirm(false);
+    }
+  }, [open]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -111,18 +120,24 @@ export function EditTaskDialog({
     });
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = () => {
     if (!task) return;
-    
-    const confirmed = confirm("Are you sure you want to delete this task?");
-    if (!confirmed) return;
 
     deleteTask.mutate(task.id, {
       onSuccess: () => {
+        setShowDeleteConfirm(false);
         onOpenChange(false);
         onTaskDeleted?.();
       },
     });
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
@@ -233,18 +248,40 @@ export function EditTaskDialog({
       }
       actionButtons={
         <>
-          <Button
-            onClick={handleDelete}
-            disabled={isDeleting || isSubmitting}
-            variant="ghost"
-            className="shadow-lg bg-white border border-red-600 hover:bg-red-50"
-          >
-            {isDeleting ? (
-              <Loader2 className="h-4 w-4 animate-spin text-red-600" strokeWidth={1} />
-            ) : (
+          {showDeleteConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Supprimer ?</span>
+              <Button
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                variant="destructive"
+                size="sm"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1} />
+                ) : (
+                  "Oui"
+                )}
+              </Button>
+              <Button
+                onClick={handleDeleteCancel}
+                disabled={isDeleting}
+                variant="ghost"
+                size="sm"
+              >
+                Non
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={handleDeleteClick}
+              disabled={isDeleting || isSubmitting}
+              variant="ghost"
+              className="shadow-lg bg-white border border-red-600 hover:bg-red-50"
+            >
               <Trash2 className="h-4 w-4 text-red-600" strokeWidth={1} />
-            )}
-          </Button>
+            </Button>
+          )}
           <Button
             onClick={() => handleSubmit()}
             disabled={!title.trim() || isSubmitting || isDeleting}
