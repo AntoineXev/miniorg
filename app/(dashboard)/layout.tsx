@@ -19,6 +19,7 @@ import { usePlatform } from "@/lib/hooks/use-platform";
 import { useTauriQuerySync } from "@/lib/hooks/use-tauri-query-sync";
 import { QuickAddWindow } from "@/components/layout/quick-add-window";
 import { isTauri } from "@/lib/platform";
+import { listen, TauriEvents } from "@/lib/tauri/events";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
@@ -29,6 +30,23 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
 
   // Sync React Query cache across Tauri windows
   useTauriQuerySync();
+
+  // Listen for navigation events from other Tauri windows
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+
+    const setupListener = async () => {
+      unlisten = await listen(TauriEvents.NAVIGATE_TO, (path) => {
+        router.push(path);
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [router]);
   // Load saved layout from localStorage
   const [defaultLayout, setDefaultLayout] = useState<{ [id: string]: number } | undefined>(() => {
     if (typeof window === "undefined") return undefined;

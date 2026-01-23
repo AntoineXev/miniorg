@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { TagSelectList } from "@/components/tags/tag-select-list";
 import { useTagsQuery } from "@/lib/api/queries/tags";
+import { usePlatform } from "@/lib/hooks/use-platform";
 import type { Tag } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+
+const MANAGE_TAGS_INDEX = -1; // Special index for "Gérer mes tags"
 
 type TagAutocompleteProps = {
   value: string;
@@ -30,6 +34,8 @@ export function TagAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { data: tags } = useTagsQuery();
+  const { isTauri } = usePlatform();
+  const router = useRouter();
 
   // Detect if user typed # and extract search query
   const hashMatch = value.match(/#(\w*)$/);
@@ -57,6 +63,10 @@ export function TagAutocomplete({
     });
   }, [tags, showingAutocomplete, searchQuery, selectedTag]);
 
+  // Total items including "Gérer mes tags" option
+  const totalItems = filteredTags.length + 1;
+  const isManageTagsSelected = selectedIndex === filteredTags.length;
+
   useEffect(() => {
     setShowDropdown(showingAutocomplete);
     setSelectedIndex(0);
@@ -65,12 +75,40 @@ export function TagAutocomplete({
   // Scroll selected item into view
   useEffect(() => {
     if (showDropdown && dropdownRef.current) {
-      const selectedElement = dropdownRef.current.querySelector(`[data-index="${selectedIndex}"]`);
+      const selector = isManageTagsSelected
+        ? '[data-index="manage-tags"]'
+        : `[data-index="${selectedIndex}"]`;
+      const selectedElement = dropdownRef.current.querySelector(selector);
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
     }
-  }, [selectedIndex, showDropdown]);
+  }, [selectedIndex, showDropdown, isManageTagsSelected]);
+
+  const handleManageTags = async () => {
+    setShowDropdown(false);
+    // Remove the # from input
+    const newValue = value.replace(/#\w*$/, "");
+    onChange(newValue);
+
+    if (isTauri) {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const currentLabel = getCurrentWindow().label;
+
+      if (currentLabel === "quick-add") {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("focus_main_window", { path: "/settings/tags" });
+        } catch (error) {
+          console.error("Failed to focus main window:", error);
+        }
+      } else {
+        router.push("/settings/tags");
+      }
+    } else {
+      router.push("/settings/tags");
+    }
+  };
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -80,29 +118,30 @@ export function TagAutocomplete({
         setShowDropdown(false);
         return;
       }
-      
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((prev) => Math.min(prev + 1, filteredTags.length - 1));
+        setSelectedIndex((prev) => Math.min(prev + 1, totalItems - 1));
         return;
       }
-      
+
       if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
         return;
       }
-      
-      if (e.key === "Enter" && filteredTags.length > 0) {
+
+      if (e.key === "Enter") {
         e.preventDefault();
-        const selectedTag = filteredTags[selectedIndex];
-        if (selectedTag) {
-          handleSelectTag(selectedTag);
+        if (isManageTagsSelected) {
+          handleManageTags();
+        } else if (filteredTags[selectedIndex]) {
+          handleSelectTag(filteredTags[selectedIndex]);
         }
         return;
       }
     }
-    
+
     onKeyDown?.(e);
   };
 
@@ -159,6 +198,9 @@ export function TagAutocomplete({
             searchQuery={searchQuery}
             selectedIndex={selectedIndex}
             showKeyboardHighlight
+            showManageTagsOption
+            manageTagsHighlighted={isManageTagsSelected}
+            onManageTagsClick={handleManageTags}
           />
         </div>
       )}

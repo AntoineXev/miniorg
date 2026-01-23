@@ -12,6 +12,7 @@ export const TauriEvents = {
   OAUTH_CODE_RECEIVED: "oauth-code-received",
   OAUTH_ERROR: "oauth-error",
   INVALIDATE_QUERIES: "invalidate-queries",
+  NAVIGATE_TO: "navigate-to",
 } as const;
 
 // Event payload types
@@ -30,6 +31,7 @@ export interface TauriEventPayloads {
   [TauriEvents.OAUTH_CODE_RECEIVED]: OAuthCodeReceivedPayload;
   [TauriEvents.OAUTH_ERROR]: string;
   [TauriEvents.INVALIDATE_QUERIES]: InvalidateQueriesPayload;
+  [TauriEvents.NAVIGATE_TO]: string;
 }
 
 /**

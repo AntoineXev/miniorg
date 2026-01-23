@@ -75,9 +75,23 @@ export function useUpdateTaskMutation() {
       if (previousTasks) {
         queryClient.setQueryData<Task[]>(
           taskKeys.all,
-          previousTasks.map((task) =>
-            task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-          )
+          previousTasks.map((task) => {
+            if (task.id !== updatedTask.id) return task;
+
+            const merged = { ...task, ...updatedTask };
+
+            // Si on marque comme done, ajouter completedAt pour l'affichage calendrier
+            if (updatedTask.status === "done" && !task.completedAt) {
+              merged.completedAt = new Date();
+            }
+            // Si on dé-marque comme done, effacer completedAt
+            // Note: status peut être "" (empty string) quand on décoche
+            else if (updatedTask.status !== undefined && updatedTask.status !== "done" && task.completedAt) {
+              merged.completedAt = null;
+            }
+
+            return merged;
+          })
         );
       }
 

@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { TaskTagBadge } from "@/components/tags/task-tag-badge";
 import { useTagsQuery } from "@/lib/api/queries/tags";
-import { X } from "lucide-react";
+import { usePlatform } from "@/lib/hooks/use-platform";
+import { X, Settings } from "lucide-react";
 import type { Tag } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +15,9 @@ type TagSelectListProps = {
   searchQuery?: string;
   selectedIndex?: number;
   showNoTagOption?: boolean;
+  showManageTagsOption?: boolean;
+  manageTagsHighlighted?: boolean;
+  onManageTagsClick?: () => void;
   size?: "small" | "base";
   className?: string;
   showKeyboardHighlight?: boolean;
@@ -24,11 +29,40 @@ export function TagSelectList({
   searchQuery = "",
   selectedIndex = 0,
   showNoTagOption = false,
+  showManageTagsOption = false,
+  manageTagsHighlighted = false,
+  onManageTagsClick,
   size = "base",
   className,
   showKeyboardHighlight = false,
 }: TagSelectListProps) {
   const { data: tags } = useTagsQuery();
+  const { isTauri } = usePlatform();
+  const router = useRouter();
+
+  const handleManageTagsClick = async () => {
+    if (onManageTagsClick) {
+      onManageTagsClick();
+    }
+
+    if (isTauri) {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const currentLabel = getCurrentWindow().label;
+
+      if (currentLabel === "quick-add") {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("focus_main_window", { path: "/settings/tags" });
+        } catch (error) {
+          console.error("Failed to focus main window:", error);
+        }
+      } else {
+        router.push("/settings/tags");
+      }
+    } else {
+      router.push("/settings/tags");
+    }
+  };
 
   // Flatten tags with hierarchy for display
   const flatTags = useMemo(() => {
@@ -110,6 +144,23 @@ export function TagSelectList({
           </button>
         );
       })}
+      {showManageTagsOption && (
+        <>
+          <div className="my-1 h-px bg-border" />
+          <button
+            type="button"
+            onClick={handleManageTagsClick}
+            data-index="manage-tags"
+            className={cn(
+              "w-full flex items-center gap-2 p-2 text-left rounded-md hover:bg-muted/10 transition-colors text-muted-foreground",
+              manageTagsHighlighted && "bg-muted/20"
+            )}
+          >
+            <Settings className="h-3.5 w-3.5" />
+            <span className="text-xs">Gérer mes tags</span>
+          </button>
+        </>
+      )}
     </div>
   );
 }

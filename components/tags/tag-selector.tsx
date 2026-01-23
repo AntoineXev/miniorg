@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import { Settings } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTagsQuery } from "@/lib/api/queries/tags";
+import { usePlatform } from "@/lib/hooks/use-platform";
 import type { Tag } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { TagDisplay } from "./tag-display";
@@ -27,6 +30,8 @@ export function TagSelector({
   showNoTagOption = false,
 }: TagSelectorProps) {
   const { data: tags } = useTagsQuery();
+  const { isTauri } = usePlatform();
+  const router = useRouter();
 
   // Flatten tags with hierarchy: parent followed by its children
   const flatTags = useMemo(() => {
@@ -51,9 +56,32 @@ export function TagSelector({
     return result;
   }, [tags]);
 
-  const handleChange = (value: string) => {
+  const handleChange = async (value: string) => {
     if (value === "no-tag") {
       onSelectTag(null);
+    } else if (value === "manage-tags") {
+      // Navigate to tag management page
+      if (isTauri) {
+        // Check window label directly since it might not be ready in context
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const currentLabel = getCurrentWindow().label;
+
+        if (currentLabel === "quick-add") {
+          // From quick-add window: focus main window and navigate
+          try {
+            const { invoke } = await import("@tauri-apps/api/core");
+            await invoke("focus_main_window", { path: "/settings/tags" });
+          } catch (error) {
+            console.error("Failed to focus main window:", error);
+          }
+        } else {
+          // Main Tauri window: navigate directly
+          router.push("/settings/tags");
+        }
+      } else {
+        // Web: navigate directly
+        router.push("/settings/tags");
+      }
     } else {
       const tag = flatTags.find(t => t.id === value);
       onSelectTag(tag || null);
@@ -83,6 +111,12 @@ export function TagSelector({
               <TagDisplay className={cn(tag.parentId && 'ml-4')} tag={tag} />
             </SelectItem>
           ))}
+          <SelectItem value="manage-tags" hideIndicator>
+            <span className="flex items-center gap-2 text-muted-foreground/80 text-xs border-t border-border/40 pt-2">
+              <Settings className="h-3.5 w-3.5" />
+              Gérer mes tags
+            </span>
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>

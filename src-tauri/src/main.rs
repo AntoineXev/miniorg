@@ -97,6 +97,29 @@ fn hide_quick_add_window(app: AppHandle) -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn focus_main_window(app: AppHandle, path: Option<String>) -> Result<(), String> {
+    // Hide quick-add panel if visible
+    if let Ok(panel) = app.get_webview_panel("quick-add") {
+        panel.hide();
+    }
+
+    // Show and focus main window
+    if let Some(main_window) = app.get_webview_window("main") {
+        main_window.show().map_err(|e| e.to_string())?;
+        main_window.set_focus().map_err(|e| e.to_string())?;
+
+        // Emit navigation event if path provided
+        if let Some(p) = path {
+            app.emit("navigate-to", p).map_err(|e| e.to_string())?;
+        }
+
+        Ok(())
+    } else {
+        Err("Main window not found".to_string())
+    }
+}
+
 fn toggle_quick_add_window(app: AppHandle) {
     if let Ok(panel) = app.get_webview_panel("quick-add") {
         if panel.is_visible() {
@@ -196,6 +219,7 @@ fn main() {
             calendar_sync::start_sync_service,
             show_quick_add_window,
             hide_quick_add_window,
+            focus_main_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

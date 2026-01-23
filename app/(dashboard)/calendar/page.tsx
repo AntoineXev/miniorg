@@ -103,10 +103,21 @@ export default function CalendarPage() {
     const isWeekendDay = isWeekend(date);
 
     // Filtrer les tâches pour ce jour
+    // Pour les tâches complétées, utiliser completedAt au lieu de scheduledDate
     const dayTasks = tasks.filter((task) => {
+      // Tâches complétées: utiliser completedAt
+      if (task.status === "done") {
+        if (!task.completedAt) return false;
+        const completedDate = typeof task.completedAt === 'string'
+          ? parseISO(task.completedAt)
+          : task.completedAt;
+        return isSameDay(completedDate, date);
+      }
+
+      // Tâches non complétées: utiliser scheduledDate
       if (!task.scheduledDate) return false;
-      const taskDate = typeof task.scheduledDate === 'string' 
-        ? parseISO(task.scheduledDate) 
+      const taskDate = typeof task.scheduledDate === 'string'
+        ? parseISO(task.scheduledDate)
         : task.scheduledDate;
       return isSameDay(taskDate, date);
     });

@@ -94,20 +94,13 @@ export function EditTaskDialog({
 
   const handleCheckboxChange = async (checked: boolean) => {
     if (!task) return;
-    
+
     setIsCompleted(checked);
-    
-    const updatePayload: any = {
+
+    updateTask.mutate({
       id: task.id,
-    };
-    
-    // Only set status when marking as done
-    // When unchecking, omit status entirely to let backend auto-determine it
-    if (checked) {
-      updatePayload.status = "done";
-    }
-    
-    updateTask.mutate(updatePayload, {
+      status: checked ? "done" : "",
+    }, {
       onSuccess: () => {
         onTaskUpdated?.();
       },
