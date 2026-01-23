@@ -10,7 +10,6 @@ import { PlatformProvider, usePlatform } from "@/providers/platform-provider";
 import { SessionProvider } from "next-auth/react";
 import { TauriSessionProvider } from "@/providers/tauri-session";
 import { QuickAddTaskProvider } from "@/providers/quick-add-task";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,13 +18,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let windowLabel = "";
-  
-  try {windowLabel = getCurrentWindow()?.label ?? "";}
-  catch (error) {}
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.className, windowLabel === "quick-add" ? "bg-transparent h-screen w-screen" : "")}>
+      <body className={cn(inter.className, "bg-transparent h-screen w-screen")}>
         <SessionProvider>
           <TauriSessionProvider>
             <QuickAddTaskProvider>
