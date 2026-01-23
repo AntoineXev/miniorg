@@ -16,6 +16,7 @@ import {
 import { useTauriSession } from "@/providers/tauri-session";
 import { cn } from "@/lib/utils";
 import { usePlatform } from "@/lib/hooks/use-platform";
+import { useTauriQuerySync } from "@/lib/hooks/use-tauri-query-sync";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { QuickAddWindow } from "@/components/layout/quick-add-window";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,9 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const hasRedirected = useRef(false);
   const router = useRouter();
   const { isTauri } = usePlatform();
+
+  // Sync React Query cache across Tauri windows
+  useTauriQuerySync();
   // Load saved layout from localStorage
   const [defaultLayout, setDefaultLayout] = useState<{ [id: string]: number } | undefined>(() => {
     if (typeof window === "undefined") return undefined;

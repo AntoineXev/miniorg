@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ApiClient } from "../client";
 import { taskKeys } from "../queries/tasks";
 import { calendarEventKeys } from "../queries/calendar-events";
+import { emitInvalidateQueries } from "@/lib/tauri/events";
 import type { Task, TaskInput } from "../types";
 
 // Hook to create a task
@@ -40,6 +41,8 @@ export function useCreateTaskMutation() {
     onSuccess: (_, __, context) => {
       toast.success("Task created", { id: context?.toastId });
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      // Emit event to sync cache across all Tauri windows
+      emitInvalidateQueries(["tasks"]);
     },
     onError: (error, _, context) => {
       // Rollback to previous state
@@ -85,6 +88,8 @@ export function useUpdateTaskMutation() {
       // Invalidate both tasks and events (they're linked)
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
       queryClient.invalidateQueries({ queryKey: calendarEventKeys.all });
+      // Emit event to sync cache across all Tauri windows
+      emitInvalidateQueries(["tasks", "calendar-events"]);
     },
     onError: (error, _, context) => {
       // Rollback to previous state
@@ -126,6 +131,8 @@ export function useDeleteTaskMutation() {
       toast.success("Task deleted", { id: context?.toastId });
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
       queryClient.invalidateQueries({ queryKey: calendarEventKeys.all });
+      // Emit event to sync cache across all Tauri windows
+      emitInvalidateQueries(["tasks", "calendar-events"]);
     },
     onError: (error, _, context) => {
       // Rollback to previous state

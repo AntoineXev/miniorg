@@ -5,8 +5,8 @@
 
 import { ApiClient } from "@/lib/api/client";
 import { getApiUrl, isTauri } from "@/lib/platform";
+import { listen, TauriEvents, type OAuthCodeReceivedPayload } from "@/lib/tauri/events";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-shell";
 
 export interface TauriUser {
@@ -331,28 +331,21 @@ export function listenForOAuthCallback(
   (listenForOAuthCallback as any).__activeListener = true;
 
   (async () => {
-    try {
-      unlistenCode = await listen<{ code: string; state?: string }>(
-        "oauth-code-received",
-        (event) => {
-          onCode(event.payload.code, event.payload.state);
-        }
-      );
-      if (!active && unlistenCode) {
-        unlistenCode();
-        unlistenCode = null;
-        return;
-      }
+    unlistenCode = await listen(TauriEvents.OAUTH_CODE_RECEIVED, (payload: OAuthCodeReceivedPayload) => {
+      onCode(payload.code, payload.state);
+    });
+    if (!active && unlistenCode) {
+      unlistenCode();
+      unlistenCode = null;
+      return;
+    }
 
-      unlistenError = await listen<string>("oauth-error", (event) => {
-        onError(event.payload);
-      });
-      if (!active && unlistenError) {
-        unlistenError();
-        unlistenError = null;
-      }
-    } catch (error) {
-      console.error("Failed to register OAuth listeners:", error);
+    unlistenError = await listen(TauriEvents.OAUTH_ERROR, (error: string) => {
+      onError(error);
+    });
+    if (!active && unlistenError) {
+      unlistenError();
+      unlistenError = null;
     }
   })();
 
