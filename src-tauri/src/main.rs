@@ -127,7 +127,7 @@ fn main() {
             });
 
             // Set activation policy to Accessory (required for panel to work over fullscreen)
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            // app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             // Convert the quick-add window to a panel so it can appear over fullscreen apps
             if let Some(quick_add_window) = app.get_webview_window("quick-add") {
