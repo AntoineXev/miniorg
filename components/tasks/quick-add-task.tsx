@@ -160,6 +160,8 @@ export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDate
             onSelectTag={handleSelectTag}
             placeholder="What do you need to do?"
             onKeyDown={handleTitleKeyDown}
+            autoFocus
+            focusTrigger={isOpen}
           />
         }
         showMoreExpanded={showMore}

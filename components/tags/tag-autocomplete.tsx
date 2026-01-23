@@ -18,6 +18,9 @@ type TagAutocompleteProps = {
   placeholder?: string;
   className?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  autoFocus?: boolean;
+  /** When true and autoFocus is enabled, triggers focus. Use modal's isOpen state. */
+  focusTrigger?: boolean;
 };
 
 export function TagAutocomplete({
@@ -28,6 +31,8 @@ export function TagAutocomplete({
   placeholder = "What do you need to do?",
   className,
   onKeyDown,
+  autoFocus = false,
+  focusTrigger = false,
 }: TagAutocompleteProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -71,6 +76,19 @@ export function TagAutocomplete({
     setShowDropdown(showingAutocomplete);
     setSelectedIndex(0);
   }, [showingAutocomplete]);
+
+  // Auto focus input with delay (needed for Tauri panel to be ready)
+  useEffect(() => {
+    if (autoFocus && focusTrigger) {
+      // Use multiple attempts with increasing delays for reliability
+      const timers = [
+        setTimeout(() => inputRef.current?.focus(), 50),
+        setTimeout(() => inputRef.current?.focus(), 150),
+        setTimeout(() => inputRef.current?.focus(), 300),
+      ];
+      return () => timers.forEach(clearTimeout);
+    }
+  }, [autoFocus, focusTrigger]);
 
   // Scroll selected item into view
   useEffect(() => {
