@@ -12,6 +12,7 @@ import { useCreateTaskMutation } from "@/lib/api/mutations/tasks";
 import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
 import { TagSelector } from "@/components/tags/tag-selector";
 import { useTagsQuery } from "@/lib/api/queries/tags";
+import { usePlatform } from "@/lib/hooks/use-platform";
 import type { Tag } from "@/lib/api/types";
 
 type QuickAddTaskProps = {
@@ -23,6 +24,7 @@ type QuickAddTaskProps = {
 
 export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDatePickerPortal }: QuickAddTaskProps) {
   const { isOpen, prefilledDate, openQuickAdd, closeQuickAdd } = useQuickAddTask();
+  const { isTauri } = usePlatform();
   const [title, setTitle] = useState("");
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
   const [specificDate, setSpecificDate] = useState<Date | undefined>(undefined);
@@ -173,7 +175,7 @@ export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDate
                   setSpecificDate(undefined);
                 }}
                 placeholder="Pick a date"
-                usePortal={!disableDatePickerPortal}
+                usePortal={!disableDatePickerPortal && !isTauri}
               />
             ) : (
               <>
