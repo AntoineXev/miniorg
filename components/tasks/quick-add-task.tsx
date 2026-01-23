@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { UnifiedModal } from "@/components/ui/unified-modal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Plus, Clock } from "lucide-react";
+import { Plus } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/utils/task";
 import { useQuickAddTask } from "@/providers/quick-add-task";
 import { useCreateTaskMutation } from "@/lib/api/mutations/tasks";
@@ -13,6 +13,8 @@ import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
 import { TagSelector } from "@/components/tags/tag-selector";
 import { useTagsQuery } from "@/lib/api/queries/tags";
 import { usePlatform } from "@/lib/hooks/use-platform";
+import { emit, listen, TauriEvents, type TaskCreatedPayload } from "@/lib/tauri/events";
+import { toast } from "sonner";
 import type { Tag } from "@/lib/api/types";
 
 type QuickAddTaskProps = {
@@ -33,20 +35,12 @@ export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDate
   const [showMore, setShowMore] = useState(false);
   const [description, setDescription] = useState("");
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [isQuickAddWindow, setIsQuickAddWindow] = useState(false);
+  const [isSubmittingViaEvent, setIsSubmittingViaEvent] = useState(false);
 
   const createTask = useCreateTaskMutation();
   const { data: tags } = useTagsQuery();
-  const isSubmitting = createTask.isPending;
-
-  // Set default tag when modal opens
-  useEffect(() => {
-    if (isOpen && tags && tags.length > 0 && !selectedTag) {
-      const defaultTag = tags.find((t) => t.isDefault && !t.parentId);
-      if (defaultTag) {
-        setSelectedTag(defaultTag);
-      }
-    }
-  }, [isOpen, tags, selectedTag]);
+  const isSubmitting = createTask.isPending || isSubmittingViaEvent;
 
   const resetForm = useCallback(() => {
     setTitle("");
@@ -58,6 +52,60 @@ export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDate
     setDescription("");
     setSelectedTag(null);
   }, []);
+
+  // Detect if we're in the quick-add window
+  useEffect(() => {
+    if (!isTauri) return;
+
+    (async () => {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const windowLabel = getCurrentWindow().label;
+      setIsQuickAddWindow(windowLabel === "quick-add");
+    })();
+  }, [isTauri]);
+
+  // Refs to avoid re-creating listener when callbacks change
+  const resetFormRef = useRef(resetForm);
+  const closeQuickAddRef = useRef(closeQuickAdd);
+  const onTaskCreatedRef = useRef(onTaskCreated);
+  resetFormRef.current = resetForm;
+  closeQuickAddRef.current = closeQuickAdd;
+  onTaskCreatedRef.current = onTaskCreated;
+
+  // Listen for task created response from main window
+  useEffect(() => {
+    if (!isTauri || !isQuickAddWindow) return;
+
+    let unlisten: (() => void) | null = null;
+
+    (async () => {
+      unlisten = await listen(TauriEvents.TASK_CREATED, (payload: TaskCreatedPayload) => {
+        setIsSubmittingViaEvent(false);
+
+        if (payload.success) {
+          resetFormRef.current();
+          closeQuickAddRef.current();
+          onTaskCreatedRef.current?.();
+        } else {
+          toast.error(payload.error || "Failed to create task");
+        }
+      });
+    })();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [isTauri, isQuickAddWindow]); // Only re-run if these change
+
+  // Set default tag when modal opens
+  useEffect(() => {
+    if (isOpen && tags && tags.length > 0 && !selectedTag) {
+      const defaultTag = tags.find((t) => t.isDefault && !t.parentId);
+      if (defaultTag) {
+        setSelectedTag(defaultTag);
+      }
+    }
+  }, [isOpen, tags, selectedTag]);
 
   // Gérer les changements d'état open
   const handleOpenChange = useCallback((newOpen: boolean) => {
@@ -98,13 +146,33 @@ export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDate
     e?.preventDefault();
     if (!title.trim()) return;
 
-    createTask.mutate({
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log("[quick-add] Already submitting, ignoring");
+      return;
+    }
+
+    const taskData = {
       title: title.trim(),
       description: description.trim() || undefined,
       deadlineType: useSpecificDate ? undefined : deadlineType,
-      scheduledDate: useSpecificDate && specificDate ? specificDate : undefined,
+      scheduledDate: useSpecificDate && specificDate ? specificDate.toISOString() : undefined,
       duration: duration ? parseInt(duration, 10) : undefined,
       tagId: selectedTag?.id || null,
+    };
+
+    // If in quick-add window, emit event for main window to handle
+    if (isQuickAddWindow) {
+      console.log("[quick-add] Emitting CREATE_TASK event");
+      setIsSubmittingViaEvent(true);
+      await emit(TauriEvents.CREATE_TASK, taskData);
+      return;
+    }
+
+    // Otherwise, create directly (main window)
+    createTask.mutate({
+      ...taskData,
+      scheduledDate: useSpecificDate && specificDate ? specificDate : undefined,
     }, {
       onSuccess: () => {
         resetForm();

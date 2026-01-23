@@ -13,6 +13,8 @@ export const TauriEvents = {
   OAUTH_ERROR: "oauth-error",
   INVALIDATE_QUERIES: "invalidate-queries",
   NAVIGATE_TO: "navigate-to",
+  CREATE_TASK: "create-task",
+  TASK_CREATED: "task-created",
 } as const;
 
 // Event payload types
@@ -25,6 +27,20 @@ export interface OAuthCodeReceivedPayload {
   state?: string;
 }
 
+export interface CreateTaskPayload {
+  title: string;
+  description?: string;
+  deadlineType?: string;
+  scheduledDate?: string; // ISO string
+  duration?: number;
+  tagId?: string | null;
+}
+
+export interface TaskCreatedPayload {
+  success: boolean;
+  error?: string;
+}
+
 // Type mapping for events
 export interface TauriEventPayloads {
   [TauriEvents.OPEN_QUICK_ADD]: void;
@@ -32,6 +48,8 @@ export interface TauriEventPayloads {
   [TauriEvents.OAUTH_ERROR]: string;
   [TauriEvents.INVALIDATE_QUERIES]: InvalidateQueriesPayload;
   [TauriEvents.NAVIGATE_TO]: string;
+  [TauriEvents.CREATE_TASK]: CreateTaskPayload;
+  [TauriEvents.TASK_CREATED]: TaskCreatedPayload;
 }
 
 /**
