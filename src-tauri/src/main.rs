@@ -151,7 +151,7 @@ fn main() {
                 // Set floating level to appear above normal windows
                 panel.set_level(PanelLevel::Floating.value());
 
-                // Set style mask for non-activating panel behavior
+                // Set style mask for non-activating panel behavior (required for fullscreen)
                 panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
 
                 // Set collection behavior for fullscreen overlay:

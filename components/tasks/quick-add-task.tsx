@@ -16,9 +16,12 @@ import type { Tag } from "@/lib/api/types";
 
 type QuickAddTaskProps = {
   onTaskCreated?: () => void;
+  hideButton?: boolean;
+  hideHints?: boolean;
+  disableDatePickerPortal?: boolean;
 };
 
-export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
+export function QuickAddTask({ onTaskCreated, hideButton, hideHints, disableDatePickerPortal }: QuickAddTaskProps) {
   const { isOpen, prefilledDate, openQuickAdd, closeQuickAdd } = useQuickAddTask();
   const [title, setTitle] = useState("");
   const [deadlineType, setDeadlineType] = useState<string>("next_3_days");
@@ -133,13 +136,14 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
 
   return (
     <>
+      {!hideButton && (
       <Button
         onClick={() => openQuickAdd()}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40"
         size="icon"
       >
         <Plus className="h-6 w-6" />
-      </Button>
+      </Button>)}
 
       <UnifiedModal
         open={isOpen}
@@ -169,6 +173,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
                   setSpecificDate(undefined);
                 }}
                 placeholder="Pick a date"
+                usePortal={!disableDatePickerPortal}
               />
             ) : (
               <>
@@ -234,6 +239,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
           </Button>
         }
         keyboardHints={
+          !hideHints && (
           <>
             <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px] font-mono">esc</kbd>
             <span className="mx-1">or click outside to cancel</span>
@@ -243,6 +249,7 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
             <span className="text-foreground font-medium">create</span>
             <span className="mx-1">to save</span>
           </>
+          )
         }
       >
         <div>
@@ -257,7 +264,6 @@ export function QuickAddTask({ onTaskCreated }: QuickAddTaskProps) {
             className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-
       </UnifiedModal>
     </>
   );
