@@ -65,11 +65,11 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/cli": "^2.0.0",
-    "@tauri-apps/api": "^2.0.0",
-    "@tauri-apps/plugin-shell": "^2.0.0",
-    "@tauri-apps/plugin-notification": "^2.0.0",
     "@tauri-apps/plugin-global-shortcut": "^2.0.0",
+    "@tauri-apps/plugin-notification": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

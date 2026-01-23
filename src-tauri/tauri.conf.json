@@ -40,11 +40,13 @@
     }
   },
   "app": {
+    "macOSPrivateApi": true,
     "security": {
       "csp": null
     },
     "windows": [
       {
+        "label": "main",
         "fullscreen": false,
         "height": 800,
         "resizable": true,
@@ -56,13 +58,22 @@
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "dragDropEnabled": false
+      },
+      {
+        "label": "quick-add",
+        "title": "Quick Add Task",
+        "center": true,
+        "visibleOnAllWorkspaces": true,
+        "resizable": false,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "focus": true,
+        "shadow": false
       }
-    ],
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "menuOnLeftClick": false
-    }
+    ]
   },
   "plugins": {
     "shell": {

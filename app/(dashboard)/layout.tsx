@@ -16,7 +16,8 @@ import {
 import { useTauriSession } from "@/providers/tauri-session";
 import { cn } from "@/lib/utils";
 import { usePlatform } from "@/lib/hooks/use-platform";
-
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { QuickAddWindow } from "@/components/layout/quick-add-window";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
@@ -30,7 +31,6 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem("miniorg-dashboard-layout");
     return saved ? JSON.parse(saved) : undefined;
   });
-
   // Save layout changes to localStorage
   const handleLayoutChange = (layout: { [id: string]: number }) => {
     if (typeof window === "undefined") return;
@@ -126,5 +126,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardContent>{children}</DashboardContent>;
+  const windowLabel = getCurrentWindow().label;
+  
+  return (windowLabel === "main" ? <DashboardContent>{children}</DashboardContent> : <QuickAddWindow />);
 }

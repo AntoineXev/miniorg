@@ -9,9 +9,11 @@ import { PlatformProvider } from "@/providers/platform-provider";
 import { SessionProvider } from "next-auth/react";
 import { TauriSessionProvider } from "@/providers/tauri-session";
 import { QuickAddTaskProvider } from "@/providers/quick-add-task";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
-
+const windowLabel = getCurrentWindow().label;
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={cn(inter.className, windowLabel === "quick-add" ? "bg-transparent h-screen w-screen" : "")}>
         <SessionProvider>
           <TauriSessionProvider>
             <QuickAddTaskProvider>
