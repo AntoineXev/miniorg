@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucid
 import { Button } from "@/components/ui/button";
 import { NavButton } from "@/components/ui/nav-button";
 import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
+import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/header";
 import { TaskCard } from "@/components/tasks/task-card";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
@@ -309,7 +310,7 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onUpdateTag, onAdd
       )}
     >
       {/* Header du jour - reste fixe pendant le scroll */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm px-4 py-3.5 space-y-1.5 sticky-header-shadow">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm px-4 py-3.5 pb-2 space-y-2.5 sticky-header-shadow">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className={cn(
@@ -326,24 +327,31 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onUpdateTag, onAdd
             {day.dayNumber}
           </div>
         </div>
-        
-        {/* Temps total estimé avec meilleur style */}
-        {totalMinutes > 0 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
-              <span className="font-medium">
-                {hours > 0 && `${hours}h`}
-                {hours > 0 && minutes > 0 && " "}
-                {minutes > 0 && `${minutes}min`}
-              </span>
-            </div>
+
+        {/* Bouton d'ajout de tâche */}
+        <button
+          onClick={onAddTask}
+          className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground/70 hover:text-foreground rounded-lg transition-all border border-dashed border-muted-foreground/20 hover:border-muted-foreground/40 group"
+        >
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />
+            <span className="font-medium">Add task</span>
           </div>
-        )}
+          {totalMinutes > 0 && (
+            <Badge
+              variant="secondary"
+              className="text-[10px] px-1.5 py-0 h-5 bg-muted/10 text-muted-foreground font-medium"
+            >
+              {hours > 0 && `${hours}h`}
+              {hours > 0 && minutes > 0 && ""}
+              {minutes > 0 && `${minutes}m`}
+            </Badge>
+          )}
+        </button>
       </div>
 
       {/* Liste des tâches */}
-      <div className="px-3 py-4 space-y-2.5">
+      <div className="px-3 pt-1 py-4 space-y-2.5">
         <AnimatePresence mode="popLayout">
           {day.tasks.map((task) => (
             <DraggableTask
@@ -356,19 +364,6 @@ function DayColumn({ day, onToggleComplete, onEdit, onDelete, onUpdateTag, onAdd
             />
           ))}
         </AnimatePresence>
-
-        {/* Bouton d'ajout de tâche */}
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.02)" }}
-          whileTap={{ scale: 0.99 }}
-          onClick={onAddTask}
-          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground/70 hover:text-foreground rounded-lg transition-all border border-dashed border-muted-foreground/20 hover:border-muted-foreground/40 group"
-        >
-          <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />
-          <span className="font-medium">Add task</span>
-        </motion.button>
       </div>
     </div>
   );
