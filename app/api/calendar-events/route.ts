@@ -23,14 +23,42 @@ function determineTaskStatus(scheduledDate: Date | null | undefined, currentStat
   if (currentStatus === "done") {
     return "done";
   }
-  
+
   // If task has a scheduled date, it's planned
   if (scheduledDate) {
     return "planned";
   }
-  
+
   // Otherwise, it's in the backlog
   return "backlog";
+}
+
+// Helper function to update a task's duration based on the sum of all linked events
+async function updateTaskDurationFromEvents(taskId: string, userId: string) {
+  // Get all events linked to this task
+  const events = await prisma.calendarEvent.findMany({
+    where: { taskId, userId },
+    select: { startTime: true, endTime: true },
+  });
+
+  if (events.length === 0) {
+    // No events, keep the task's existing duration (don't reset to null)
+    return;
+  }
+
+  // Calculate total duration in minutes
+  const totalDuration = events.reduce((sum, event) => {
+    const start = new Date(event.startTime);
+    const end = new Date(event.endTime);
+    const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    return sum + durationMinutes;
+  }, 0);
+
+  // Update the task's duration
+  await prisma.task.update({
+    where: { id: taskId, userId },
+    data: { duration: totalDuration },
+  });
 }
 
 // GET /api/calendar-events - Fetch all calendar events for authenticated user
@@ -135,6 +163,11 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Update task duration based on all linked events
+    if (body.taskId) {
+      await updateTaskDurationFromEvents(body.taskId, userId);
+    }
 
     // Check if there's an export target connection and export the event
     const exportConnection = await prisma.calendarConnection.findFirst({
@@ -330,6 +363,21 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
+    // Update task duration if event times changed or taskId changed
+    const timesChanged = 'startTime' in updates || 'endTime' in updates;
+    const taskIdChanged = 'taskId' in updates;
+
+    if (timesChanged || taskIdChanged) {
+      // Update the new task's duration (if any)
+      if (event.taskId) {
+        await updateTaskDurationFromEvents(event.taskId, userId);
+      }
+      // Update the old task's duration if taskId was changed
+      if (taskIdChanged && existingEvent.taskId && existingEvent.taskId !== event.taskId) {
+        await updateTaskDurationFromEvents(existingEvent.taskId, userId);
+      }
+    }
+
     // If event is from external calendar (Google, etc.), sync back to provider
     if (existingEvent.externalId && existingEvent.connectionId) {
       try {
@@ -393,20 +441,50 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // If event is linked to a task, clear scheduledDate and auto-determine status
-    if (existingEvent.taskId && existingEvent.task) {
-      await prisma.task.update({
-        where: { id: existingEvent.taskId, userId },
-        data: {
-          scheduledDate: null,
-          status: determineTaskStatus(null, existingEvent.task.status),
-        },
-      });
-    }
+    // Store taskId before deletion
+    const linkedTaskId = existingEvent.taskId;
 
     await prisma.calendarEvent.delete({
       where: { id },
     });
+
+    // If event was linked to a task, update task duration and check if scheduledDate should be cleared
+    if (linkedTaskId && existingEvent.task) {
+      // Check if there are remaining events for this task
+      const remainingEvents = await prisma.calendarEvent.findMany({
+        where: { taskId: linkedTaskId, userId },
+        select: { startTime: true, endTime: true },
+        orderBy: { startTime: 'asc' },
+      });
+
+      if (remainingEvents.length === 0) {
+        // No more events, clear scheduledDate and update status
+        await prisma.task.update({
+          where: { id: linkedTaskId, userId },
+          data: {
+            scheduledDate: null,
+            status: determineTaskStatus(null, existingEvent.task.status),
+          },
+        });
+      } else {
+        // Recalculate total duration from remaining events
+        const totalDuration = remainingEvents.reduce((sum, event) => {
+          const start = new Date(event.startTime);
+          const end = new Date(event.endTime);
+          const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+          return sum + durationMinutes;
+        }, 0);
+
+        // Update scheduledDate to earliest remaining event
+        await prisma.task.update({
+          where: { id: linkedTaskId, userId },
+          data: {
+            duration: totalDuration,
+            scheduledDate: remainingEvents[0].startTime,
+          },
+        });
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

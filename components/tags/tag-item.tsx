@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Trash2, Edit2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { TagDisplay } from "@/components/tags/tag-display";
 import { useDeleteTagMutation } from "@/lib/api/mutations/tags";
 import type { Tag } from "@/lib/api/types";
@@ -59,7 +60,10 @@ export function TagItem({ tag, isChild = false, onEdit, onCreateChild }: TagItem
       <div className={cn("ml-2", !showActions && "opacity-0")}>
         <ButtonGroup>
           {!isChild && onCreateChild && (
-            <ButtonGroupItem
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
               onClick={(e) => {
                 e.stopPropagation();
                 onCreateChild(tag.id);
@@ -67,9 +71,12 @@ export function TagItem({ tag, isChild = false, onEdit, onCreateChild }: TagItem
               title="Add channel"
             >
               <Plus className="h-3 w-3" strokeWidth={1} />
-            </ButtonGroupItem>
+            </Button>
           )}
-          <ButtonGroupItem
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
             onClick={(e) => {
               e.stopPropagation();
               onEdit(tag);
@@ -77,17 +84,19 @@ export function TagItem({ tag, isChild = false, onEdit, onCreateChild }: TagItem
             title="Edit"
           >
             <Edit2 className="h-3 w-3" strokeWidth={1} />
-          </ButtonGroupItem>
-          <ButtonGroupItem
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-destructive hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               handleDelete();
             }}
-            className="text-destructive hover:text-destructive"
             title="Delete"
           >
             <Trash2 className="h-3 w-3" strokeWidth={1} />
-          </ButtonGroupItem>
+          </Button>
         </ButtonGroup>
       </div>
     </button>

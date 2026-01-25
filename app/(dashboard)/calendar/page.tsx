@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { format, addDays, startOfToday, isSameDay, parseISO, isWeekend } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Header } from "@/components/layout/header";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
@@ -176,24 +177,32 @@ export default function CalendarPage() {
           title="Calendar"
           actions={
             <ButtonGroup>
-              <ButtonGroupItem
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-1 py-1 h-7"
                 onClick={handlePrevWeek}
                 aria-label="Previous week"
               >
                 <ChevronLeft strokeWidth={1} className="h-4 w-4" />
-              </ButtonGroupItem>
-              <ButtonGroupItem
-                variant="primary"
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-1 py-1 h-7"
                 onClick={handleToday}
               >
                 Today
-              </ButtonGroupItem>
-              <ButtonGroupItem
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-1 py-1 h-7"
                 onClick={handleNextWeek}
                 aria-label="Next week"
               >
                 <ChevronRight strokeWidth={1} className="h-4 w-4" />
-              </ButtonGroupItem>
+              </Button>
             </ButtonGroup>
           }
         />
