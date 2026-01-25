@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
             id: true,
             startTime: true,
             endTime: true,
+            source: true,
           },
         },
       },
@@ -143,6 +144,7 @@ export async function POST(request: NextRequest) {
             id: true,
             startTime: true,
             endTime: true,
+            source: true,
           },
         },
       },
@@ -229,7 +231,8 @@ export async function PATCH(request: NextRequest) {
     
     // Handle completedAt based on final status (either explicitly set or auto-determined)
     const finalStatus = updateData.status || ('status' in updates ? updates.status : existingTask.status);
-    
+    const isBeingMarkedAsDone = finalStatus === "done" && existingTask.status !== "done";
+
     if (finalStatus === "done" && !existingTask.completedAt) {
       // Task is being marked as done - set completedAt
       // Note: We keep the original scheduledDate even if it's in the past,
@@ -238,6 +241,48 @@ export async function PATCH(request: NextRequest) {
     } else if (finalStatus !== "done" && existingTask.completedAt) {
       // Task is being unmarked as done - clear completedAt
       updateData.completedAt = null;
+    }
+
+    // When task is being marked as done, update the last miniorg event for today
+    if (isBeingMarkedAsDone) {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart);
+      todayEnd.setDate(todayEnd.getDate() + 1);
+
+      // Get all miniorg events for this task scheduled for today
+      const todayMiniorgEvents = await prisma.calendarEvent.findMany({
+        where: {
+          taskId: id,
+          userId,
+          source: "miniorg",
+          startTime: {
+            gte: todayStart,
+            lt: todayEnd,
+          },
+        },
+        orderBy: { endTime: "desc" },
+      });
+
+      if (todayMiniorgEvents.length > 0) {
+        const lastEvent = todayMiniorgEvents[0];
+        const originalDuration = new Date(lastEvent.endTime).getTime() - new Date(lastEvent.startTime).getTime();
+
+        // Round current time to nearest 5 minutes
+        const roundedNow = new Date(Math.round(now.getTime() / (5 * 60 * 1000)) * (5 * 60 * 1000));
+
+        // Calculate new start time to keep the same duration
+        const newStartTime = new Date(roundedNow.getTime() - originalDuration);
+
+        // Update the event
+        await prisma.calendarEvent.update({
+          where: { id: lastEvent.id },
+          data: {
+            startTime: newStartTime,
+            endTime: roundedNow,
+          },
+        });
+      }
     }
 
     const task = await prisma.task.update({
@@ -250,6 +295,7 @@ export async function PATCH(request: NextRequest) {
             id: true,
             startTime: true,
             endTime: true,
+            source: true,
           },
         },
       },

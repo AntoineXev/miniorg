@@ -10,6 +10,8 @@ import { Calendar, Plus, Trash2, RefreshCw, Check, ArrowLeft } from "lucide-reac
 import { toast } from "sonner";
 import { CalendarOnboardingModal } from "@/components/calendar/calendar-onboarding-modal";
 import { Loader } from "@/components/ui/loader";
+import { isTauri } from "@/lib/platform";
+import { ApiClient } from "@/lib/api/client";
 
 type CalendarConnection = {
   id: string;
@@ -32,11 +34,8 @@ export default function CalendarsSettingsPage() {
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch("/api/calendar-connections");
-      if (response.ok) {
-        const data = await response.json();
-        setConnections(data);
-      }
+      const data = await ApiClient.get<CalendarConnection[]>("/api/calendar-connections");
+      setConnections(data);
     } catch (error) {
       console.error("Error fetching connections:", error);
     } finally {
@@ -75,21 +74,13 @@ export default function CalendarsSettingsPage() {
       for (const connection of connections) {
         const shouldBeActive = activeIds.includes(connection.id);
         if (connection.isActive !== shouldBeActive) {
-          await fetch("/api/calendar-connections", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: connection.id, isActive: shouldBeActive }),
-          });
+          await ApiClient.patch("/api/calendar-connections", { id: connection.id, isActive: shouldBeActive });
         }
       }
 
       // Set export target if selected
       if (exportId) {
-        await fetch("/api/calendar-connections", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: exportId, isExportTarget: true }),
-        });
+        await ApiClient.patch("/api/calendar-connections", { id: exportId, isExportTarget: true });
       }
 
       // Refresh connections
@@ -106,24 +97,35 @@ export default function CalendarsSettingsPage() {
     }
   };
 
-  const handleConnectGoogle = () => {
-    window.location.href = "/api/auth/google-calendar";
+  const handleConnectGoogle = async () => {
+    if (isTauri()) {
+      try {
+        // Pour Tauri, on fait un fetch pour obtenir l'URL OAuth
+        const response = await ApiClient.get<{ authUrl: string }>("/api/auth/google-calendar");
+        if (response.authUrl) {
+          // Ouvrir l'URL dans le navigateur externe
+          const { open } = await import("@tauri-apps/plugin-shell");
+          await open(response.authUrl);
+          toast.info(
+            "Browser opened",
+            { description: "Complete the authentication in your browser, then return here." }
+          );
+        }
+      } catch (error) {
+        console.error("Error initiating Google auth:", error);
+        toast.error("Failed to connect to Google Calendar");
+      }
+    } else {
+      // Pour le web, redirection classique
+      window.location.href = "/api/auth/google-calendar";
+    }
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      const response = await fetch("/api/calendar-connections", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, isActive }),
-      });
-
-      if (response.ok) {
-        fetchConnections();
-        toast.success(
-          isActive ? "Calendar enabled" : "Calendar disabled"
-        );
-      }
+      await ApiClient.patch("/api/calendar-connections", { id, isActive });
+      fetchConnections();
+      toast.success(isActive ? "Calendar enabled" : "Calendar disabled");
     } catch (error) {
       console.error("Error toggling calendar:", error);
       toast.error("Failed to update calendar");
@@ -132,16 +134,9 @@ export default function CalendarsSettingsPage() {
 
   const handleSetExportTarget = async (id: string) => {
     try {
-      const response = await fetch("/api/calendar-connections", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, isExportTarget: true }),
-      });
-
-      if (response.ok) {
-        fetchConnections();
-        toast.success("Export calendar updated");
-      }
+      await ApiClient.patch("/api/calendar-connections", { id, isExportTarget: true });
+      fetchConnections();
+      toast.success("Export calendar updated");
     } catch (error) {
       console.error("Error setting export target:", error);
       toast.error("Failed to update export calendar");
@@ -154,14 +149,9 @@ export default function CalendarsSettingsPage() {
     }
 
     try {
-      const response = await fetch(`/api/calendar-connections?id=${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        fetchConnections();
-        toast.success("Calendar removed");
-      }
+      await ApiClient.delete(`/api/calendar-connections?id=${id}`);
+      fetchConnections();
+      toast.success("Calendar removed");
     } catch (error) {
       console.error("Error deleting calendar:", error);
       toast.error("Failed to remove calendar");
@@ -171,22 +161,14 @@ export default function CalendarsSettingsPage() {
   const handleForceSync = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch("/api/calendar-sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(
-          "Synchronization complete",
-          {
-            description: `${data.syncedCount}/${data.totalCount} calendar(s) synced`
-          }
-        );
-        fetchConnections();
-      }
+      const data = await ApiClient.post<{ syncedCount: number; totalCount: number }>("/api/calendar-sync", {});
+      toast.success(
+        "Synchronization complete",
+        {
+          description: `${data.syncedCount}/${data.totalCount} calendar(s) synced`
+        }
+      );
+      fetchConnections();
     } catch (error) {
       console.error("Error syncing calendars:", error);
       toast.error("Synchronization failed");

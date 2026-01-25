@@ -12,7 +12,7 @@ export type Task = {
   duration?: number | null;
   completedAt?: Date | null;
   tag?: { id: string; name: string; color: string } | null;
-  calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string }>;
+  calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string; source?: string }>;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getAuthorizedUser } from '@/lib/auth-tauri-server';
 import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 
 export const dynamic = 'force-dynamic';
@@ -10,10 +10,10 @@ export async function GET(request: NextRequest) {
   if (process.env.BUILD_TARGET === 'tauri') {
     return NextResponse.json({ error: 'API routes not available in static export' }, { status: 501 });
   }
-  
+
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const authResult = await getAuthorizedUser(request);
+    if (!authResult?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,9 +27,10 @@ export async function GET(request: NextRequest) {
     // Note: Dans une vraie app, il faudrait sauvegarder cela dans une session côté serveur
     // Pour simplifier, on va l'encoder dans le state avec le userId
     const stateData = {
-      userId: session.user.id,
+      userId: authResult.userId,
       nonce: state,
       callbackUrl,
+      source: authResult.source, // 'tauri' ou 'web'
     };
     const encodedState = Buffer.from(JSON.stringify(stateData)).toString('base64');
 
@@ -41,7 +42,13 @@ export async function GET(request: NextRequest) {
 
     const authUrl = adapter.getAuthUrl(redirectUri, encodedState);
 
-    // Rediriger vers l'URL d'authentification Google
+    // Si c'est une requête Tauri (a un Authorization header), retourner l'URL en JSON
+    // pour que le client puisse l'ouvrir dans le navigateur externe
+    if (authResult.source === 'tauri') {
+      return NextResponse.json({ authUrl });
+    }
+
+    // Sinon, rediriger directement vers l'URL d'authentification Google
     return NextResponse.redirect(authUrl);
   } catch (error) {
     console.error('Error initiating Google Calendar auth:', error);

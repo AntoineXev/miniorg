@@ -10,6 +10,7 @@ import { deadlineTypeLabels } from "@/lib/utils/task";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
 import { TagSelector } from "@/components/tags/tag-selector";
+import { LinkedEventsList } from "@/components/tasks/linked-events-list";
 import { usePlatform } from "@/lib/hooks/use-platform";
 import type { Task, Tag } from "@/lib/api/types";
 
@@ -316,6 +317,13 @@ export function EditTaskDialog({
         />
       </div>
 
+      {/* Linked calendar events */}
+      {task.calendarEvents && task.calendarEvents.length > 0 && (
+        <LinkedEventsList
+          events={task.calendarEvents}
+          onEventDeleted={onTaskUpdated}
+        />
+      )}
     </UnifiedModal>
   );
 }

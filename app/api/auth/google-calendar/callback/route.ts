@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { GoogleCalendarAdapter } from '@/lib/calendar/google';
 import { prisma } from '@/lib/prisma';
 
@@ -11,13 +10,8 @@ export async function GET(request: NextRequest) {
   if (process.env.BUILD_TARGET === 'tauri') {
     return NextResponse.json({ error: 'API routes not available in static export' }, { status: 501 });
   }
-  
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
 
+  try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state');
@@ -36,7 +30,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Décoder et vérifier le state
+    // Décoder et vérifier le state (contient le userId encodé lors de l'initiation)
     let stateData;
     try {
       stateData = JSON.parse(Buffer.from(state, 'base64').toString());
@@ -46,11 +40,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (stateData.userId !== session.user.id) {
+    // Vérifier que le userId existe dans le state et que l'utilisateur existe
+    if (!stateData.userId) {
       return NextResponse.redirect(
-        new URL('/settings/calendars?error=user_mismatch', request.url)
+        new URL('/settings/calendars?error=invalid_state', request.url)
       );
     }
+
+    const user = await prisma.user.findUnique({ where: { id: stateData.userId } });
+    if (!user) {
+      return NextResponse.redirect(
+        new URL('/settings/calendars?error=user_not_found', request.url)
+      );
+    }
+
+    const userId = stateData.userId;
 
     const adapter = new GoogleCalendarAdapter();
     const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
@@ -71,7 +75,7 @@ export async function GET(request: NextRequest) {
         // Vérifier si le calendrier existe déjà
         const existingConnection = await prisma.calendarConnection.findFirst({
           where: {
-            userId: session.user.id,
+            userId: userId,
             provider: 'google',
             calendarId: calendar.id,
           },
@@ -91,7 +95,7 @@ export async function GET(request: NextRequest) {
           // Créer une nouvelle connexion avec isActive=false et isExportTarget=false
           await prisma.calendarConnection.create({
             data: {
-              userId: session.user.id,
+              userId: userId,
               provider: 'google',
               providerAccountId: calendar.id,
               name: calendar.name,
@@ -111,11 +115,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Rediriger vers la page settings/calendars avec le flag onboarding=true pour déclencher le modal
+    // Si la requête venait de Tauri, utiliser le deep link pour rouvrir l'app
+    if (stateData.source === 'tauri') {
+      return NextResponse.redirect('miniorg://settings/calendars?onboarding=true');
+    }
+
     return NextResponse.redirect(
       new URL('/settings/calendars?onboarding=true', request.url)
     );
   } catch (error) {
     console.error('Error in Google Calendar callback:', error);
+    // Pour les erreurs, on redirige vers le web (pas de deep link car on ne connaît pas la source)
     return NextResponse.redirect(
       new URL('/settings/calendars?error=authentication_failed', request.url)
     );

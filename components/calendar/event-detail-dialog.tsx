@@ -5,12 +5,13 @@ import { UnifiedModal } from "@/components/ui/unified-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Clock, Link as LinkIcon, Trash2, CheckCircle2, ArrowRight, Loader2, Download } from "lucide-react";
+import { Clock, Trash2, CheckCircle2, Plus, Loader2 } from "lucide-react";
 import { formatTimeRange, formatDuration, calculateDuration } from "@/lib/utils/calendar";
-import { cn } from "@/lib/utils";
 import { useUpdateEventMutation, useDeleteEventMutation } from "@/lib/api/mutations/calendar-events";
 import { useCreateTaskMutation } from "@/lib/api/mutations/tasks";
-import type { CalendarEvent } from "@/lib/api/types";
+import { LinkedTaskDisplay } from "@/components/calendar/linked-task-display";
+import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
+import type { CalendarEvent, Task } from "@/lib/api/types";
 import { toast } from "sonner";
 
 type EventDetailDialogProps = {
@@ -30,19 +31,21 @@ export function EventDetailDialog({
 }: EventDetailDialogProps) {
   const [showDetails, setShowDetails] = useState(true); // Start expanded
   const [localEvent, setLocalEvent] = useState(event);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const updateEvent = useUpdateEventMutation();
   const deleteEvent = useDeleteEventMutation();
   const createTask = useCreateTaskMutation();
   const isDeleting = deleteEvent.isPending;
   const isConverting = createTask.isPending;
-  const isTogglingComplete = updateEvent.isPending;
 
-  // Sync local event with prop
+  // Sync local event with prop and reset state
   useEffect(() => {
     if (event) {
       setLocalEvent(event);
     }
+    setShowDeleteConfirm(false);
   }, [event]);
 
   if (!event || !localEvent) return null;
@@ -57,9 +60,11 @@ export function EventDetailDialog({
   // Allow conversion/import for all events that don't have a linked task yet
   const canConvertToTask = !localEvent.taskId;
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const handleDeleteConfirm = () => {
     deleteEvent.mutate(localEvent.id, {
       onSuccess: () => {
         onEventDeleted?.();
@@ -68,47 +73,8 @@ export function EventDetailDialog({
     });
   };
 
-  const handleCheckboxChange = async (checked: boolean) => {
-    // Optimistically update the local state immediately for instant UI feedback
-    setLocalEvent(prev => prev ? { ...prev, isCompleted: checked } : prev);
-    
-    updateEvent.mutate({
-      id: localEvent.id,
-      isCompleted: checked,
-    }, {
-      onSuccess: (updatedEvent) => {
-        // Parse dates
-        const parsedEvent = {
-          ...updatedEvent,
-          startTime: typeof updatedEvent.startTime === 'string' ? new Date(updatedEvent.startTime) : updatedEvent.startTime,
-          endTime: typeof updatedEvent.endTime === 'string' ? new Date(updatedEvent.endTime) : updatedEvent.endTime,
-        };
-        
-        // Update local state with full response (including taskId if auto-imported)
-        setLocalEvent(parsedEvent);
-        onEventUpdated?.(parsedEvent);
-        
-        // Show success message for auto-import
-        if (checked && !localEvent.taskId) {
-          toast.success(
-            "Event completed and imported",
-            {
-              description: "A new task has been created and marked as done"
-            }
-          );
-        }
-      },
-      onError: () => {
-        // Revert optimistic update on error
-        setLocalEvent(prev => prev ? { ...prev, isCompleted: !checked } : prev);
-        toast.error(
-          "Failed to update event",
-          {
-            description: "Please try again or contact support if the problem persists"
-          }
-        );
-      },
-    });
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   const handleConvertToTask = async () => {
@@ -138,21 +104,12 @@ export function EventDetailDialog({
             onOpenChange(false); // Close the dialog after successful import
             
             // Show success message
-            if (isExternal) {
-              toast.success(
-                "Event imported successfully",
-                {
-                  description: "A new task has been created and linked to this event"
-                }
-              );
-            } else {
-              toast.success(
-                "Event converted to task",
-                {
-                  description: "Your event is now linked to a task"
-                }
-              );
-            }
+            toast.success(
+              "Task created",
+              {
+                description: "Event is now linked to a task"
+              }
+            );
           },
           onError: () => {
             toast.error(
@@ -181,9 +138,6 @@ export function EventDetailDialog({
       onOpenChange={onOpenChange}
       headerValue={localEvent.title}
       headerDisabled={true}
-      showCheckbox={!isExternal}
-      checkboxChecked={localEvent.isCompleted}
-      onCheckboxChange={!isExternal ? handleCheckboxChange : undefined}
       showMoreExpanded={showDetails}
       onShowMoreToggle={setShowDetails}
       footerLeftActions={
@@ -208,21 +162,43 @@ export function EventDetailDialog({
         <>
           {/* Delete - only for miniorg events */}
           {!isExternal && (
-            <Button
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="shadow-lg bg-white border border-red-600 hover:bg-red-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin text-red-600" strokeWidth={1} />
-              ) : (
+            showDeleteConfirm ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Supprimer ?</span>
+                <Button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1} />
+                  ) : (
+                    "Oui"
+                  )}
+                </Button>
+                <Button
+                  onClick={handleDeleteCancel}
+                  disabled={isDeleting}
+                  variant="ghost"
+                  size="sm"
+                >
+                  Non
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={handleDeleteClick}
+                disabled={isDeleting}
+                className="shadow-lg bg-white border border-red-600 hover:bg-red-50"
+              >
                 <Trash2 className="h-4 w-4 text-red-600" strokeWidth={1} />
-              )}
-            </Button>
+              </Button>
+            )
           )}
 
-          {/* Import/Convert to Task button */}
+          {/* Add to Tasks button */}
           {canConvertToTask && (
             <Button
               variant="default"
@@ -230,18 +206,12 @@ export function EventDetailDialog({
               disabled={isConverting}
               className="shadow-lg"
             >
-              {isConverting && <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1} />}
-              {isExternal ? (
-                <>
-                  <Download className="mr-2 h-4 w-4" strokeWidth={1} />
-                  Import
-                </>
+              {isConverting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1} />
               ) : (
-                <>
-                  <ArrowRight className="mr-2 h-4 w-4" strokeWidth={1} />
-                  Add to Tasks
-                </>
+                <Plus className="mr-2 h-4 w-4" strokeWidth={1} />
               )}
+              Add to Tasks
             </Button>
           )}
         </>
@@ -281,32 +251,42 @@ export function EventDetailDialog({
         </div>
       )}
 
-      {/* Linked Task Info */}
+      {/* Linked Task */}
       {localEvent.taskId && localEvent.task && (
-        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <LinkIcon className="h-4 w-4 text-blue-600" strokeWidth={1} />
-            <span>Linked to Task</span>
-          </div>
-          <div>
-            <p className="font-medium text-sm">{localEvent.task.title}</p>
-            <Badge variant="secondary" className="text-xs mt-2 capitalize">
-              {localEvent.task.status}
-            </Badge>
-            {localEvent.task.tag && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                <Badge
-                  variant="secondary"
-                  style={{ backgroundColor: `${localEvent.task.tag.color}20`, color: localEvent.task.tag.color }}
-                  className="text-xs"
-                >
-                  {localEvent.task.tag.name}
-                </Badge>
-              </div>
-            )}
-          </div>
-        </div>
+        <LinkedTaskDisplay
+          task={localEvent.task}
+          event={localEvent}
+          onTaskUpdated={(updatedTask, isCompleted) => {
+            // Optimistically update local state
+            setLocalEvent(prev => prev ? {
+              ...prev,
+              isCompleted,
+              task: updatedTask,
+            } : prev);
+            onEventUpdated?.(localEvent);
+          }}
+          onTaskDeleted={() => {
+            // Clear task link from local event
+            setLocalEvent(prev => prev ? { ...prev, taskId: null, task: null } : prev);
+          }}
+          onEdit={(task) => setEditingTask(task)}
+        />
       )}
+
+      {/* Edit Task Dialog */}
+      <EditTaskDialog
+        task={editingTask}
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+        onTaskUpdated={() => {
+          setEditingTask(null);
+          onEventUpdated?.(localEvent);
+        }}
+        onTaskDeleted={() => {
+          setEditingTask(null);
+          setLocalEvent(prev => prev ? { ...prev, taskId: null, task: null } : prev);
+        }}
+      />
     </UnifiedModal>
   );
 }
