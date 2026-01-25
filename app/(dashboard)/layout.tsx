@@ -22,6 +22,7 @@ import { listen, TauriEvents } from "@/lib/tauri/events";
 import { TimelineDragProvider } from "@/lib/contexts/timeline-drag-context";
 import { TimelineDateProvider } from "@/lib/contexts/timeline-date-context";
 import { DailyHighlightBanner } from "@/components/daily-planning/daily-highlight-banner";
+import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
@@ -51,6 +52,37 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
       if (unlisten) unlisten();
     };
   }, [router]);
+
+  // Listen for deep links (e.g., miniorg://settings/calendars?onboarding=true)
+  useEffect(() => {
+    if (!isTauri()) return;
+
+    let unlisten: (() => void) | null = null;
+
+    const setupDeepLinkListener = async () => {
+      unlisten = await onOpenUrl((urls) => {
+        for (const url of urls) {
+          try {
+            // Parse the deep link URL: miniorg://path?query
+            const parsed = new URL(url);
+            const path = parsed.pathname || parsed.host; // pathname for miniorg://path, host for miniorg://host
+            const search = parsed.search;
+            const fullPath = `/${path}${search}`;
+            router.push(fullPath);
+          } catch (e) {
+            console.error("[Deep Link] Failed to parse URL:", url, e);
+          }
+        }
+      });
+    };
+
+    setupDeepLinkListener();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [router]);
+
   // Load saved layout from localStorage
   const [defaultLayout, setDefaultLayout] = useState<{ [id: string]: number } | undefined>(() => {
     if (typeof window === "undefined") return undefined;
