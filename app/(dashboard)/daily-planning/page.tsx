@@ -11,7 +11,7 @@ import { PlanningDayColumn } from "@/components/daily-planning/planning-day-colu
 import { DailyPlanningComplete } from "@/components/daily-planning/daily-planning-complete";
 import { useRightSidebar } from "@/components/layout/right-sidebar/context";
 import { Button } from "@/components/ui/button";
-import { useHighlightQuery, useTasksQuery } from "@/lib/api/queries/tasks";
+import { useHighlightQuery, useTasksQuery, useDailyRitualQuery } from "@/lib/api/queries/tasks";
 import { useSaveDailyRitualMutation } from "@/lib/api/mutations/tasks";
 import { useTimelineDate } from "@/lib/contexts/timeline-date-context";
 
@@ -26,9 +26,10 @@ export default function DailyPlanningPage() {
   const selectedDate = useMemo(() => startOfDay(new Date()), []);
   const tomorrowDate = useMemo(() => addDays(selectedDate, 1), [selectedDate]);
 
-  // Get highlight and tasks for saving the ritual
+  // Get highlight, tasks, and existing ritual
   const { data: highlight } = useHighlightQuery(selectedDate);
   const { data: tasks = [] } = useTasksQuery();
+  const { data: existingRitual, isLoading: isRitualLoading } = useDailyRitualQuery(selectedDate);
   const saveDailyRitual = useSaveDailyRitualMutation(selectedDate);
 
   // Get today's planned tasks IDs for the timeline
@@ -49,6 +50,14 @@ export default function DailyPlanningPage() {
     setTimelineDate(selectedDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // If daily ritual already exists for today, go directly to the ready step
+  useEffect(() => {
+    if (!isRitualLoading && existingRitual && currentStep === "highlight") {
+      setCurrentStep("ready");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRitualLoading, existingRitual]);
 
   const handleNextFromHighlight = useCallback(() => {
     setCurrentStep("upcoming");
@@ -148,17 +157,29 @@ export default function DailyPlanningPage() {
     );
   }
 
-  // Ready step - full screen centered
+  // Ready step - success on left, planned tasks on right
   if (currentStep === "ready") {
     return (
       <div className="flex flex-col h-full">
         <Header title="Daily Planning" />
 
-        <div className="flex-1 p-4 flex items-center justify-center">
-          <DailyPlanningComplete
-            highlight={highlight}
-            onEdit={() => setCurrentStep("highlight")}
-          />
+        <div className="flex-1 p-4 overflow-auto">
+          <div className="grid grid-cols-2 gap-6 h-full">
+            {/* Left column: Success message */}
+            <div className="flex items-center justify-center">
+              <DailyPlanningComplete
+                highlight={highlight}
+                onEdit={() => setCurrentStep("highlight")}
+              />
+            </div>
+
+            {/* Right column: Today's planned tasks */}
+            <PlanningDayColumn
+              date={selectedDate}
+              title="Today's Tasks"
+              subtitle="Your planned tasks for today."
+            />
+          </div>
         </div>
       </div>
     );

@@ -19,9 +19,45 @@ type Task = {
   duration?: number | null; // Duration in minutes
   completedAt?: Date | null;
   tags?: Array<{ id: string; name: string; color: string }>;
+  calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string }>;
   createdAt: Date;
   updatedAt: Date;
 };
+
+// Helper to calculate the actual deadline date from deadlineType and deadlineSetAt
+function getTaskDeadlineDate(task: Task): number {
+  if (task.deadlineType && task.deadlineSetAt) {
+    const setDate = typeof task.deadlineSetAt === 'string' ? new Date(task.deadlineSetAt) : task.deadlineSetAt;
+    const setTime = setDate.getTime();
+
+    switch (task.deadlineType) {
+      case 'next_3_days':
+        return setTime + 3 * 24 * 60 * 60 * 1000;
+      case 'next_week':
+        return setTime + 7 * 24 * 60 * 60 * 1000;
+      case 'next_month':
+        return setTime + 30 * 24 * 60 * 60 * 1000;
+      case 'next_quarter':
+        return setTime + 90 * 24 * 60 * 60 * 1000;
+      case 'next_year':
+        return setTime + 365 * 24 * 60 * 60 * 1000;
+    }
+  }
+
+  // Fall back to scheduledDate if no deadline
+  if (task.scheduledDate) {
+    const date = typeof task.scheduledDate === 'string' ? new Date(task.scheduledDate) : task.scheduledDate;
+    return date.getTime();
+  }
+
+  // No date, put at the end
+  return Infinity;
+}
+
+// Sort tasks by deadline date (ascending - earliest deadline first)
+function sortTasksByDeadline(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => getTaskDeadlineDate(a) - getTaskDeadlineDate(b));
+}
 
 type BacklogGroupsProps = {
   tasks: Task[];
@@ -71,7 +107,7 @@ export function BacklogGroups({ tasks, onToggleComplete, onEdit, onDelete, onUpd
   return (
     <div>
       {groupOrder.map((group) => {
-        const tasksInGroup = groupedTasks[group] || [];
+        const tasksInGroup = sortTasksByDeadline(groupedTasks[group] || []);
         if (tasksInGroup.length === 0) return null;
 
         const isExpanded = expandedGroups.has(group);
