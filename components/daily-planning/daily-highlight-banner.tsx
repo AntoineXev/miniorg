@@ -11,7 +11,7 @@ import type { Task } from "@/lib/api/types";
 
 const EmptyBanner = (isTauri: boolean) => {
   return (
-    <div className={cn(isTauri ? "pt-6" : "pt-2")}>
+    <div data-tauri-drag-region={true} className={cn(isTauri ? "pt-6" : "pt-2")}>
     </div>
   );
 };

@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { EventDetailDialog } from "@/components/calendar/event-detail-dialog";
 import { useDeleteEventMutation } from "@/lib/api/mutations/calendar-events";
 import { formatDuration, calculateDuration } from "@/lib/utils/calendar";
+import { GoogleCalendarIcon } from "@/components/icons/google-calendar-icon";
+import { MiniorgIcon } from "@/components/icons/miniorg-icon";
 import type { CalendarEvent } from "@/lib/api/types";
 
 type LinkedEvent = {
   id: string;
   startTime: Date | string;
   endTime: Date | string;
+  source?: string;
 };
 
 type LinkedEventsListProps = {
@@ -75,15 +78,23 @@ export function LinkedEventsList({ events, onEventDeleted }: LinkedEventsListPro
           return (
             <div
               key={event.id}
-              className="group relative flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
+              className="group relative flex items-start gap-3 p-2 rounded-md hover:bg-muted-foreground/10 transition-colors"
               onMouseEnter={() => setHoveredEventId(event.id)}
               onMouseLeave={() => setHoveredEventId(null)}
             >
               {/* Calendar icon */}
               <div className="flex-shrink-0 mt-0.5">
-                <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center">
-                  <Calendar className="w-3 h-3 text-white" strokeWidth={2} />
-                </div>
+                {event.source === "google" ? (
+                  <GoogleCalendarIcon
+                    size={16}
+                    className={`grayscale opacity-70 ${isHovered ? "grayscale-0 opacity-100" : ""}`}
+                  />
+                ) : (
+                  <MiniorgIcon
+                    size={16}
+                    className={`grayscale opacity-70 ${isHovered ? "grayscale-0 opacity-100" : ""}`}
+                  />
+                )}
               </div>
 
               {/* Event details */}
@@ -91,7 +102,7 @@ export function LinkedEventsList({ events, onEventDeleted }: LinkedEventsListPro
                 <div className="text-sm font-medium text-foreground">
                   {format(startTime, "EEEE, MMM d")}
                 </div>
-                <div className="text-sm text-foreground">
+                <div className="text-xs text-foreground">
                   {format(startTime, "HH:mm")} - {format(endTime, "HH:mm")}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -101,7 +112,7 @@ export function LinkedEventsList({ events, onEventDeleted }: LinkedEventsListPro
 
               {/* Action buttons - show on hover */}
               {isHovered && !isDeleting && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <div className="absolute right-1 top-1">
                   <ButtonGroup>
                     <Button
                       variant="ghost"
@@ -125,7 +136,7 @@ export function LinkedEventsList({ events, onEventDeleted }: LinkedEventsListPro
 
               {/* Loading state for delete */}
               {isDeleting && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <div className="absolute right-2 top-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
               )}

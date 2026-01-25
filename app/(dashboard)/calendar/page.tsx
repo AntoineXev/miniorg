@@ -179,8 +179,7 @@ export default function CalendarPage() {
             <ButtonGroup>
               <Button
                 variant="ghost"
-                size="sm"
-                className="px-1 py-1 h-7"
+                size="xs"
                 onClick={handlePrevWeek}
                 aria-label="Previous week"
               >
@@ -188,16 +187,14 @@ export default function CalendarPage() {
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
-                className="px-1 py-1 h-7"
+                size="xs"
                 onClick={handleToday}
               >
                 Today
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
-                className="px-1 py-1 h-7"
+                size="xs"
                 onClick={handleNextWeek}
                 aria-label="Next week"
               >
