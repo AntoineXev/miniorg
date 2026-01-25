@@ -19,7 +19,7 @@
     "db:push": "prisma db push --url=\"file:./dev.db\"",
     "db:push:accept-data-loss": "prisma db push --url=\"file:./prisma/dev.db\" --accept-data-loss",
     "db:migrate:deploy": "DATABASE_URL=\"file:./dev.db\" prisma migrate deploy --config=./prisma/prisma.config.ts",
-    "db:studio": "prisma studio --url=\"file:./prisma/dev.db\"",
+    "db:studio": "prisma studio --url=\"file:./dev.db\"",
     "db:reset": "rm -f ./dev.db ./dev.db-journal && npm run db:push",
     "db:migrate:d1:create": "wrangler d1 migrations create DB",
     "db:migrate:d1:apply": "wrangler d1 migrations apply DB",

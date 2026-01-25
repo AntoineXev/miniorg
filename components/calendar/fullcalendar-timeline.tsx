@@ -26,6 +26,7 @@ import {
   DEFAULT_EVENT_DURATION_MINUTES,
   COMPACT_EVENT_THRESHOLD_MINUTES,
 } from "@/lib/constants/calendar";
+import { useTimelineDate } from "@/lib/contexts/timeline-date-context";
 
 // FullCalendar imports
 import FullCalendar from "@fullcalendar/react";
@@ -51,17 +52,21 @@ type DraggedTask = {
 };
 
 export function FullCalendarTimeline({
-  selectedDate = new Date(),
+  selectedDate: selectedDateProp,
   onDateChange,
   startHour = DAY_START_HOUR,
   endHour = DAY_END_HOUR,
   slotInterval = SLOT_DURATION_MINUTES,
 }: FullCalendarTimelineProps) {
+  // Use context date if no prop provided
+  const { selectedDate: contextDate, setSelectedDate: setContextDate } = useTimelineDate();
+  const initialDate = selectedDateProp ?? contextDate;
+
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [prefilledStartTime, setPrefilledStartTime] = useState<Date | undefined>();
-  const [currentDate, setCurrentDate] = useState(selectedDate);
+  const [currentDate, setCurrentDate] = useState(initialDate);
   const calendarRef = useRef<FullCalendar>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggedTask, setDraggedTask] = useState<DraggedTask | null>(null);
@@ -69,6 +74,23 @@ export function FullCalendarTimeline({
 
   const slotHeight = SLOT_HEIGHT_PX;
   const snapInterval = SNAP_INTERVAL_MINUTES;
+
+  // Sync with context date when it changes externally
+  useEffect(() => {
+    if (!selectedDateProp && contextDate.getTime() !== currentDate.getTime()) {
+      setCurrentDate(contextDate);
+      calendarRef.current?.getApi().gotoDate(contextDate);
+    }
+  }, [contextDate, selectedDateProp, currentDate]);
+
+  // Update context when navigating (if not using prop)
+  const updateCurrentDate = useCallback((date: Date) => {
+    setCurrentDate(date);
+    if (!selectedDateProp) {
+      setContextDate(date);
+    }
+    onDateChange?.(date);
+  }, [selectedDateProp, setContextDate, onDateChange]);
 
   // Use React Query hooks
   const startDate = useMemo(() => startOfDay(currentDate).toISOString(), [currentDate]);
@@ -358,23 +380,20 @@ export function FullCalendarTimeline({
   const handlePreviousDay = () => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() - 1);
-    setCurrentDate(newDate);
-    onDateChange?.(newDate);
+    updateCurrentDate(newDate);
     calendarRef.current?.getApi().gotoDate(newDate);
   };
 
   const handleNextDay = () => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + 1);
-    setCurrentDate(newDate);
-    onDateChange?.(newDate);
+    updateCurrentDate(newDate);
     calendarRef.current?.getApi().gotoDate(newDate);
   };
 
   const handleToday = () => {
     const today = new Date();
-    setCurrentDate(today);
-    onDateChange?.(today);
+    updateCurrentDate(today);
     calendarRef.current?.getApi().gotoDate(today);
   };
 

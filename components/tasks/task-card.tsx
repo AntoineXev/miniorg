@@ -6,7 +6,7 @@ import { AnimatedCheckbox } from "@/components/ui/animated-checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow, isSameDay, addDays, addMonths, addYears, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Calendar } from "lucide-react";
+import { Calendar, Crown } from "lucide-react";
 import { TagSelector } from "@/components/tags/tag-selector";
 import type { Tag } from "@/lib/api/types";
 
@@ -16,6 +16,7 @@ export type TaskCardProps = {
     title: string;
     description?: string | null;
     status: string;
+    type?: string | null; // "normal" | "highlight"
     scheduledDate?: Date | null;
     deadlineType?: string | null;
     deadlineSetAt?: Date | null;
@@ -158,7 +159,9 @@ export function TaskCard({
       className="w-full"
     >
       <Card
-        className="group relative p-3 transition-all duration-200 hover:shadow-md cursor-pointer w-full"
+        className={cn(
+          "group relative p-3 transition-all duration-200 hover:shadow-md cursor-pointer w-full"
+        )}
         onClick={() => onEdit?.(task.id)}
       >
         <div className="flex items-start gap-3">
@@ -200,7 +203,7 @@ export function TaskCard({
             )}
           <div className="flex justify-between items-center gap-1 mt-3">
 
-            {deadlineInfo && (
+            {deadlineInfo && task.type !== "highlight" && (
               <div className="flex items-center gap-1">
                 <Calendar className={cn(
                   "h-3 w-3",
@@ -214,6 +217,14 @@ export function TaskCard({
                 )}>
                   {deadlineInfo.text}
                 </span>
+              </div>
+            )}
+            {task.type === "highlight" && (
+              <div className="flex items-center gap-1">
+                <Crown className={cn(
+                  "h-3 w-3",
+                  "text-orange-500"
+                )} strokeWidth={2} />
               </div>
             )}
             {showTime && task.scheduledDate && (

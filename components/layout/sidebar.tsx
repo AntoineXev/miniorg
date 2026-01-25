@@ -2,16 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { usePlatform } from "@/providers/platform-provider";
 import { useCallback, useRef, type MouseEvent } from "react";
 import { useTauriSession } from "@/providers/tauri-session";
 
-const navigation = [
+const mainNavigation = [
   { name: "Calendar", href: "/calendar", icon: SquareKanban },
   { name: "Backlog", href: "/backlog", icon: ClipboardList },
+];
+
+const ritualsNavigation = [
+  { name: "Daily Planning", href: "/daily-planning", icon: Sun },
 ];
 
 type SidebarProps = {
@@ -29,8 +33,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
       data-tauri-drag-region={true}
       className={cn(
         "flex h-full flex-col transition-all duration-300",
-        isCollapsed ? "w-16" : "w-52",
-        isTauri && "pt-3"
+        isCollapsed ? "w-16" : "w-52"
       )}
     >
       <div className={cn(
@@ -62,7 +65,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
+        {mainNavigation.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -83,6 +86,38 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
             </Link>
           );
         })}
+
+        {/* Rituals Section */}
+        <div className="pt-4 mt-4">
+          {!isCollapsed && (
+            <span className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Rituals
+            </span>
+          )}
+          <div className="mt-2 space-y-1">
+            {ritualsNavigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  data-tauri-drag-region="false"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                    isActive
+                      ? "text-primary bg-primary/5"
+                      : "text-muted-foreground hover:bg-gray-200/70",
+                    isCollapsed && "justify-center"
+                  )}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <item.icon className="h-5 w-5 shrink-0" strokeWidth={1}/>
+                  {!isCollapsed && item.name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </nav>
       
       {/* User section at the bottom - Settings link */}

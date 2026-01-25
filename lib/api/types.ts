@@ -5,6 +5,7 @@ export type Task = {
   title: string;
   description?: string | null;
   status: string;
+  type?: string | null; // "normal" | "highlight"
   scheduledDate?: Date | null;
   deadlineType?: string | null;
   deadlineSetAt?: Date | null;
@@ -58,4 +59,15 @@ export type CalendarConnection = {
   expiresAt: Date;
   isActive: boolean;
   userId: string;
+};
+
+export type DailyRitual = {
+  id: string;
+  date: Date | string;
+  userId: string;
+  highlightId?: string | null;
+  highlight?: Task | null;
+  timeline?: string | null; // JSON string of task IDs
+  createdAt: Date;
+  updatedAt: Date;
 };

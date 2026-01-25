@@ -1,35 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, forwardRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 import { format, addDays, startOfToday, isSameDay, parseISO, isWeekend } from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { NavButton } from "@/components/ui/nav-button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ButtonGroup, ButtonGroupItem } from "@/components/ui/button-group";
-import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/header";
-import { TaskCard } from "@/components/tasks/task-card";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
-import { cn } from "@/lib/utils";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import type { Task } from "@/lib/api/types";
-import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
-import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview";
-import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview";
 import { useQuickAddTask } from "@/providers/quick-add-task";
 import { Loader } from "@/components/ui/loader";
-
-type DayColumn = {
-  date: Date;
-  dayName: string;
-  dayNumber: string;
-  isToday: boolean;
-  isWeekend: boolean;
-  tasks: Task[];
-};
+import { DayColumn, type DayColumnData } from "@/components/calendar/day-column";
 
 export default function CalendarPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -95,9 +77,9 @@ export default function CalendarPage() {
   };
 
   // Générer les colonnes de jours
-  const dayColumns: DayColumn[] = [];
+  const dayColumns: DayColumnData[] = [];
   const today = new Date();
-  
+
   for (let i = 0; i < numDays; i++) {
     const date = addDays(startDate, i);
     const isToday = isSameDay(date, today);
@@ -124,12 +106,15 @@ export default function CalendarPage() {
     });
 
     // Si c'est aujourd'hui, ajouter aussi les tâches en retard (overdue)
+    // But exclude highlights from rollup - they stay on their original date
     if (isToday) {
       const overdueTasks = tasks.filter((task) => {
         // Ne pas inclure les tâches déjà comptées pour aujourd'hui
         if (!task.scheduledDate || task.status === "done") return false;
-        const taskDate = typeof task.scheduledDate === 'string' 
-          ? parseISO(task.scheduledDate) 
+        // Exclude highlights from rollup
+        if (task.type === "highlight") return false;
+        const taskDate = typeof task.scheduledDate === 'string'
+          ? parseISO(task.scheduledDate)
           : task.scheduledDate;
         // Tâche en retard = scheduledDate dans le passé et pas aujourd'hui
         return taskDate < today && !isSameDay(taskDate, today);
@@ -252,205 +237,3 @@ export default function CalendarPage() {
   );
 }
 
-// Composant pour une colonne de jour
-type DayColumnProps = {
-  day: DayColumn;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onEdit: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
-  onUpdateTag: (taskId: string, tagId: string | null) => void;
-  onAddTask: () => void;
-  onTaskDrop: (taskId: string, newDate: Date, source?: string) => void;
-  isLast: boolean;
-};
-
-function DayColumn({ day, onToggleComplete, onEdit, onDelete, onUpdateTag, onAddTask, onTaskDrop, isLast }: DayColumnProps) {
-  const [isDraggedOver, setIsDraggedOver] = useState(false);
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = dropRef.current;
-    if (!el) return;
-
-    return dropTargetForElements({
-      element: el,
-      getData: () => ({ date: day.date.toISOString() }),
-      onDragEnter: () => setIsDraggedOver(true),
-      onDragLeave: () => setIsDraggedOver(false),
-      onDrop: ({ source }) => {
-        setIsDraggedOver(false);
-        const taskId = source.data.taskId as string;
-        const taskStatus = source.data.taskStatus as string;
-        const sourceLocation = source.data.source as string | undefined;
-        
-        // Ne permettre le drop que pour les tâches non complétées
-        if (taskStatus !== "done" && taskId) {
-          onTaskDrop(taskId, day.date, sourceLocation);
-        }
-      },
-    });
-  }, [day.date, onTaskDrop]);
-
-  const totalMinutes = day.tasks.reduce((sum, task) => {
-    // Only count incomplete tasks
-    if (task.status === "done") return sum;
-    // Use the task's duration if set, otherwise default to 30 minutes
-    return sum + (task.duration || 30);
-  }, 0);
-
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  return (
-    <div 
-      ref={dropRef}
-      className={cn(
-        "h-full bg-background transition-all duration-200 overflow-y-auto max-w-72",
-        isDraggedOver && "bg-primary/5 ring-2 ring-primary/20 ring-inset"
-      )}
-    >
-      {/* Header du jour - reste fixe pendant le scroll */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm px-4 py-3.5 pb-2 space-y-2.5 sticky-header-shadow">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-xs font-semibold uppercase tracking-wider",
-              day.isToday ? "text-primary" : "text-muted-foreground"
-            )}>
-              {day.dayName}
-            </span>
-          </div>
-          <div className={cn(
-            "flex items-center justify-center w-9 h-9 rounded-full font-semibold text-lg",
-            day.isToday ? "text-primary" : "text-foreground"
-          )}>
-            {day.dayNumber}
-          </div>
-        </div>
-
-        {/* Bouton d'ajout de tâche */}
-        <button
-          onClick={onAddTask}
-          className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground/70 hover:text-foreground rounded-lg transition-all border border-dashed border-muted-foreground/20 hover:border-muted-foreground/40 group"
-        >
-          <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />
-            <span className="font-medium">Add task</span>
-          </div>
-          {totalMinutes > 0 && (
-            <Badge
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0 h-5 bg-muted/10 text-muted-foreground font-medium"
-            >
-              {hours > 0 && `${hours}h`}
-              {hours > 0 && minutes > 0 && ""}
-              {minutes > 0 && `${minutes}m`}
-            </Badge>
-          )}
-        </button>
-      </div>
-
-      {/* Liste des tâches */}
-      <div className="px-3 pt-1 py-4 space-y-2.5">
-        <AnimatePresence mode="popLayout">
-          {day.tasks.map((task) => (
-            <DraggableTask
-              key={task.id}
-              task={task}
-              onToggleComplete={onToggleComplete}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onUpdateTag={onUpdateTag}
-            />
-          ))}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-// Composant pour une tâche draggable
-type DraggableTaskProps = {
-  task: Task;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onEdit: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
-  onUpdateTag: (taskId: string, tagId: string | null) => void;
-};
-
-const DraggableTask = forwardRef<HTMLDivElement, DraggableTaskProps>(
-  ({ task, onToggleComplete, onEdit, onDelete, onUpdateTag }, ref) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const dragRef = useRef<HTMLDivElement>(null);
-    const isCompleted = task.status === "done";
-
-    useEffect(() => {
-      const el = dragRef.current;
-      if (!el) return;
-
-      // Ne pas permettre le drag pour les tâches complétées
-      if (isCompleted) return;
-
-      return combine(
-        draggable({
-          element: el,
-          getInitialData: () => ({
-            taskId: task.id,
-            taskTitle: task.title,
-            taskStatus: task.status,
-            taskDuration: task.duration || 30,
-          }),
-          onDragStart: () => setIsDragging(true),
-          onDrop: () => setIsDragging(false),
-          onGenerateDragPreview: ({ nativeSetDragImage }) => {
-            setCustomNativeDragPreview({
-              nativeSetDragImage,
-              getOffset: pointerOutsideOfPreview({
-                x: '16px',
-                y: '8px',
-              }),
-              render: ({ container }) => {
-                const preview = document.createElement('div');
-                preview.className = 'bg-card border border-primary rounded-lg p-3 shadow-xl max-w-xs';
-                preview.innerHTML = `
-                  <div class="text-sm font-medium text-foreground">
-                    ${task.title}
-                  </div>
-                `;
-                container.appendChild(preview);
-              },
-            });
-          },
-        })
-      );
-    }, [task.id, task.title, task.status, task.duration, isCompleted]);
-
-    return (
-      <motion.div
-        ref={dragRef}
-        layout
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity:task.status === "done" ? 0.7 : 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.2 }}
-        className={cn(
-          "transition-all duration-300",
-          task.status === "done" && "opacity-40 grayscale",
-          !isCompleted && "cursor-grab active:cursor-grabbing",
-          isDragging && "opacity-50 scale-95"
-        )}
-      >
-        <TaskCard
-          task={task}
-          onToggleComplete={onToggleComplete}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onUpdateTag={onUpdateTag}
-          showTime={false}
-        />
-      </motion.div>
-    );
-  }
-);
-
-DraggableTask.displayName = 'DraggableTask';

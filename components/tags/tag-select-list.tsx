@@ -146,7 +146,7 @@ export function TagSelectList({
       })}
       {showManageTagsOption && (
         <>
-          <div className="my-1 h-px bg-border" />
+          <div className="py-1 h-px bg-border" />
           <button
             type="button"
             onClick={handleManageTagsClick}

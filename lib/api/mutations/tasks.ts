@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { ApiClient } from "../client";
-import { taskKeys } from "../queries/tasks";
+import { taskKeys, dailyRitualKeys } from "../queries/tasks";
 import { calendarEventKeys } from "../queries/calendar-events";
 import { emitInvalidateQueries } from "@/lib/tauri/events";
-import type { Task, TaskInput } from "../types";
+import type { Task, TaskInput, DailyRitual } from "../types";
 
 // Hook to create a task
 export function useCreateTaskMutation() {
@@ -154,6 +155,105 @@ export function useDeleteTaskMutation() {
         queryClient.setQueryData(taskKeys.all, context.previousTasks);
       }
       toast.error("Failed to delete task", { id: context?.toastId });
+      console.error(error);
+    },
+  });
+}
+
+// Hook to upsert (create or update) highlight for a specific date
+export function useUpsertHighlightMutation(date: Date) {
+  const queryClient = useQueryClient();
+  const dateStr = format(date, "yyyy-MM-dd");
+
+  return useMutation({
+    mutationFn: (title: string) =>
+      ApiClient.post<Task>("/api/tasks/highlight", { title, date: dateStr }),
+    onMutate: async (title) => {
+      const toastId = toast.loading("Saving highlight...");
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: taskKeys.highlight(dateStr) });
+      await queryClient.cancelQueries({ queryKey: taskKeys.all });
+
+      // Snapshot previous values
+      const previousHighlight = queryClient.getQueryData<Task | null>(
+        taskKeys.highlight(dateStr)
+      );
+      const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.all);
+
+      // Optimistically update highlight
+      const optimisticHighlight: Task = previousHighlight
+        ? { ...previousHighlight, title }
+        : {
+            id: `temp-${Date.now()}`,
+            title,
+            type: "highlight",
+            status: "planned",
+            scheduledDate: date,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+      queryClient.setQueryData<Task | null>(
+        taskKeys.highlight(dateStr),
+        optimisticHighlight
+      );
+
+      // Also update in the main tasks list
+      if (previousTasks) {
+        const existingIndex = previousTasks.findIndex(
+          (t) => t.id === previousHighlight?.id
+        );
+        if (existingIndex >= 0) {
+          const updated = [...previousTasks];
+          updated[existingIndex] = optimisticHighlight;
+          queryClient.setQueryData<Task[]>(taskKeys.all, updated);
+        } else {
+          queryClient.setQueryData<Task[]>(taskKeys.all, [
+            ...previousTasks,
+            optimisticHighlight,
+          ]);
+        }
+      }
+
+      return { previousHighlight, previousTasks, toastId };
+    },
+    onSuccess: (_, __, context) => {
+      toast.success("Highlight saved", { id: context?.toastId });
+      queryClient.invalidateQueries({ queryKey: taskKeys.highlight(dateStr) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      emitInvalidateQueries(["tasks"]);
+    },
+    onError: (error, _, context) => {
+      // Rollback to previous state
+      if (context?.previousHighlight !== undefined) {
+        queryClient.setQueryData(
+          taskKeys.highlight(dateStr),
+          context.previousHighlight
+        );
+      }
+      if (context?.previousTasks) {
+        queryClient.setQueryData(taskKeys.all, context.previousTasks);
+      }
+      toast.error("Failed to save highlight", { id: context?.toastId });
+      console.error(error);
+    },
+  });
+}
+
+// Hook to save daily ritual (when user clicks "Start my day")
+export function useSaveDailyRitualMutation(date: Date) {
+  const queryClient = useQueryClient();
+  const dateStr = format(date, "yyyy-MM-dd");
+
+  return useMutation({
+    mutationFn: (data: { highlightId?: string | null; timeline?: string[] }) =>
+      ApiClient.post<DailyRitual>("/api/daily-ritual", { ...data, date: dateStr }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dailyRitualKeys.byDate(dateStr) });
+    },
+    onError: (error) => {
+      toast.error("Failed to save daily ritual");
       console.error(error);
     },
   });

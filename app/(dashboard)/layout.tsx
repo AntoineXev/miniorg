@@ -14,21 +14,20 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useTauriSession } from "@/providers/tauri-session";
-import { cn } from "@/lib/utils";
-import { usePlatform } from "@/lib/hooks/use-platform";
 import { useTauriQuerySync } from "@/lib/hooks/use-tauri-query-sync";
 import { useTauriTaskHandler } from "@/lib/hooks/use-tauri-task-handler";
 import { QuickAddWindow } from "@/components/layout/quick-add-window";
 import { isTauri } from "@/lib/platform";
 import { listen, TauriEvents } from "@/lib/tauri/events";
 import { TimelineDragProvider } from "@/lib/contexts/timeline-drag-context";
+import { TimelineDateProvider } from "@/lib/contexts/timeline-date-context";
+import { DailyHighlightBanner } from "@/components/daily-planning/daily-highlight-banner";
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { activePanel } = useRightSidebar();
   const { session, status } = useTauriSession();
   const hasRedirected = useRef(false);
   const router = useRouter();
-  const { isTauri } = usePlatform();
 
   // Sync React Query cache across Tauri windows
   useTauriQuerySync();
@@ -96,12 +95,14 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-100">
-      <Sidebar 
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-      <div data-tauri-drag-region={true} className={cn("flex-1 overflow-hidden", isTauri ? "p-2 pt-6" : "p-2")}>
+    <div className="flex flex-col h-screen overflow-hidden bg-zinc-100">
+      <DailyHighlightBanner />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+      <div data-tauri-drag-region={true} className="flex-1 overflow-hidden px-2 pb-2">
         <div className="flex h-full" data-tauri-drag-region={false}>
           <ResizablePanelGroup 
             orientation="horizontal" 
@@ -111,7 +112,7 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
           >
             {/* Main content */}
             <ResizablePanel id="main-content" defaultSize={75} minSize={40}>
-              <main  className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
+              <main className="h-full overflow-auto rounded-l-lg border bg-background shadow-sm">
                 {children}
               </main>
             </ResizablePanel>
@@ -134,8 +135,9 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Global Quick Add Task - Accessible from anywhere */}
-      <QuickAddTask onTaskCreated={() => {}} />
+        {/* Global Quick Add Task - Accessible from anywhere */}
+        <QuickAddTask onTaskCreated={() => {}} />
+      </div>
     </div>
   );
 }
@@ -143,9 +145,11 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
 function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <RightSidebarProvider>
-      <TimelineDragProvider>
-        <DashboardContentInner>{children}</DashboardContentInner>
-      </TimelineDragProvider>
+      <TimelineDateProvider>
+        <TimelineDragProvider>
+          <DashboardContentInner>{children}</DashboardContentInner>
+        </TimelineDragProvider>
+      </TimelineDateProvider>
     </RightSidebarProvider>
   );
 }

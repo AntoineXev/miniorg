@@ -29,9 +29,11 @@ export function BacklogContent({
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
 
-  // Filter to show only backlog and planned tasks (not done)
+  // Filter to show only backlog and planned tasks (not done), exclude highlights
   const tasks = allTasks.filter(
-    (task: Task) => task.status === "backlog" || task.status === "planned"
+    (task: Task) =>
+      (task.status === "backlog" || task.status === "planned") &&
+      task.type !== "highlight"
   );
 
   // Filter tasks based on showAllTasks toggle
