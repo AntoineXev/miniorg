@@ -168,6 +168,8 @@ export class CalendarService {
   }
 
   async updateExportedEvent(eventId: string): Promise<void> {
+    console.log("[CalendarService] updateExportedEvent called for:", eventId);
+
     // Récupérer l'événement local
     const event = await prisma.calendarEvent.findUnique({
       where: { id: eventId },
@@ -175,8 +177,20 @@ export class CalendarService {
     });
 
     if (!event || !event.externalId || !event.connection) {
+      console.error("[CalendarService] Event not found or not exported:", {
+        eventId,
+        hasEvent: !!event,
+        hasExternalId: event?.externalId,
+        hasConnection: !!event?.connection,
+      });
       throw new Error('Event not found or not exported');
     }
+
+    console.log("[CalendarService] Preparing to update external event:", {
+      externalId: event.externalId,
+      calendarId: event.connection.calendarId,
+      provider: event.connection.provider,
+    });
 
     // Vérifier et rafraîchir le token si nécessaire
     const validToken = await ensureValidToken(event.connection.id);
@@ -185,6 +199,14 @@ export class CalendarService {
     const adapter = this.getAdapter(event.connection.provider as CalendarProvider);
 
     // Mettre à jour l'événement sur le calendrier externe
+    console.log("[CalendarService] Calling adapter.updateEvent with:", {
+      calendarId: event.connection.calendarId,
+      externalId: event.externalId,
+      title: event.title,
+      startTime: event.startTime,
+      endTime: event.endTime,
+    });
+
     await adapter.updateEvent(
       validToken,
       event.connection.calendarId,
@@ -197,6 +219,8 @@ export class CalendarService {
         color: event.color || undefined,
       }
     );
+
+    console.log("[CalendarService] Successfully updated external event");
 
     // Mettre à jour le statut de sync
     await prisma.calendarEvent.update({

@@ -100,7 +100,12 @@ export class GoogleCalendarClient {
     eventId: string,
     eventData: Partial<GoogleEventInsert>
   ): Promise<GoogleEvent> {
-    return this.request<GoogleEvent>(
+    console.log("[GoogleCalendarClient] patchEvent:", {
+      calendarId,
+      eventId,
+      eventData,
+    });
+    const result = await this.request<GoogleEvent>(
       `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(
         eventId
       )}`,
@@ -109,6 +114,8 @@ export class GoogleCalendarClient {
         body: JSON.stringify(eventData),
       }
     );
+    console.log("[GoogleCalendarClient] patchEvent success:", result.id);
+    return result;
   }
 
   /**

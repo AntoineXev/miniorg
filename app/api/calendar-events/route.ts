@@ -380,11 +380,17 @@ export async function PATCH(request: NextRequest) {
 
     // If event is from external calendar (Google, etc.), sync back to provider
     if (existingEvent.externalId && existingEvent.connectionId) {
+      console.log("[Calendar Sync] Syncing event to external calendar:", {
+        eventId: id,
+        externalId: existingEvent.externalId,
+        connectionId: existingEvent.connectionId,
+      });
       try {
         const calendarService = new CalendarService();
         await calendarService.updateExportedEvent(id);
+        console.log("[Calendar Sync] Successfully synced event to external calendar");
       } catch (syncError) {
-        console.error("Failed to sync event to external calendar:", syncError);
+        console.error("[Calendar Sync] Failed to sync event to external calendar:", syncError);
         // Update sync status to error but don't fail the request
         await prisma.calendarEvent.update({
           where: { id },
@@ -394,9 +400,27 @@ export async function PATCH(request: NextRequest) {
           },
         });
       }
+    } else {
+      console.log("[Calendar Sync] Event not synced (no externalId or connectionId):", {
+        eventId: id,
+        hasExternalId: !!existingEvent.externalId,
+        hasConnectionId: !!existingEvent.connectionId,
+      });
     }
 
-    return NextResponse.json(event);
+    // Refetch the event to get the latest syncStatus
+    const finalEvent = await prisma.calendarEvent.findUnique({
+      where: { id, userId },
+      include: {
+        task: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(finalEvent || event);
   } catch (error) {
     console.error("Error updating calendar event:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
