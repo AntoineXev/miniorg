@@ -1,0 +1,110 @@
+<svg width="600" height="500" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="600" height="500" rx="16" fill="#F9FAFB"/>
+  
+  <!-- Compact Sidebar -->
+  <rect x="24" y="24" width="48" height="452" rx="12" fill="#FFFFFF"/>
+  <text x="42" y="60" fill="#9CA3AF" font-family="system-ui" font-size="14">»</text>
+  <rect x="36" y="80" width="24" height="24" rx="4" fill="#F3F4F6"/>
+  <rect x="36" y="116" width="24" height="24" rx="4" fill="#F3F4F6"/>
+  <rect x="36" y="160" width="24" height="24" rx="4" fill="#F3F4F6"/>
+  
+  <!-- Main Content Area -->
+  <rect x="88" y="24" width="340" height="452" rx="12" fill="#FFFFFF"/>
+  
+  <!-- Back arrow and Header -->
+  <circle cx="108" cy="48" r="14" fill="#F3F4F6"/>
+  <text x="104" y="53" fill="#6B7280" font-family="system-ui" font-size="14">←</text>
+  <text x="132" y="44" fill="#111827" font-family="system-ui" font-size="15" font-weight="600">Calendriers</text>
+  <text x="132" y="62" fill="#9CA3AF" font-family="system-ui" font-size="10">Synchroniser vos calendriers externes</text>
+  
+  <!-- Connect button with ORANGE highlight -->
+  <rect x="290" y="28" width="130" height="44" rx="10" fill="none" stroke="#F97316" stroke-width="2.5"/>
+  <rect x="290" y="28" width="130" height="44" rx="10" fill="#F97316" opacity="0.05"/>
+  
+  <rect x="298" y="36" width="114" height="28" rx="6" fill="#F97316"/>
+  <text x="310" y="54" fill="#FFFFFF" font-family="system-ui" font-size="10" font-weight="500">+ Connect Google</text>
+  
+  <!-- Connected Calendars section -->
+  <g transform="translate(104, 90)">
+    <text x="0" y="16" fill="#374151" font-family="system-ui" font-size="13" font-weight="600">Connected Calendars</text>
+    
+    <!-- Sync button -->
+    <rect x="230" y="2" width="75" height="24" rx="5" fill="#F3F4F6"/>
+    <text x="244" y="18" fill="#6B7280" font-family="system-ui" font-size="10">↻ Sync Now</text>
+    
+    <!-- Calendar list -->
+    <!-- Calendar 1 -->
+    <rect x="0" y="32" width="308" height="70" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <rect x="16" y="50" width="28" height="28" rx="5" fill="#E5E7EB"/>
+    <text x="24" y="68" fill="#9CA3AF" font-family="system-ui" font-size="12">📅</text>
+    <rect x="56" y="46" width="140" height="9" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="56" y="61" width="110" height="7" rx="2" fill="#9CA3AF" opacity="0.5"/>
+    <rect x="56" y="74" width="80" height="6" rx="2" fill="#9CA3AF" opacity="0.4"/>
+    <rect x="230" y="52" width="62" height="22" rx="5" fill="#E5E7EB"/>
+    <text x="243" y="67" fill="#6B7280" font-family="system-ui" font-size="10">Disabled</text>
+    
+    <!-- Calendar 2 - Active -->
+    <rect x="0" y="110" width="308" height="70" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <rect x="16" y="128" width="28" height="28" rx="5" fill="#FEF3C7"/>
+    <text x="24" y="146" fill="#D97706" font-family="system-ui" font-size="12">📅</text>
+    <rect x="56" y="124" width="120" height="9" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="56" y="139" width="95" height="7" rx="2" fill="#9CA3AF" opacity="0.5"/>
+    <rect x="56" y="152" width="105" height="6" rx="2" fill="#9CA3AF" opacity="0.4"/>
+    <rect x="224" y="130" width="62" height="22" rx="5" fill="#DCFCE7"/>
+    <text x="237" y="145" fill="#16A34A" font-family="system-ui" font-size="10">Enabled</text>
+    
+    <!-- Calendar 3 -->
+    <rect x="0" y="188" width="308" height="70" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <rect x="16" y="206" width="28" height="28" rx="5" fill="#E5E7EB"/>
+    <text x="24" y="224" fill="#9CA3AF" font-family="system-ui" font-size="12">📅</text>
+    <rect x="56" y="202" width="130" height="9" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="56" y="217" width="100" height="7" rx="2" fill="#9CA3AF" opacity="0.5"/>
+    <rect x="56" y="230" width="85" height="6" rx="2" fill="#9CA3AF" opacity="0.4"/>
+    <rect x="230" y="208" width="62" height="22" rx="5" fill="#E5E7EB"/>
+    <text x="243" y="223" fill="#6B7280" font-family="system-ui" font-size="10">Disabled</text>
+    
+    <!-- Calendar 4 -->
+    <rect x="0" y="266" width="308" height="70" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <rect x="16" y="284" width="28" height="28" rx="5" fill="#E5E7EB"/>
+    <text x="24" y="302" fill="#9CA3AF" font-family="system-ui" font-size="12">📅</text>
+    <rect x="56" y="280" width="150" height="9" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="56" y="295" width="110" height="7" rx="2" fill="#9CA3AF" opacity="0.5"/>
+    <rect x="56" y="308" width="80" height="6" rx="2" fill="#9CA3AF" opacity="0.4"/>
+    <rect x="230" y="286" width="62" height="22" rx="5" fill="#E5E7EB"/>
+    <text x="243" y="301" fill="#6B7280" font-family="system-ui" font-size="10">Disabled</text>
+  </g>
+  
+  <!-- Timeline Panel -->
+  <rect x="444" y="24" width="132" height="452" rx="12" fill="#FFFFFF"/>
+  
+  <!-- Date header -->
+  <text x="490" y="46" fill="#F97316" font-family="system-ui" font-size="10">Mon</text>
+  <text x="500" y="68" fill="#111827" font-family="system-ui" font-size="18" font-weight="600">26</text>
+  
+  <!-- Time labels and events -->
+  <text x="454" y="105" fill="#9CA3AF" font-family="system-ui" font-size="9">08:00</text>
+  <rect x="490" y="92" width="76" height="50" rx="4" fill="#D1D5DB"/>
+  <rect x="496" y="100" width="60" height="6" rx="1" fill="#9CA3AF"/>
+  
+  <text x="454" y="165" fill="#9CA3AF" font-family="system-ui" font-size="9">09:00</text>
+  <rect x="490" y="152" width="76" height="38" rx="4" fill="#FED7AA"/>
+  <rect x="496" y="160" width="56" height="6" rx="1" fill="#FDBA74"/>
+  
+  <text x="454" y="215" fill="#9CA3AF" font-family="system-ui" font-size="9">10:00</text>
+  <rect x="490" y="202" width="76" height="30" rx="4" fill="#FED7AA"/>
+  <rect x="490" y="238" width="76" height="45" rx="4" fill="#FDBA74"/>
+  
+  <text x="454" y="305" fill="#9CA3AF" font-family="system-ui" font-size="9">11:00</text>
+  <rect x="490" y="295" width="76" height="50" rx="4" fill="#FED7AA"/>
+  
+  <text x="454" y="370" fill="#9CA3AF" font-family="system-ui" font-size="9">12:00</text>
+  
+  <!-- Google icon hint -->
+  <g transform="translate(475, 395)">
+    <circle cx="35" cy="22" r="20" fill="#F3F4F6"/>
+    <text x="26" y="30" fill="#6B7280" font-family="system-ui" font-size="18" font-weight="500">G</text>
+    <rect x="5" y="52" width="60" height="8" rx="2" fill="#E5E7EB"/>
+    <rect x="15" y="66" width="40" height="6" rx="2" fill="#E5E7EB"/>
+  </g>
+</svg>

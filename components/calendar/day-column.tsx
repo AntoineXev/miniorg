@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AddButton } from "@/components/ui/add-button";
 import { DraggableTaskCard } from "@/components/tasks/draggable-task-card";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/lib/api/types";
@@ -127,25 +127,23 @@ export function DayColumn({
           )}
 
           {/* Add task button */}
-          <button
+          <AddButton
             onClick={onAddTask}
-            className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground/70 hover:text-foreground rounded-lg transition-all border border-dashed border-muted-foreground/20 hover:border-muted-foreground/40 group"
+            rightContent={
+              totalMinutes > 0 ? (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-5 bg-muted/10 text-muted-foreground font-medium"
+                >
+                  {hours > 0 && `${hours}h`}
+                  {hours > 0 && minutes > 0 && ""}
+                  {minutes > 0 && `${minutes}m`}
+                </Badge>
+              ) : undefined
+            }
           >
-            <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />
-              <span className="font-medium">Add task</span>
-            </div>
-            {totalMinutes > 0 && (
-              <Badge
-                variant="secondary"
-                className="text-[10px] px-1.5 py-0 h-5 bg-muted/10 text-muted-foreground font-medium"
-              >
-                {hours > 0 && `${hours}h`}
-                {hours > 0 && minutes > 0 && ""}
-                {minutes > 0 && `${minutes}m`}
-              </Badge>
-            )}
-          </button>
+            Add task
+          </AddButton>
         </div>
       )}
 

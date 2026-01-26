@@ -19,6 +19,7 @@ import {
   listenForOAuthCallback,
   type TauriSession,
 } from "@/lib/auth-tauri";
+import { clearOnboardingState } from "@/lib/hooks/use-onboarding";
 import { toast } from "sonner";
 
 interface UnifiedUser {
@@ -159,7 +160,7 @@ export function TauriSessionProvider({
             setTauriStatus("authenticated");
             toast.success("Successfully logged in!");
             // Redirect immediately after successful auth
-            router.push("/backlog");
+            router.push("/onboarding");
           } catch (error: any) {
             console.error("OAuth exchange error:", error);
             toast.error("Failed to log in: " + error.message);
@@ -197,18 +198,16 @@ export function TauriSessionProvider({
     // Avoid running if already on dashboard
     const isOnDashboard =
       typeof window !== "undefined" &&
-      (window.location.pathname === "/backlog" ||
-        window.location.pathname.startsWith("/backlog") ||
-        window.location.pathname.startsWith("/dashboard"));
+      (window.location.pathname !== "/login")
 
     if (!isOnDashboard) {
       if (shouldLog) {
-        console.log(LOG_PREFIX, "redirecting to backlog after auth", {
+        console.log(LOG_PREFIX, "redirecting to calendar after auth", {
           pathname:
             typeof window !== "undefined" ? window.location.pathname : "no-window",
         });
       }
-      router.push("/backlog");
+      router.push("/calendar");
     }
   }, [isDesktop, tauriStatus, router, shouldLog]);
 
@@ -234,6 +233,9 @@ export function TauriSessionProvider({
 
   // Logout handler
   const logout = async () => {
+    // Clear onboarding state on logout
+    clearOnboardingState();
+
     if (isDesktop) {
       await clearTauriSession();
       setTauriSession(null);

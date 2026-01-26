@@ -1,0 +1,105 @@
+<svg width="600" height="500" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="600" height="500" rx="16" fill="#F9FAFB"/>
+  
+  <!-- App Container -->
+  <g opacity="0.6">
+    <!-- Compact Sidebar -->
+    <rect x="24" y="24" width="48" height="452" rx="12" fill="#FFFFFF"/>
+    <text x="42" y="60" fill="#9CA3AF" font-family="system-ui" font-size="14">»</text>
+    <rect x="36" y="80" width="24" height="24" rx="4" fill="#F3F4F6"/>
+    <rect x="36" y="116" width="24" height="24" rx="4" fill="#F3F4F6"/>
+    <rect x="36" y="168" width="24" height="24" rx="4" fill="#F3F4F6"/>
+    
+    <!-- Main Content Area -->
+    <rect x="88" y="24" width="340" height="452" rx="12" fill="#FFFFFF"/>
+    
+    <!-- Calendar Header -->
+    <text x="104" y="52" fill="#111827" font-family="system-ui" font-size="14" font-weight="600">Calendar</text>
+    <rect x="340" y="36" width="70" height="26" rx="6" fill="#F3F4F6"/>
+    <text x="365" y="53" fill="#6B7280" font-family="system-ui" font-size="10">Today</text>
+    
+    <!-- Day columns headers -->
+    <text x="115" y="86" fill="#F97316" font-family="system-ui" font-size="10" font-weight="500">MONDAY</text>
+    <text x="175" y="86" fill="#F97316" font-family="system-ui" font-size="16" font-weight="600">26</text>
+    <text x="255" y="86" fill="#6B7280" font-family="system-ui" font-size="10" font-weight="500">TUESDAY</text>
+    <text x="325" y="86" fill="#111827" font-family="system-ui" font-size="16" font-weight="600">27</text>
+    
+    <!-- Add task buttons -->
+    <rect x="104" y="102" width="120" height="28" rx="6" fill="#F9FAFB" stroke="#E5E7EB" stroke-dasharray="4 2"/>
+    <text x="118" y="120" fill="#9CA3AF" font-family="system-ui" font-size="10">+ Add task</text>
+    <text x="190" y="120" fill="#D1D5DB" font-family="system-ui" font-size="9">3h35m</text>
+    
+    <rect x="240" y="102" width="120" height="28" rx="6" fill="#F9FAFB" stroke="#E5E7EB" stroke-dasharray="4 2"/>
+    <text x="254" y="120" fill="#9CA3AF" font-family="system-ui" font-size="10">+ Add task</text>
+    <text x="326" y="120" fill="#D1D5DB" font-family="system-ui" font-size="9">2h30m</text>
+    
+    <!-- Monday Tasks -->
+    <rect x="104" y="140" width="120" height="56" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="120" cy="160" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="134" y="152" width="70" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <rect x="134" y="166" width="50" height="6" rx="2" fill="#F97316" opacity="0.5"/>
+    
+    <rect x="104" y="204" width="120" height="56" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="120" cy="224" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="134" y="216" width="65" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <text x="134" y="238" fill="#F97316" font-family="system-ui" font-size="8">👑</text>
+    
+    <rect x="104" y="268" width="120" height="50" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="120" cy="288" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="134" y="280" width="75" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <rect x="134" y="294" width="40" height="6" rx="2" fill="#F97316" opacity="0.5"/>
+    
+    <rect x="104" y="326" width="120" height="50" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="120" cy="346" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="134" y="338" width="68" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <rect x="134" y="352" width="45" height="6" rx="2" fill="#F97316" opacity="0.5"/>
+    
+    <!-- Tuesday Tasks -->
+    <rect x="240" y="140" width="120" height="56" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="256" cy="160" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="270" y="152" width="70" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <rect x="270" y="166" width="55" height="6" rx="2" fill="#F97316" opacity="0.5"/>
+    
+    <rect x="240" y="204" width="120" height="50" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="256" cy="224" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="270" y="216" width="80" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <rect x="270" y="230" width="55" height="6" rx="2" fill="#F97316" opacity="0.5"/>
+    
+    <rect x="240" y="262" width="120" height="50" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="256" cy="282" r="8" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="270" y="274" width="60" height="8" rx="2" fill="#374151" opacity="0.7"/>
+    <rect x="270" y="288" width="50" height="6" rx="2" fill="#F97316" opacity="0.5"/>
+    
+    <!-- Timeline Panel - Plus large -->
+    <rect x="444" y="24" width="132" height="452" rx="12" fill="#FFFFFF"/>
+    
+    <!-- Date header -->
+    <text x="490" y="46" fill="#F97316" font-family="system-ui" font-size="10">Mon</text>
+    <text x="500" y="68" fill="#111827" font-family="system-ui" font-size="18" font-weight="600">26</text>
+    
+    <!-- Time labels and events - Plus espacés -->
+    <text x="454" y="105" fill="#9CA3AF" font-family="system-ui" font-size="9">08:00</text>
+    <rect x="490" y="92" width="76" height="50" rx="4" fill="#D1D5DB"/>
+    <rect x="496" y="100" width="60" height="6" rx="1" fill="#9CA3AF"/>
+    
+    <text x="454" y="165" fill="#9CA3AF" font-family="system-ui" font-size="9">09:00</text>
+    <rect x="490" y="152" width="76" height="38" rx="4" fill="#FED7AA"/>
+    <rect x="496" y="160" width="56" height="6" rx="1" fill="#FDBA74"/>
+    
+    <text x="454" y="215" fill="#9CA3AF" font-family="system-ui" font-size="9">10:00</text>
+    <rect x="490" y="202" width="76" height="30" rx="4" fill="#FED7AA"/>
+    <rect x="490" y="238" width="76" height="45" rx="4" fill="#FDBA74"/>
+    <rect x="496" y="246" width="56" height="6" rx="1" fill="#F97316" opacity="0.6"/>
+    
+    <text x="454" y="305" fill="#9CA3AF" font-family="system-ui" font-size="9">11:00</text>
+    <rect x="490" y="295" width="76" height="50" rx="4" fill="#FED7AA"/>
+    <rect x="496" y="303" width="60" height="6" rx="1" fill="#FDBA74"/>
+    
+    <text x="454" y="370" fill="#9CA3AF" font-family="system-ui" font-size="9">12:00</text>
+    <rect x="490" y="358" width="76" height="28" rx="4" fill="#FEF3C7"/>
+    
+    <text x="454" y="415" fill="#9CA3AF" font-family="system-ui" font-size="9">14:00</text>
+    <rect x="490" y="400" width="76" height="45" rx="4" fill="#FED7AA"/>
+  </g>
+</svg>

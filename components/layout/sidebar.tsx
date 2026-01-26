@@ -6,12 +6,11 @@ import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight, Sun } f
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { usePlatform } from "@/providers/platform-provider";
-import { useCallback, useRef, type MouseEvent } from "react";
 import { useTauriSession } from "@/providers/tauri-session";
 
 const mainNavigation = [
   { name: "Calendar", href: "/calendar", icon: SquareKanban },
-  { name: "Backlog", href: "/backlog", icon: ClipboardList },
+  { name: "Backlog", href: "/backlog", icon: ClipboardList }
 ];
 
 const ritualsNavigation = [

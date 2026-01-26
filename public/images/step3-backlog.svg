@@ -1,0 +1,101 @@
+<svg width="600" height="500" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="600" height="500" rx="16" fill="#F9FAFB"/>
+  
+  <!-- Compact Sidebar -->
+  <rect x="24" y="24" width="48" height="452" rx="12" fill="#FFFFFF"/>
+  <text x="42" y="60" fill="#9CA3AF" font-family="system-ui" font-size="14">»</text>
+  <rect x="36" y="80" width="24" height="24" rx="4" fill="#F3F4F6"/>
+  <!-- Backlog icon highlighted -->
+  <rect x="36" y="116" width="24" height="24" rx="4" fill="#FFF7ED" stroke="#FDBA74"/>
+  <rect x="36" y="160" width="24" height="24" rx="4" fill="#F3F4F6"/>
+  
+  <!-- Main Content Area -->
+  <rect x="88" y="24" width="340" height="452" rx="12" fill="#FFFFFF"/>
+  
+  <!-- Header -->
+  <text x="104" y="52" fill="#111827" font-family="system-ui" font-size="16" font-weight="600">Backlog</text>
+  <text x="104" y="70" fill="#9CA3AF" font-family="system-ui" font-size="10">All your tasks, organized by deadline</text>
+  
+  <!-- Filter button -->
+  <rect x="340" y="36" width="75" height="28" rx="6" fill="#F3F4F6"/>
+  <text x="352" y="54" fill="#6B7280" font-family="system-ui" font-size="9">Non planifiées</text>
+  
+  <!-- Highlight border around tasks section - ORANGE -->
+  <rect x="96" y="88" width="324" height="260" rx="10" fill="none" stroke="#F97316" stroke-width="2.5"/>
+  <rect x="96" y="88" width="324" height="260" rx="10" fill="#F97316" opacity="0.03"/>
+  
+  <!-- Next 3 Days Section -->
+  <g transform="translate(108, 100)">
+    <text x="0" y="16" fill="#6B7280" font-family="system-ui" font-size="11" font-weight="500">▼ Next 3 Days</text>
+    <text x="90" y="16" fill="#9CA3AF" font-family="system-ui" font-size="10">(2)</text>
+    
+    <!-- Task 1 -->
+    <rect x="0" y="28" width="300" height="58" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="20" cy="57" r="9" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="40" y="42" width="160" height="10" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="40" y="58" width="90" height="8" rx="2" fill="#9CA3AF" opacity="0.5"/>
+    <rect x="40" y="72" width="60" height="6" rx="2" fill="#F97316" opacity="0.4"/>
+    <rect x="250" y="48" width="42" height="18" rx="4" fill="#FEF3C7"/>
+    <text x="259" y="61" fill="#D97706" font-family="system-ui" font-size="9">30min</text>
+    
+    <!-- Task 2 -->
+    <rect x="0" y="94" width="300" height="58" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="20" cy="123" r="9" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="40" y="108" width="140" height="10" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="40" y="124" width="100" height="8" rx="2" fill="#9CA3AF" opacity="0.5"/>
+    <rect x="40" y="138" width="70" height="6" rx="2" fill="#F97316" opacity="0.4"/>
+    <rect x="250" y="114" width="42" height="18" rx="4" fill="#FEF3C7"/>
+    <text x="259" y="127" fill="#D97706" font-family="system-ui" font-size="9">30min</text>
+  </g>
+  
+  <!-- No Date Section -->
+  <g transform="translate(108, 268)">
+    <text x="0" y="16" fill="#6B7280" font-family="system-ui" font-size="11" font-weight="500">▼ No Date</text>
+    <text x="60" y="16" fill="#9CA3AF" font-family="system-ui" font-size="10">(1)</text>
+    
+    <!-- Task -->
+    <rect x="0" y="28" width="300" height="58" rx="8" fill="#FAFAFA" stroke="#E5E7EB"/>
+    <circle cx="20" cy="57" r="9" fill="none" stroke="#D1D5DB" stroke-width="1.5"/>
+    <rect x="40" y="42" width="120" height="10" rx="2" fill="#374151" opacity="0.8"/>
+    <rect x="175" y="42" width="55" height="16" rx="4" fill="#E0E7FF"/>
+    <text x="185" y="53" fill="#6366F1" font-family="system-ui" font-size="9"># House</text>
+    <rect x="40" y="58" width="80" height="8" rx="2" fill="#9CA3AF" opacity="0.5"/>
+  </g>
+  
+  <!-- Keyboard shortcut hint -->
+  <g transform="translate(108, 440)">
+    <text x="0" y="12" fill="#9CA3AF" font-family="system-ui" font-size="10">Press</text>
+    <rect x="34" y="0" width="22" height="16" rx="4" fill="#F3F4F6"/>
+    <text x="40" y="12" fill="#6B7280" font-family="system-ui" font-size="10">⌘</text>
+    <rect x="60" y="0" width="16" height="16" rx="4" fill="#F3F4F6"/>
+    <text x="65" y="12" fill="#6B7280" font-family="system-ui" font-size="10">K</text>
+    <text x="84" y="12" fill="#9CA3AF" font-family="system-ui" font-size="10">to create a task anywhere</text>
+  </g>
+  
+  <!-- Timeline Panel -->
+  <rect x="444" y="24" width="132" height="452" rx="12" fill="#FFFFFF"/>
+  
+  <!-- Date header -->
+  <text x="490" y="46" fill="#F97316" font-family="system-ui" font-size="10">Mon</text>
+  <text x="500" y="68" fill="#111827" font-family="system-ui" font-size="18" font-weight="600">26</text>
+  
+  <!-- Time labels and events -->
+  <text x="454" y="105" fill="#9CA3AF" font-family="system-ui" font-size="9">08:00</text>
+  <rect x="490" y="92" width="76" height="50" rx="4" fill="#D1D5DB"/>
+  <rect x="496" y="100" width="60" height="6" rx="1" fill="#9CA3AF"/>
+  
+  <text x="454" y="165" fill="#9CA3AF" font-family="system-ui" font-size="9">09:00</text>
+  <rect x="490" y="152" width="76" height="38" rx="4" fill="#FED7AA"/>
+  <rect x="496" y="160" width="56" height="6" rx="1" fill="#FDBA74"/>
+  
+  <text x="454" y="215" fill="#9CA3AF" font-family="system-ui" font-size="9">10:00</text>
+  <rect x="490" y="202" width="76" height="30" rx="4" fill="#FED7AA"/>
+  <rect x="490" y="238" width="76" height="45" rx="4" fill="#FDBA74"/>
+  <rect x="496" y="246" width="56" height="6" rx="1" fill="#F97316" opacity="0.6"/>
+  
+  <text x="454" y="305" fill="#9CA3AF" font-family="system-ui" font-size="9">11:00</text>
+  <rect x="490" y="295" width="76" height="50" rx="4" fill="#FED7AA"/>
+  
+  <text x="454" y="370" fill="#9CA3AF" font-family="system-ui" font-size="9">12:00</text>
+</svg>

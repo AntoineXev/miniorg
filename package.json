@@ -40,6 +40,7 @@
     "@prisma/adapter-d1": "^7.0.0",
     "@prisma/adapter-libsql": "^7.2.0",
     "@prisma/client": "^7.0.0",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-dropdown-menu": "^2.0.6",

@@ -1,0 +1,87 @@
+<svg width="600" height="500" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="600" height="500" rx="16" fill="#F9FAFB"/>
+  
+  <!-- App Container (dimmed) -->
+  <g opacity="0.4">
+    <!-- Compact Sidebar -->
+    <rect x="24" y="24" width="48" height="452" rx="12" fill="#FFFFFF"/>
+    <text x="42" y="60" fill="#9CA3AF" font-family="system-ui" font-size="14">»</text>
+    <rect x="36" y="80" width="24" height="24" rx="4" fill="#F3F4F6"/>
+    <rect x="36" y="116" width="24" height="24" rx="4" fill="#F3F4F6"/>
+    
+    <!-- Main Content Area -->
+    <rect x="88" y="24" width="340" height="452" rx="12" fill="#FFFFFF"/>
+    <text x="104" y="52" fill="#111827" font-family="system-ui" font-size="14" font-weight="600">Calendar</text>
+    
+    <!-- Blurred columns -->
+    <rect x="104" y="80" width="120" height="350" rx="8" fill="#F3F4F6"/>
+    <rect x="240" y="80" width="120" height="350" rx="8" fill="#F3F4F6"/>
+    
+    <!-- Timeline Panel -->
+    <rect x="444" y="24" width="132" height="452" rx="12" fill="#FFFFFF"/>
+    <rect x="460" y="100" width="100" height="300" rx="4" fill="#F3F4F6"/>
+  </g>
+  
+  <!-- Modal Highlight Border - ORANGE -->
+  <rect x="118" y="138" width="364" height="224" rx="14" fill="none" stroke="#F97316" stroke-width="2.5"/>
+  <rect x="118" y="138" width="364" height="224" rx="14" fill="#F97316" opacity="0.05"/>
+  
+  <!-- Modal -->
+  <rect x="125" y="145" width="350" height="210" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  
+  <!-- Modal Content -->
+  <text x="150" y="185" fill="#6B7280" font-family="system-ui" font-size="15">What do you need to do?</text>
+  
+  <!-- Input field placeholder line -->
+  <rect x="150" y="200" width="240" height="2" rx="1" fill="#E5E7EB"/>
+  
+  <!-- Pills row -->
+  <g transform="translate(150, 230)">
+    <!-- Next 3 Days pill -->
+    <rect x="0" y="0" width="85" height="30" rx="6" fill="#F3F4F6"/>
+    <text x="12" y="20" fill="#374151" font-family="system-ui" font-size="11">Next 3 Days</text>
+    
+    <!-- Set date pill -->
+    <rect x="93" y="0" width="65" height="30" rx="6" fill="#F3F4F6"/>
+    <text x="107" y="20" fill="#374151" font-family="system-ui" font-size="11">Set date</text>
+    
+    <!-- 30 min pill -->
+    <rect x="166" y="0" width="55" height="30" rx="6" fill="#F3F4F6"/>
+    <text x="180" y="20" fill="#374151" font-family="system-ui" font-size="11">30 min</text>
+    
+    <!-- Add tag pill -->
+    <rect x="229" y="0" width="70" height="30" rx="6" fill="#F3F4F6"/>
+    <text x="239" y="20" fill="#9CA3AF" font-family="system-ui" font-size="11"># Add tag</text>
+  </g>
+  
+  <!-- Show more -->
+  <g transform="translate(150, 275)">
+    <text x="0" y="14" fill="#9CA3AF" font-family="system-ui" font-size="11">Show more</text>
+    <text x="70" y="14" fill="#9CA3AF" font-family="system-ui" font-size="11">+</text>
+  </g>
+  
+  <!-- Create task button -->
+  <rect x="365" y="305" width="100" height="36" rx="8" fill="#F97316"/>
+  <text x="385" y="328" fill="#FFFFFF" font-family="system-ui" font-size="12" font-weight="500">Create task</text>
+  
+  <!-- Keyboard shortcut hint at bottom -->
+  <g transform="translate(200, 400)">
+    <rect x="0" y="0" width="200" height="36" rx="8" fill="#FFFFFF" filter="url(#shadow2)"/>
+    <rect x="14" y="10" width="26" height="18" rx="4" fill="#F3F4F6"/>
+    <text x="21" y="23" fill="#6B7280" font-family="system-ui" font-size="11">⌘</text>
+    <rect x="46" y="10" width="20" height="18" rx="4" fill="#F3F4F6"/>
+    <text x="52" y="23" fill="#6B7280" font-family="system-ui" font-size="11">K</text>
+    <text x="76" y="24" fill="#9CA3AF" font-family="system-ui" font-size="11">to create a task anywhere</text>
+  </g>
+  
+  <!-- Shadow filters -->
+  <defs>
+    <filter id="shadow" x="-20" y="-20" width="400" height="260" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+    <filter id="shadow2" x="-10" y="-10" width="230" height="60" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+</svg>
