@@ -13,7 +13,7 @@
     "preview": "BUILD_TARGET=cloudflare opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "tauri": "tauri",
     "tauri:dev": "BUILD_TARGET=tauri tauri dev",
-    "tauri:build": "BUILD_TARGET=tauri tauri build",
+    "tauri:build": "cp .env .env.backup && cp .env.tauri .env && BUILD_TARGET=tauri tauri build; mv .env.backup .env",
     "build:tauri": "BUILD_TARGET=tauri next build",
     "db:generate": "prisma generate",
     "db:push": "prisma db push --url=\"file:./dev.db\"",

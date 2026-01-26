@@ -161,10 +161,10 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
       location: event.location,
       start: event.isAllDay
         ? { date: event.startTime.toISOString().split('T')[0] }
-        : { dateTime: event.startTime.toISOString() },
+        : { dateTime: event.startTime.toISOString(), timeZone: 'UTC' },
       end: event.isAllDay
         ? { date: event.endTime.toISOString().split('T')[0] }
-        : { dateTime: event.endTime.toISOString() },
+        : { dateTime: event.endTime.toISOString(), timeZone: 'UTC' },
       colorId: event.color,
       attendees: event.attendees?.map((email) => ({ email })),
     };
@@ -204,13 +204,13 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
     if (event.startTime !== undefined) {
       eventData.start = event.isAllDay
         ? { date: event.startTime.toISOString().split('T')[0] }
-        : { dateTime: event.startTime.toISOString() };
+        : { dateTime: event.startTime.toISOString(), timeZone: 'UTC' };
     }
 
     if (event.endTime !== undefined) {
       eventData.end = event.isAllDay
         ? { date: event.endTime.toISOString().split('T')[0] }
-        : { dateTime: event.endTime.toISOString() };
+        : { dateTime: event.endTime.toISOString(), timeZone: 'UTC' };
     }
 
     if (event.attendees !== undefined) {
