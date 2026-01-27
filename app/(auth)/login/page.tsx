@@ -14,7 +14,7 @@ function LoginContent() {
   // If already authenticated (Tauri JWT), skip login page
   useEffect(() => {
     if (status === "authenticated" && isTauri()) {
-      router.replace("/backlog");
+      router.replace("/onboarding");
     }
   }, [status, router]);
 

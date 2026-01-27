@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { AddButton } from "@/components/ui/add-button";
 import { TagItem } from "./tag-item";
 import { TagDialog } from "./tag-dialog";
 import { useTagsQuery } from "@/lib/api/queries/tags";
@@ -56,17 +56,15 @@ export function TagList() {
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex gap-3">
-          <Button onClick={handleCreateContext}>Create Context</Button>
-        </div>
+      <div className="space-y-4">
+        <AddButton onClick={handleCreateContext}>
+          Create context
+        </AddButton>
 
         {contexts.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">
-              No contexts yet. Create your first context to organize your tasks.
-            </p>
-          </Card>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No contexts created yet
+          </p>
         ) : (
           <Card className="divide-y">
             {contexts.map((context) => (

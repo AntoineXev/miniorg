@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
-import { User, Calendar, Hash, LogOut, ChevronRight } from "lucide-react";
+import { User, Calendar, Hash, LogOut, ChevronRight, GraduationCap } from "lucide-react";
 import { useTauriSession } from "@/providers/tauri-session";
+import { useOnboarding } from "@/lib/hooks/use-onboarding";
 import type { ReactNode } from "react";
 
 type SettingsSectionProps = {
@@ -39,9 +40,15 @@ function SettingsSection({ icon, title, subtitle, onClick, showChevron = true }:
 export default function SettingsPage() {
   const { session, logout } = useTauriSession();
   const router = useRouter();
+  const { resetOnboarding } = useOnboarding();
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleRestartOnboarding = () => {
+    resetOnboarding();
+    router.push("/onboarding");
   };
 
   const getUserInitials = () => {
@@ -57,7 +64,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <Header title="Paramètres" subtitle="Gérer votre compte et vos préférences" />
+      <Header title="Settings" subtitle="Manage your account and preferences" />
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -81,7 +88,7 @@ export default function SettingsPage() {
                   </div>
                 )
               }
-              title={session?.user?.name || "Utilisateur"}
+              title={session?.user?.name || "User"}
               subtitle={session?.user?.email ?? undefined}
               onClick={() => router.push("/settings/profile")}
             />
@@ -91,15 +98,25 @@ export default function SettingsPage() {
           <Card className="overflow-hidden divide-y">
             <SettingsSection
               icon={<Calendar className="h-5 w-5 text-muted-foreground" strokeWidth={1} />}
-              title="Calendriers"
-              subtitle="Gérer vos connexions calendrier"
+              title="Calendars"
+              subtitle="Manage your calendar connections"
               onClick={() => router.push("/settings/calendars")}
             />
             <SettingsSection
               icon={<Hash className="h-5 w-5 text-muted-foreground" strokeWidth={1} />}
               title="Tags"
-              subtitle="Organiser vos tâches"
+              subtitle="Organize your tasks"
               onClick={() => router.push("/settings/tags")}
+            />
+          </Card>
+
+          {/* Help Section */}
+          <Card className="overflow-hidden">
+            <SettingsSection
+              icon={<GraduationCap className="h-5 w-5 text-muted-foreground" strokeWidth={1} />}
+              title="Restart tutorial"
+              subtitle="Learn how to use MiniOrg"
+              onClick={handleRestartOnboarding}
             />
           </Card>
 
@@ -110,7 +127,7 @@ export default function SettingsPage() {
               className="w-full flex items-center justify-center gap-3 p-4 text-red-600 hover:bg-red-50 transition-colors font-medium"
             >
               <LogOut className="h-5 w-5" />
-              <span>Se déconnecter</span>
+              <span>Log out</span>
             </button>
           </Card>
         </div>

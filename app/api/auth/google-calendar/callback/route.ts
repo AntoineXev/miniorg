@@ -114,14 +114,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Rediriger vers la page settings/calendars avec le flag onboarding=true pour déclencher le modal
+    // Rediriger vers la page appropriée avec le flag onboarding=true
+    // Utiliser le callbackUrl du state si présent, sinon /settings/calendars
+    const callbackUrl = stateData.callbackUrl || '/settings/calendars';
+    const redirectUrl = `${callbackUrl}${callbackUrl.includes('?') ? '&' : '?'}onboarding=true`;
+
     // Si la requête venait de Tauri, utiliser le deep link pour rouvrir l'app
     if (stateData.source === 'tauri') {
-      return NextResponse.redirect('miniorg://settings/calendars?onboarding=true');
+      return NextResponse.redirect(`miniorg:/${redirectUrl}`);
     }
 
     return NextResponse.redirect(
-      new URL('/settings/calendars?onboarding=true', request.url)
+      new URL(redirectUrl, request.url)
     );
   } catch (error) {
     console.error('Error in Google Calendar callback:', error);
