@@ -11,6 +11,7 @@ export type Task = {
   deadlineSetAt?: Date | null;
   duration?: number | null;
   completedAt?: Date | null;
+  rollupCount?: number; // Track rollover count
   tag?: { id: string; name: string; color: string } | null;
   calendarEvents?: Array<{ id: string; startTime: Date | string; endTime: Date | string; source?: string }>;
   createdAt: Date;
@@ -68,6 +69,8 @@ export type DailyRitual = {
   highlightId?: string | null;
   highlight?: Task | null;
   timeline?: string | null; // JSON string of task IDs
+  notes?: string | null; // User notes from wrap-up
+  wrapupCompletedAt?: Date | string | null; // When wrap-up was completed
   createdAt: Date;
   updatedAt: Date;
 };

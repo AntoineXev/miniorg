@@ -73,6 +73,7 @@ model Task {
   duration       Int?            // Duration in minutes
   order          Int             @default(0)
   completedAt    DateTime?
+  rollupCount    Int             @default(0) // Track rollover count
   userId         String
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   tagId          String?
@@ -163,15 +164,17 @@ model CalendarConnection {
 }
 
 model DailyRitual {
-  id          String   @id @default(cuid())
-  date        DateTime // Date of the ritual (start of day)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  highlightId String?
-  highlight   Task?    @relation(fields: [highlightId], references: [id], onDelete: SetNull)
-  timeline    String?  // JSON string of planned task IDs for the day
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String    @id @default(cuid())
+  date              DateTime  // Date of the ritual (start of day)
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  highlightId       String?
+  highlight         Task?     @relation(fields: [highlightId], references: [id], onDelete: SetNull)
+  timeline          String?   // JSON string of planned task IDs for the day
+  notes             String?   // User notes from wrap-up
+  wrapupCompletedAt DateTime? // When wrap-up was completed
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])

@@ -79,8 +79,13 @@ export async function GET(request: NextRequest) {
     const where: any = {
       userId,
       // Exclude events where user responded "declined"
-      // Show: accepted, tentative, needsAction (not responded), or no responseStatus (miniorg events)
-      NOT: { responseStatus: 'declined' },
+      // Show: accepted, tentative, needsAction (not responded), or no responseStatus (miniorg events / self-created events)
+      OR: [
+        { responseStatus: null },           // MiniOrg events or events without attendees
+        { responseStatus: 'accepted' },      // User accepted the invite
+        { responseStatus: 'tentative' },     // User marked as tentative
+        { responseStatus: 'needsAction' },   // User hasn't responded yet
+      ],
     };
 
     // Filter by date range

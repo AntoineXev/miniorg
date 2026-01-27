@@ -258,3 +258,75 @@ export function useSaveDailyRitualMutation(date: Date) {
     },
   });
 }
+
+// Hook to rollover tasks to tomorrow (or another date)
+export function useRolloverTasksMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { taskIds: string[]; targetDate?: string }) =>
+      ApiClient.post<{ success: boolean; count: number; tasks: Task[] }>(
+        "/api/tasks/rollover",
+        data
+      ),
+    onMutate: async ({ taskIds, targetDate }) => {
+      const toastId = toast.loading("Rolling over tasks...");
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: taskKeys.all });
+
+      // Snapshot previous value
+      const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.all);
+
+      // Optimistically update tasks
+      if (previousTasks) {
+        const tomorrow = targetDate || format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
+        queryClient.setQueryData<Task[]>(
+          taskKeys.all,
+          previousTasks.map((task) =>
+            taskIds.includes(task.id)
+              ? {
+                  ...task,
+                  scheduledDate: new Date(tomorrow),
+                  rollupCount: (task.rollupCount || 0) + 1,
+                }
+              : task
+          )
+        );
+      }
+
+      return { previousTasks, toastId };
+    },
+    onSuccess: (_, __, context) => {
+      toast.success("Tasks rolled over to tomorrow", { id: context?.toastId });
+      queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      emitInvalidateQueries(["tasks"]);
+    },
+    onError: (error, _, context) => {
+      // Rollback to previous state
+      if (context?.previousTasks) {
+        queryClient.setQueryData(taskKeys.all, context.previousTasks);
+      }
+      toast.error("Failed to rollover tasks", { id: context?.toastId });
+      console.error(error);
+    },
+  });
+}
+
+// Hook to save wrap-up (notes and completion)
+export function useSaveWrapupMutation(date: Date) {
+  const queryClient = useQueryClient();
+  const dateStr = format(date, "yyyy-MM-dd");
+
+  return useMutation({
+    mutationFn: (data: { notes?: string | null; wrapupCompletedAt?: string | null }) =>
+      ApiClient.post<DailyRitual>("/api/daily-ritual", { ...data, date: dateStr }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dailyRitualKeys.byDate(dateStr) });
+    },
+    onError: (error) => {
+      toast.error("Failed to save wrap-up");
+      console.error(error);
+    },
+  });
+}

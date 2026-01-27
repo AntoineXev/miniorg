@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight, Sun } from "lucide-react";
+import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { usePlatform } from "@/providers/platform-provider";
@@ -15,6 +15,7 @@ const mainNavigation = [
 
 const ritualsNavigation = [
   { name: "Daily Planning", href: "/daily-planning", icon: Sun },
+  { name: "Daily Wrap Up", href: "/daily-wrapup", icon: Moon },
 ];
 
 type SidebarProps = {

@@ -9,6 +9,8 @@ const dailyRitualSchema = z.object({
   date: z.string().optional(), // ISO date string, defaults to today
   highlightId: z.string().optional().nullable(),
   timeline: z.array(z.string()).optional(), // Array of task IDs
+  notes: z.string().optional().nullable(), // User notes from wrap-up
+  wrapupCompletedAt: z.string().optional().nullable(), // When wrap-up was completed (ISO string)
 });
 
 // GET /api/daily-ritual?date=2024-01-15
@@ -73,6 +75,9 @@ export async function POST(request: NextRequest) {
     // Convert timeline array to JSON string
     const timelineJson = body.timeline ? JSON.stringify(body.timeline) : null;
 
+    // Parse wrapupCompletedAt if provided
+    const wrapupCompletedAt = body.wrapupCompletedAt ? new Date(body.wrapupCompletedAt) : undefined;
+
     const ritual = await prisma.dailyRitual.upsert({
       where: {
         userId_date: {
@@ -83,6 +88,8 @@ export async function POST(request: NextRequest) {
       update: {
         highlightId: body.highlightId,
         timeline: timelineJson,
+        ...(body.notes !== undefined && { notes: body.notes }),
+        ...(wrapupCompletedAt !== undefined && { wrapupCompletedAt }),
         updatedAt: new Date(),
       },
       create: {
@@ -90,6 +97,8 @@ export async function POST(request: NextRequest) {
         date: dayStart,
         highlightId: body.highlightId,
         timeline: timelineJson,
+        notes: body.notes || null,
+        wrapupCompletedAt: wrapupCompletedAt || null,
       },
       include: {
         highlight: {
