@@ -52,4 +52,5 @@ dev.db
 /src-tauri/gen/
 /src-tauri/*.log
 
-.env.tauri.env.backup
+.env.tauri
+.env.backup

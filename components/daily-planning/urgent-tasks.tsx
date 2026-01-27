@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DraggableTaskCard } from "@/components/tasks/draggable-task-card";
+import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { addDays, addMonths, addYears, isSameDay, parseISO, startOfDay } from "date-fns";
@@ -55,6 +56,8 @@ type UrgentTasksProps = {
 
 export function UrgentTasks({ referenceDate }: UrgentTasksProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("next_3_days");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { data: tasks = [] } = useTasksQuery();
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
@@ -123,8 +126,11 @@ export function UrgentTasks({ referenceDate }: UrgentTasksProps) {
   };
 
   const handleEdit = (taskId: string) => {
-    // TODO: Open edit dialog or navigate to task
-    console.log("Edit task:", taskId);
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      setEditingTask(task);
+      setIsEditDialogOpen(true);
+    }
   };
 
   const handleDelete = (taskId: string) => {
@@ -140,43 +146,53 @@ export function UrgentTasks({ referenceDate }: UrgentTasksProps) {
   };
 
   return (
-    <div className="relative flex flex-col h-full">
-      <div className="bg-background sticky top-0 z-10 flex flex-wrap justify-between items-center gap-2 pb-3">
-        <h2 className="font-semibold text-base">Upcoming Tasks</h2>
-        <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
-          <SelectTrigger className="h-7 w-auto text-xs border-none bg-transparent px-2 gap-1 text-muted-foreground hover:text-foreground">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            {(Object.keys(timeRangeLabels) as TimeRange[]).map((key) => (
-              <SelectItem key={key} value={key} className="text-xs">
-                {timeRangeLabels[key]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground w-full basis-full">Check your upcoming tasks and move them to the right column to add them to your day.</p>
+    <>
+      <div className="relative flex flex-col h-full">
+        <div className="bg-background sticky top-0 z-10 flex flex-wrap justify-between items-center gap-2 pb-3">
+          <h2 className="font-semibold text-base">Upcoming Tasks</h2>
+          <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+            <SelectTrigger className="h-7 w-auto text-xs border-none bg-transparent px-2 gap-1 text-muted-foreground hover:text-foreground">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {(Object.keys(timeRangeLabels) as TimeRange[]).map((key) => (
+                <SelectItem key={key} value={key} className="text-xs">
+                  {timeRangeLabels[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground w-full basis-full">Check your upcoming tasks and move them to the right column to add them to your day.</p>
 
+        </div>
+
+        {urgentTasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No upcoming tasks. Nice work!
+          </p>
+        ) : (
+          <div className="space-y-2.5 flex-1 pt-1 overflow-auto">
+            {urgentTasks.map((task) => (
+              <DraggableTaskCard
+                key={task.id}
+                task={task}
+                onToggleComplete={handleToggleComplete}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onUpdateTag={handleUpdateTag}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {urgentTasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No upcoming tasks. Nice work!
-        </p>
-      ) : (
-        <div className="space-y-2.5 flex-1 pt-1 overflow-auto">
-          {urgentTasks.map((task) => (
-            <DraggableTaskCard
-              key={task.id}
-              task={task}
-              onToggleComplete={handleToggleComplete}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onUpdateTag={handleUpdateTag}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+      <EditTaskDialog
+        task={editingTask}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onTaskUpdated={() => {}}
+        onTaskDeleted={() => {}}
+      />
+    </>
   );
 }
