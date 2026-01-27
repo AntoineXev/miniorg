@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { startOfDay, format, isSameDay, parseISO, isPast } from "date-fns";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, Moon } from "lucide-react";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { useRightSidebar } from "@/components/layout/right-sidebar/context";
@@ -13,13 +14,18 @@ import { useCalendarEventsQuery } from "@/lib/api/queries/calendar-events";
 import { useSaveWrapupMutation, useRolloverTasksMutation } from "@/lib/api/mutations/tasks";
 import {
   TimeSummary,
-  TimeDistributionChart,
   WrapupCompletedColumn,
   WrapupIncompleteColumn,
   WrapupNotes,
   DayTimeline,
   HighlightCard,
 } from "@/components/daily-wrapup";
+
+// Dynamic import to exclude recharts from server bundle
+const TimeDistributionChart = dynamic(
+  () => import("@/components/daily-wrapup/time-distribution-chart").then((mod) => mod.TimeDistributionChart),
+  { ssr: false }
+);
 
 type Step = "review" | "summary" | "completed";
 
