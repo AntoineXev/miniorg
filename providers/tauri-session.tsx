@@ -20,6 +20,7 @@ import {
   type TauriSession,
 } from "@/lib/auth-tauri";
 import { clearOnboardingState } from "@/lib/hooks/use-onboarding";
+import { clearQueryCache } from "@/providers/query-provider";
 import { toast } from "sonner";
 
 interface UnifiedUser {
@@ -235,6 +236,9 @@ export function TauriSessionProvider({
   const logout = async () => {
     // Clear onboarding state on logout
     clearOnboardingState();
+
+    // Clear React Query cache to remove previous user's data
+    clearQueryCache();
 
     if (isDesktop) {
       await clearTauriSession();
