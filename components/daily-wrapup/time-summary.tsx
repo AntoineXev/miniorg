@@ -90,7 +90,7 @@ export function TimeSummary({ tasks, date }: TimeSummaryProps) {
     <div className="overflow-visible">
       {/* Header */}
       <h3 className="text-base font-semibold">Total time</h3>
-      <p className="text-sm font-light pt-2 text-muted-foreground mb-6">
+      <p className="text-xs font-light italic pt-1 text-muted-foreground mb-6">
         How much time did you spend on tasks today?
       </p>
 

@@ -79,12 +79,12 @@ export async function GET(request: NextRequest) {
     const where: any = {
       userId,
       // Exclude events where user responded "declined"
-      // Show: accepted, tentative, needsAction (not responded), or no responseStatus (miniorg events / self-created events)
+      // Note: Must use OR with explicit null check because SQL NULL comparisons don't work with NOT
       OR: [
-        { responseStatus: null },           // MiniOrg events or events without attendees
-        { responseStatus: 'accepted' },      // User accepted the invite
-        { responseStatus: 'tentative' },     // User marked as tentative
-        { responseStatus: 'needsAction' },   // User hasn't responded yet
+        { responseStatus: { equals: null } },
+        { responseStatus: 'accepted' },
+        { responseStatus: 'tentative' },
+        { responseStatus: 'needsAction' },
       ],
     };
 

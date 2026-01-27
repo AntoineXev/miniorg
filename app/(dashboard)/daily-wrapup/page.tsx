@@ -252,10 +252,10 @@ export default function DailyWrapupPage() {
     <div className="flex flex-col h-full">
       <Header title="Daily Wrap Up" />
 
-      <div className="flex-1 p-4 overflow-x-visible overflow-y-auto">
-        <div className="grid grid-cols-3 gap-4 h-full overflow-visible">
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="grid grid-cols-3 gap-2 h-full overflow-hidden ">
           {/* Column 1: Time Summary + Distribution */}
-          <div className="flex flex-col pt-4 gap-4 overflow-visible">
+          <div className="flex flex-col pt-4 gap-4 h-full flex-1 overflow-x-hidden pr-1  overflow-y-auto ">
             <TimeSummary
               tasks={tasks}
               date={selectedDate}
@@ -266,8 +266,9 @@ export default function DailyWrapupPage() {
               date={selectedDate}
             />
 
+
             {/* Navigation to step 2 */}
-            <div className="mt-auto pt-4">
+            <div className="sticky bg-background/90 bottom-0 mt-auto pt-2 sticky-bottom-shadow backdrop-blur-sm">
               <Button
                 variant="outline"
                 onClick={handleGoToSummary}

@@ -71,22 +71,16 @@ function Confetti({ show }: { show: boolean }) {
 function StatusDot({ isCompleted }: { isCompleted: boolean }) {
   return (
     <div className="relative">
-      {isCompleted && (
-        <motion.div
-          className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-400"
-          animate={{ scale: [1, 2, 2], opacity: [0.8, 0, 0] }}
-          transition={{ duration: 1, repeat: Infinity, ease: "easeOut" }}
-        />
-      )}
-      <motion.div
-        className={`relative w-2.5 h-2.5 rounded-full ${
-          isCompleted ? "bg-green-400" : "bg-muted-foreground/50"
-        }`}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: "spring", stiffness: 500, damping: 25 }}
-      />
-    </div>
+      {isCompleted ? (
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex size-2 rounded-full bg-green-500"></span>
+        </span>
+      ) : (
+      <span className="relative flex size-2">
+  <span className="relative inline-flex size-2 rounded-full bg-muted-foreground"></span>
+</span>
+)}</div>
   );
 }
 
@@ -163,12 +157,12 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
           transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1], delay: 0.2 }}
         >
           {/* Outer card */}
-          <div className="bg-zinc-100 rounded-xl pt-3 pb-1.5 px-1.5 rounded-xl">
+          <div className="bg-muted-foreground/10 rounded-xl pt-3 pb-1.5 px-1.5 rounded-xl">
             {/* Header row */}
-            <div className="flex items-center justify-between mb-2.5 px-1">
+            <div className="flex items-center justify-between mb-2.5 px-1 pr-2">
               <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-muted-foreground" strokeWidth={2} />
-                <span className="text-sm font-medium text-muted-foreground">
+                <Target className="w-4 h-4" strokeWidth={1} />
+                <span className="text-sm font-light">
                   Highlight du jour
                 </span>
               </div>
@@ -178,7 +172,7 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
             {/* Inner card */}
             <motion.div
               className={`rounded-lg overflow-hidden ${
-                isCompleted ? "bg-green-500" : "bg-card border border-border"
+                isCompleted ? "bg-green-400" : "bg-card border border-border"
               }`}
               animate={{ backgroundColor: isCompleted ? "#22c55e" : undefined }}
               transition={{ duration: 0.3 }}
@@ -208,7 +202,7 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
 
                 {/* Title */}
                 <motion.h2
-                  className={`text-lg font-semibold leading-snug ${
+                  className={`text-lg font-medium leading-snug ${
                     isCompleted ? "text-white" : "text-foreground"
                   }`}
                   initial={{ opacity: 0, y: 8 }}

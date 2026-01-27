@@ -118,14 +118,41 @@ export function TimeDistributionChart({ tasks, tags, date }: TimeDistributionCha
     });
     outer.sort((a, b) => b.value - a.value);
 
+    // Build inner data aligned with outer ring
+    // For each outer segment, add its children in sequence so they align angularly
     const inner: ChartDataItem[] = [];
+    const childrenByParent = new Map<string, { key: string; minutes: number; name: string; color: string }[]>();
+
+    // Group children by their parent
     Array.from(innerMinutes.entries()).forEach(([key, { minutes, name, color, parentId }]) => {
-      inner.push({ name: key, value: minutes, fill: color, parentId });
       if (!config[key]) {
         config[key] = { label: name, color };
       }
+      const parentKey = parentId || key; // If no parent, use self as key
+      if (!childrenByParent.has(parentKey)) {
+        childrenByParent.set(parentKey, []);
+      }
+      childrenByParent.get(parentKey)!.push({ key, minutes, name, color });
     });
-    inner.sort((a, b) => b.value - a.value);
+
+    // Build inner array following outer order
+    outer.forEach(outerItem => {
+      const children = childrenByParent.get(outerItem.name) || [];
+
+      if (children.length === 0) {
+        // No children data, show parent segment in inner ring too
+        inner.push({ name: outerItem.name, value: outerItem.value, fill: outerItem.fill, parentId: null });
+      } else if (children.length === 1 && children[0].key === outerItem.name) {
+        // Only self (root tag without children), just add it
+        inner.push({ name: children[0].key, value: children[0].minutes, fill: children[0].color, parentId: null });
+      } else {
+        // Has actual children - add them sorted by value within this parent's section
+        const sortedChildren = [...children].sort((a, b) => b.minutes - a.minutes);
+        sortedChildren.forEach(child => {
+          inner.push({ name: child.key, value: child.minutes, fill: child.color, parentId: outerItem.name });
+        });
+      }
+    });
 
     // Build parent to children mapping for tooltip
     const parentChildren = new Map<string, ChartDataItem[]>();
@@ -255,7 +282,7 @@ export function TimeDistributionChart({ tasks, tags, date }: TimeDistributionCha
     return (
       <div>
         <h3 className="text-base font-semibold">Time by channel</h3>
-        <p className="text-sm font-light pt-2 text-muted-foreground mb-6">
+        <p className="text-xs font-light italic pt-1 text-muted-foreground mb-6">
           How is your time distributed across channels?
         </p>
         <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
@@ -268,7 +295,7 @@ export function TimeDistributionChart({ tasks, tags, date }: TimeDistributionCha
   return (
     <div>
       <h3 className="text-base font-semibold">Time by channel</h3>
-      <p className="text-sm font-light pt-2 text-muted-foreground mb-6">
+      <p className="text-xs italic font-light pt-1 text-muted-foreground mb-4">
         How is your time distributed across channels?
       </p>
 
@@ -339,7 +366,7 @@ export function TimeDistributionChart({ tasks, tags, date }: TimeDistributionCha
       </div>
 
       {/* Custom tooltip - below chart */}
-      <div className="h-16 flex items-start justify-center mt-2">
+      <div className="h-16 flex items-start justify-center mt-2 relative z-10">
         {hoverState ? renderTooltip() : (
           <div className="text-xs text-muted-foreground">Hover to see details</div>
         )}
