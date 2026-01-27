@@ -78,6 +78,9 @@ export async function GET(request: NextRequest) {
 
     const where: any = {
       userId,
+      // Exclude events where user responded "declined"
+      // Show: accepted, tentative, needsAction (not responded), or no responseStatus (miniorg events)
+      NOT: { responseStatus: 'declined' },
     };
 
     // Filter by date range

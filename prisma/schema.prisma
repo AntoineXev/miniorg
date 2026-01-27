@@ -126,9 +126,10 @@ model CalendarEvent {
   connectionId String?             // Lien vers CalendarConnection
   connection   CalendarConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
   lastSyncedAt DateTime?           // Dernière fois que l'event a été synced
-  syncStatus   String?             // "synced" | "pending" | "error"
-  syncError    String?             // Message d'erreur si sync échoue
-  createdAt    DateTime            @default(now())
+  syncStatus     String?             // "synced" | "pending" | "error"
+  syncError      String?             // Message d'erreur si sync échoue
+  responseStatus String?             // "needsAction" | "declined" | "tentative" | "accepted"
+  createdAt      DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
   @@unique([externalId, connectionId])

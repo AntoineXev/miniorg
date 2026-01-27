@@ -19,6 +19,7 @@ export interface ExternalEvent {
   isAllDay?: boolean;
   status?: string;
   attendees?: string[];
+  responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted';
 }
 
 export interface CalendarAdapter {

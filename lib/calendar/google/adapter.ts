@@ -128,6 +128,15 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
           ? new Date(item.end.date)
           : new Date();
 
+        // Find the current user's response status
+        const selfAttendee = item.attendees?.find((a) => a.self);
+        const responseStatus = selfAttendee?.responseStatus as
+          | 'needsAction'
+          | 'declined'
+          | 'tentative'
+          | 'accepted'
+          | undefined;
+
         return {
           id: item.id,
           title: item.summary || 'Untitled Event',
@@ -139,6 +148,7 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
           isAllDay: !!item.start?.date,
           status: item.status || undefined,
           attendees: item.attendees?.map((a) => a.email),
+          responseStatus,
         };
       });
 

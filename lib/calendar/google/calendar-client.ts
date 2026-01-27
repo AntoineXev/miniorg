@@ -160,7 +160,11 @@ export interface GoogleEvent {
   status: string;
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
-  attendees?: Array<{ email: string }>;
+  attendees?: Array<{
+    email: string;
+    self?: boolean;
+    responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted';
+  }>;
   eventType?: 'default' | 'outOfOffice' | 'focusTime' | 'workingLocation' | 'birthday' | 'fromGmail';
   workingLocationProperties?: {
     type?: 'homeOffice' | 'officeLocation' | 'customLocation';
