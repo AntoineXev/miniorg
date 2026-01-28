@@ -1,5 +1,11 @@
 // Centralized API types for the application
 
+export type RitualMode = "separate" | "morning" | "evening";
+
+export type UserSettings = {
+  ritualMode: RitualMode;
+};
+
 export type Task = {
   id: string;
   title: string;

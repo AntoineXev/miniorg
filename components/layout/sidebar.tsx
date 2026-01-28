@@ -2,20 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight, Sun, Moon } from "lucide-react";
+import { ClipboardList, SquareKanban, User, ChevronsLeft, ChevronsRight, Sun, Moon, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { usePlatform } from "@/providers/platform-provider";
 import { useTauriSession } from "@/providers/tauri-session";
+import { useUserSettingsQuery } from "@/lib/api/queries/user-settings";
 
 const mainNavigation = [
   { name: "Calendar", href: "/calendar", icon: SquareKanban },
   { name: "Backlog", href: "/backlog", icon: ClipboardList }
-];
-
-const ritualsNavigation = [
-  { name: "Daily Planning", href: "/daily-planning", icon: Sun },
-  { name: "Daily Wrap Up", href: "/daily-wrapup", icon: Moon },
 ];
 
 type SidebarProps = {
@@ -27,6 +23,19 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
   const pathname = usePathname();
   const { session } = useTauriSession();
   const { isTauri } = usePlatform();
+  const { data: settings } = useUserSettingsQuery();
+
+  const ritualMode = settings?.ritualMode || "separate";
+
+  // Build rituals navigation based on mode
+  const ritualsNavigation = ritualMode === "separate"
+    ? [
+        { name: "Daily Planning", href: "/daily-planning", icon: Sun },
+        { name: "Daily Wrap Up", href: "/daily-wrapup", icon: Moon },
+      ]
+    : ritualMode === "morning"
+    ? [{ name: "Morning Ritual", href: "/daily-wrapup", icon: Sparkles }]
+    : [{ name: "Evening Ritual", href: "/daily-wrapup", icon: Sparkles }];
 
   return (
     <div 
@@ -96,7 +105,10 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse }: SidebarProps)
           )}
           <div className="mt-2 space-y-1">
             {ritualsNavigation.map((item) => {
-              const isActive = pathname === item.href;
+              // For combined modes, highlight when on either daily-planning or daily-wrapup
+              const isActive = ritualMode !== "separate"
+                ? pathname === "/daily-planning" || pathname === "/daily-wrapup"
+                : pathname === item.href || pathname.startsWith(item.href + "?");
               return (
                 <Link
                   key={item.name}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { startOfDay, addDays } from "date-fns";
+import { useRouter, useSearchParams } from "next/navigation";
+import { startOfDay, addDays, format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Header } from "@/components/layout/header";
@@ -14,16 +15,30 @@ import { Button } from "@/components/ui/button";
 import { useHighlightQuery, useTasksQuery, useDailyRitualQuery } from "@/lib/api/queries/tasks";
 import { useSaveDailyRitualMutation } from "@/lib/api/mutations/tasks";
 import { useTimelineDate } from "@/lib/contexts/timeline-date-context";
+import { useUserSettingsQuery } from "@/lib/api/queries/user-settings";
 
 type Step = "highlight" | "upcoming" | "review" | "ready";
 
 export default function DailyPlanningPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { setActivePanel } = useRightSidebar();
   const { setSelectedDate: setTimelineDate } = useTimelineDate();
   const [currentStep, setCurrentStep] = useState<Step>("highlight");
 
-  // Selected date for planning (defaults to today)
-  const selectedDate = useMemo(() => startOfDay(new Date()), []);
+  // Get user settings for ritual mode
+  const { data: settings } = useUserSettingsQuery();
+  const ritualMode = settings?.ritualMode || "separate";
+
+  // Selected date for planning (from query param or defaults to today)
+  const selectedDate = useMemo(() => {
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      return startOfDay(new Date(dateParam));
+    }
+    return startOfDay(new Date());
+  }, [searchParams]);
+
   const tomorrowDate = useMemo(() => addDays(selectedDate, 1), [selectedDate]);
 
   // Get highlight, tasks, and existing ritual
@@ -51,13 +66,19 @@ export default function DailyPlanningPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // If daily ritual already exists for today, go directly to the ready step
+  // If daily ritual already exists, handle based on mode
   useEffect(() => {
     if (!isRitualLoading && existingRitual && currentStep === "highlight") {
+      // For evening mode, redirect to wrapup completed screen (end of evening ritual)
+      if (ritualMode === "evening") {
+        router.replace("/daily-wrapup");
+        return;
+      }
+      // Morning mode and separate mode: show ready step
       setCurrentStep("ready");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRitualLoading, existingRitual]);
+  }, [isRitualLoading, existingRitual, ritualMode]);
 
   const handleNextFromHighlight = useCallback(() => {
     setCurrentStep("upcoming");
@@ -81,8 +102,17 @@ export default function DailyPlanningPage() {
       highlightId: highlight?.id || null,
       timeline: todayTaskIds,
     });
+
+    // For evening mode, redirect to wrapup completed screen
+    if (ritualMode === "evening") {
+      router.replace("/daily-wrapup");
+      return;
+    }
+
+    // For morning mode, show ready step (end of morning ritual)
+    // For separate mode, also show ready step
     setCurrentStep("ready");
-  }, [saveDailyRitual, highlight?.id, todayTaskIds]);
+  }, [saveDailyRitual, highlight?.id, todayTaskIds, ritualMode, router]);
 
   const slideVariants = {
     enter: (direction: number) => ({

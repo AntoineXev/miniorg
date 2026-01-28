@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { startOfDay, format, isSameDay, parseISO, isPast } from "date-fns";
+import { useRouter, useSearchParams } from "next/navigation";
+import { startOfDay, format, isSameDay, parseISO, isPast, subDays, addDays } from "date-fns";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -12,6 +13,7 @@ import { useTasksQuery, useDailyRitualQuery, useHighlightQuery } from "@/lib/api
 import { useTagsQuery } from "@/lib/api/queries/tags";
 import { useCalendarEventsQuery } from "@/lib/api/queries/calendar-events";
 import { useSaveWrapupMutation, useRolloverTasksMutation } from "@/lib/api/mutations/tasks";
+import { useUserSettingsQuery } from "@/lib/api/queries/user-settings";
 import {
   TimeSummary,
   WrapupCompletedColumn,
@@ -30,12 +32,30 @@ const TimeDistributionChart = dynamic(
 type Step = "review" | "summary" | "completed";
 
 export default function DailyWrapupPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { setActivePanel } = useRightSidebar();
   const [currentStep, setCurrentStep] = useState<Step>("review");
   const [notes, setNotes] = useState<string>("");
 
-  // Selected date for wrap-up (defaults to today)
-  const selectedDate = useMemo(() => startOfDay(new Date()), []);
+  // Get user settings for ritual mode
+  const { data: settings } = useUserSettingsQuery();
+  const ritualMode = settings?.ritualMode || "separate";
+
+  // Get date from query params or default based on ritual mode
+  const selectedDate = useMemo(() => {
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      return startOfDay(new Date(dateParam));
+    }
+    // For morning mode, wrap-up is for yesterday
+    if (ritualMode === "morning") {
+      return startOfDay(subDays(new Date(), 1));
+    }
+    // Default to today
+    return startOfDay(new Date());
+  }, [searchParams, ritualMode]);
+
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   // Queries
@@ -47,6 +67,15 @@ export default function DailyWrapupPage() {
   });
   const { data: existingRitual, isLoading: isRitualLoading } = useDailyRitualQuery(selectedDate);
   const { data: highlight } = useHighlightQuery(selectedDate);
+
+  // For evening mode, we need to check if tomorrow's planning is done
+  const planningDate = useMemo(() => {
+    if (ritualMode === "evening") {
+      return startOfDay(addDays(new Date(), 1));
+    }
+    return startOfDay(new Date());
+  }, [ritualMode]);
+  const { data: planningRitual, isLoading: isPlanningLoading } = useDailyRitualQuery(planningDate);
 
   // Mutations
   const saveWrapup = useSaveWrapupMutation(selectedDate);
@@ -75,14 +104,36 @@ export default function DailyWrapupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-skip to completed if wrapupCompletedAt exists
+  // Auto-skip or redirect if wrapupCompletedAt exists
   useEffect(() => {
-    if (!isRitualLoading && existingRitual?.wrapupCompletedAt && currentStep === "review") {
-      setNotes(existingRitual.notes || "");
-      setCurrentStep("completed");
+    if (isRitualLoading || isPlanningLoading) return;
+    if (!existingRitual?.wrapupCompletedAt || currentStep !== "review") return;
+
+    // For morning mode, always redirect to planning (it will show ready screen if done)
+    if (ritualMode === "morning") {
+      router.push("/daily-planning");
+      return;
     }
+
+    // For evening mode, check if tomorrow's planning is done
+    if (ritualMode === "evening") {
+      if (planningRitual) {
+        // Planning is done, show wrapup completed screen (end of evening ritual)
+        setNotes(existingRitual.notes || "");
+        setCurrentStep("completed");
+      } else {
+        // Planning not done yet, redirect to planning
+        const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
+        router.push(`/daily-planning?date=${tomorrow}`);
+      }
+      return;
+    }
+
+    // Separate mode: show completed screen
+    setNotes(existingRitual.notes || "");
+    setCurrentStep("completed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRitualLoading, existingRitual]);
+  }, [isRitualLoading, isPlanningLoading, existingRitual, planningRitual, ritualMode]);
 
   // Load existing notes
   useEffect(() => {
@@ -96,8 +147,20 @@ export default function DailyWrapupPage() {
       notes: notes || null,
       wrapupCompletedAt: new Date().toISOString(),
     });
-    setCurrentStep("completed");
-  }, [saveWrapup, notes]);
+
+    // Redirect based on ritual mode
+    if (ritualMode === "morning") {
+      // Morning mode: after wrap-up, go to planning for today
+      router.push("/daily-planning");
+    } else if (ritualMode === "evening") {
+      // Evening mode: after wrap-up, go to planning for tomorrow
+      const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
+      router.push(`/daily-planning?date=${tomorrow}`);
+    } else {
+      // Separate mode: show completion screen
+      setCurrentStep("completed");
+    }
+  }, [saveWrapup, notes, ritualMode, router]);
 
   const handleGoToReview = useCallback(() => {
     setCurrentStep("review");
