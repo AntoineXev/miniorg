@@ -1,0 +1,16 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="80" rx="16" fill="#1E293B"/>
+  <!-- Moon -->
+  <circle cx="40" cy="38" r="18" fill="#F8FAFC"/>
+  <circle cx="48" cy="32" r="14" fill="#1E293B"/>
+  <!-- Stars -->
+  <circle cx="18" cy="24" r="2" fill="#F8FAFC"/>
+  <circle cx="62" cy="20" r="1.5" fill="#F8FAFC"/>
+  <circle cx="68" cy="36" r="1" fill="#F8FAFC"/>
+  <circle cx="14" cy="44" r="1.5" fill="#F8FAFC"/>
+  <circle cx="24" cy="58" r="1" fill="#F8FAFC"/>
+  <circle cx="58" cy="56" r="2" fill="#F8FAFC"/>
+  <!-- Sparkle star -->
+  <path d="M66 50L67.5 53L71 52L67.5 53L69 56L67.5 53L64 54L67.5 53L66 50Z" fill="#F8FAFC"/>
+  <path d="M20 32L21 34L23 33.5L21 34L21.5 36L21 34L19 34.5L21 34L20 32Z" fill="#F8FAFC"/>
+</svg>

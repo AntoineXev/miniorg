@@ -1,26 +1,40 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { useState } from "react";
 import { OnboardingStep } from "../onboarding-step";
-import { FeatureCard } from "../ui/feature-card";
 import { PreviewContainer } from "../ui/preview-container";
+import { RitualModeSelector } from "@/components/settings/ritual-mode-selector";
+import { useUpdateUserSettingsMutation } from "@/lib/api/mutations/user-settings";
+import type { RitualMode } from "@/lib/api/types";
 
 type StepDailyPlanningProps = {
   onNext: () => void;
 };
 
 export function StepDailyPlanning({ onNext }: StepDailyPlanningProps) {
+  const [selectedMode, setSelectedMode] = useState<RitualMode>("separate");
+  const updateSettings = useUpdateUserSettingsMutation();
+
+  const handleNext = () => {
+    // Save the selected ritual mode
+    updateSettings.mutate({ ritualMode: selectedMode }, {
+      onSuccess: () => {
+        onNext();
+      },
+    });
+  };
+
   return (
     <OnboardingStep
       step={4}
       totalSteps={6}
       title="Plan your day"
-      description="Every morning, the Daily Planner guides you in 3 steps: choose your goal for the day (Highlight), select your tasks, and place them on your timeline."
+      description="Every day, the Daily Ritual guides you through planning and reflection. Choose when you prefer to do it:"
       leftContent={
-        <FeatureCard
-          icon={Sparkles}
-          title="Daily Highlight"
-          description="Define THE important task of your day. It will be displayed at the top to stay visible."
+        <RitualModeSelector
+          value={selectedMode}
+          onChange={setSelectedMode}
+          disabled={updateSettings.isPending}
         />
       }
       rightContent={
@@ -32,8 +46,8 @@ export function StepDailyPlanning({ onNext }: StepDailyPlanningProps) {
           />
         </PreviewContainer>
       }
-      ctaLabel="Continue"
-      onCtaClick={onNext}
+      ctaLabel={updateSettings.isPending ? "Saving..." : "Continue"}
+      onCtaClick={handleNext}
     />
   );
 }

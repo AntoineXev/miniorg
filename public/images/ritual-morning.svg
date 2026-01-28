@@ -1,0 +1,17 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="80" rx="16" fill="#FFF7ED"/>
+  <!-- Horizon line -->
+  <rect x="10" y="50" width="60" height="20" rx="4" fill="#FDBA74"/>
+  <!-- Sun rising -->
+  <circle cx="40" cy="50" r="16" fill="#FB923C"/>
+  <!-- Sun rays -->
+  <g stroke="#FB923C" stroke-width="2.5" stroke-linecap="round">
+    <line x1="40" y1="24" x2="40" y2="30"/>
+    <line x1="22" y1="38" x2="27" y2="42"/>
+    <line x1="58" y1="38" x2="53" y2="42"/>
+    <line x1="16" y1="50" x2="20" y2="50"/>
+    <line x1="64" y1="50" x2="60" y2="50"/>
+  </g>
+  <!-- Small sparkle -->
+  <path d="M60 24L62 28L66 26L62 28L64 32L62 28L58 30L62 28L60 24Z" fill="#FB923C"/>
+</svg>
