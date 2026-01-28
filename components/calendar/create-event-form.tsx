@@ -11,6 +11,7 @@ import { format, addMinutes } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
 import { useCreateEventMutation } from "@/lib/api/mutations/calendar-events";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { Task } from "@/lib/api/types";
 
 type CreateEventFormProps = {
@@ -134,12 +135,14 @@ export function CreateEventForm({
         <label className="text-xs text-muted-foreground mb-1.5 block">
           Description
         </label>
-        <textarea
-          placeholder="Optional description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="py-1">
+          <RichTextEditor
+            content={description}
+            onChange={setDescription}
+            placeholder="Optional description"
+            minHeight="60px"
+          />
+        </div>
       </div>
 
       <div>

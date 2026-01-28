@@ -10,6 +10,11 @@ import { Calendar, Crown } from "lucide-react";
 import { TagSelector } from "@/components/tags/tag-selector";
 import type { Tag } from "@/lib/api/types";
 
+// Strip HTML tags for plain text preview
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+}
+
 export type TaskCardProps = {
   task: {
     id: string;
@@ -198,7 +203,7 @@ export function TaskCard({
 
             {task.description && (
               <p className="text-xs text-muted-foreground/80 mt-1 line-clamp-1">
-                {task.description}
+                {stripHtml(task.description)}
               </p>
             )}
           <div className="flex justify-between items-center gap-1 mt-3">

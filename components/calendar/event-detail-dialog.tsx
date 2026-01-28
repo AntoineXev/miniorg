@@ -245,9 +245,10 @@ export function EventDetailDialog({
       {localEvent.description && (
         <div className="space-y-1">
           <h4 className="text-sm font-medium">Description</h4>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {localEvent.description}
-          </p>
+          <div
+            className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1"
+            dangerouslySetInnerHTML={{ __html: localEvent.description }}
+          />
         </div>
       )}
 

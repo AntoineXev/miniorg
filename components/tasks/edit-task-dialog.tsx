@@ -10,6 +10,7 @@ import { deadlineTypeLabels } from "@/lib/utils/task";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
 import { TagSelector } from "@/components/tags/tag-selector";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { LinkedEventsList } from "@/components/tasks/linked-events-list";
 import { usePlatform } from "@/lib/hooks/use-platform";
 import type { Task, Tag } from "@/lib/api/types";
@@ -151,12 +152,6 @@ export function EditTaskDialog({
     }
   };
 
-  const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      // Allow Enter in description without submitting
-      return;
-    }
-  };
 
   if (!task) return null;
 
@@ -308,13 +303,14 @@ export function EditTaskDialog({
         <label className="text-xs text-muted-foreground mb-1.5 block">
           Description
         </label>
-        <textarea
-          placeholder="Add more details..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={handleDescriptionKeyDown}
-          className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="py-1">
+          <RichTextEditor
+            content={description}
+            onChange={setDescription}
+            placeholder="Add more details..."
+            minHeight="60px"
+          />
+        </div>
       </div>
 
       {/* Linked calendar events */}
