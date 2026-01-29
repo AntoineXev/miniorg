@@ -60,28 +60,37 @@ export class CalendarService {
       });
 
       if (existingEvent) {
-        // Mettre à jour l'événement existant
-        // Comparer les timestamps pour déterminer quelle version est la plus récente
-        const externalUpdated = externalEvent.startTime; // Approximation, Google n'expose pas updatedAt
-        const localUpdated = existingEvent.updatedAt;
+        // Mettre à jour l'événement existant depuis la source externe (Google)
+        await prisma.calendarEvent.update({
+          where: { id: existingEvent.id },
+          data: {
+            title: externalEvent.title,
+            description: externalEvent.description,
+            startTime: externalEvent.startTime,
+            endTime: externalEvent.endTime,
+            isAllDay: externalEvent.isAllDay ?? false,
+            color: externalEvent.color,
+            responseStatus: externalEvent.responseStatus,
+            lastSyncedAt: new Date(),
+            syncStatus: 'synced',
+          },
+        });
 
-        // Pour la simplicité, on privilégie toujours la version externe (Google)
-        // sauf si l'événement local a été modifié manuellement (taskId != null)
-        if (!existingEvent.taskId) {
-          await prisma.calendarEvent.update({
-            where: { id: existingEvent.id },
-            data: {
-              title: externalEvent.title,
-              description: externalEvent.description,
-              startTime: externalEvent.startTime,
-              endTime: externalEvent.endTime,
-              isAllDay: externalEvent.isAllDay ?? false,
-              color: externalEvent.color,
-              responseStatus: externalEvent.responseStatus,
-              lastSyncedAt: new Date(),
-              syncStatus: 'synced',
-            },
+        // Si l'événement est lié à une task, mettre à jour la scheduledDate de la task
+        // uniquement si la task n'est liée qu'à un seul event
+        if (existingEvent.taskId) {
+          const linkedEventsCount = await prisma.calendarEvent.count({
+            where: { taskId: existingEvent.taskId },
           });
+
+          if (linkedEventsCount === 1) {
+            await prisma.task.update({
+              where: { id: existingEvent.taskId },
+              data: {
+                scheduledDate: externalEvent.startTime,
+              },
+            });
+          }
         }
       } else {
         // Créer un nouvel événement local
