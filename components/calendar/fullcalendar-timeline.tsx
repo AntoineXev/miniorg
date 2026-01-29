@@ -84,6 +84,22 @@ export function FullCalendarTimeline({
     }
   }, [contextDate, selectedDateProp, currentDate]);
 
+  // Resize FullCalendar when container size changes
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      calendarRef.current?.getApi().updateSize();
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   // Update context when navigating (if not using prop)
   const updateCurrentDate = useCallback((date: Date) => {
     setCurrentDate(date);
