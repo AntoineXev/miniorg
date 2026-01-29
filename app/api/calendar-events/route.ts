@@ -10,6 +10,7 @@ const calendarEventSchema = z.object({
   description: z.string().nullable().optional(),
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
+  isAllDay: z.boolean().optional(),
   taskId: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
   isCompleted: z.boolean().optional(),

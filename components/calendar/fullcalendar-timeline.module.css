@@ -8,6 +8,56 @@
   display: none !important;
 }
 
+/* All-day section styling */
+.container :global(.fc-daygrid-body) {
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
+}
+
+.container :global(.fc-scrollgrid-section-header) {
+  /* Ensure all-day section is visible */
+}
+
+.container :global(.fc-daygrid-day-frame) {
+  height: 34px;
+}
+
+.container :global(.fc-daygrid-day-events) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 4px;
+}
+
+.container :global(.fc-daygrid-event) {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  margin: 0 !important;
+  line-height: 1.2;
+}
+
+.container :global(.fc-daygrid-event-harness) {
+  margin: 0 !important;
+}
+
+/* All-day row label */
+.container :global(.fc-timegrid-axis) {
+  width: 56px !important;
+}
+
+.container :global(.fc-timegrid-divider) {
+  display: none;
+}
+
+/* Style the all-day area background */
+.container :global(.fc-timegrid-body .fc-scrollgrid-sync-table) {
+  /* Time grid body */
+}
+
+.container :global(.fc-daygrid-body-balanced) {
+  /* All day body */
+}
+
 /* Base styles */
 .container :global(.fc) {
   --fc-border-color: hsl(var(--border) / 0.4);
@@ -27,9 +77,10 @@
   width: 56px !important;
   font-size: 12px;
   color: hsl(var(--muted-foreground) / 0.6);
-  padding: 4px 8px;
+  padding: 0 8px;
   border: none !important;
   background: transparent !important;
+  vertical-align: top;
 }
 
 .container :global(.fc-timegrid-slot-label:hover) {
@@ -38,6 +89,8 @@
 
 .container :global(.fc-timegrid-slot-label-cushion) {
   padding: 0;
+  transform: translateY(-50%);
+  display: inline-block;
 }
 
 /* Hide the half-hour labels */

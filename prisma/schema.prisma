@@ -117,6 +117,7 @@ model CalendarEvent {
   description  String?
   startTime    DateTime
   endTime      DateTime
+  isAllDay     Boolean             @default(false)
   taskId       String?
   task         Task?               @relation(fields: [taskId], references: [id], onDelete: SetNull)
   userId       String

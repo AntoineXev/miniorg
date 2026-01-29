@@ -34,6 +34,7 @@ export type CalendarEvent = {
   description?: string | null;
   startTime: Date | string;
   endTime: Date | string;
+  isAllDay?: boolean;
   taskId?: string | null;
   color?: string | null;
   isCompleted?: boolean;

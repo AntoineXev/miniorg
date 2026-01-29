@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { format, startOfDay, endOfDay, isSameDay, parseISO, addMinutes, differenceInMinutes, isPast } from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavButton } from "@/components/ui/nav-button";
 import { CreateEventForm } from "./create-event-form";
 import { EventDetailDialog } from "./event-detail-dialog";
@@ -15,6 +15,7 @@ import type { CalendarEvent } from "@/lib/api/types";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader } from "@/components/ui/loader";
+import { ApiClient } from "@/lib/api/client";
 import { getEventColor, getEventBackgroundColor, EVENT_COLOR_TASK, EVENT_OPACITY } from "@/lib/utils/event-colors";
 import { useTimelineDrag } from "@/lib/contexts/timeline-drag-context";
 import {
@@ -119,6 +120,7 @@ export function FullCalendarTimeline({
         title: event.title,
         start,
         end,
+        allDay: event.isAllDay ?? false,
         backgroundColor,
         borderColor: 'transparent',
         textColor: '#ffffff',
@@ -139,6 +141,7 @@ export function FullCalendarTimeline({
         title: draggedTask.title,
         start: draggedTask.startTime,
         end: draggedTask.endTime,
+        allDay: false,
         backgroundColor: `hsla(17, 78%, 62%, ${EVENT_OPACITY.PAST})`,
         borderColor: EVENT_COLOR_TASK,
         textColor: '#ffffff',
@@ -157,15 +160,8 @@ export function FullCalendarTimeline({
   useEffect(() => {
     const syncCalendars = async () => {
       try {
-        const response = await fetch('/api/calendar-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ startDate, endDate }),
-        });
-
-        if (response.ok) {
-          queryClient.invalidateQueries({ queryKey: calendarEventKeys.all });
-        }
+        await ApiClient.post('/api/calendar-sync', { startDate, endDate });
+        queryClient.invalidateQueries({ queryKey: calendarEventKeys.all });
       } catch (syncError) {
         console.error('Calendar sync error:', syncError);
       }
@@ -333,8 +329,6 @@ export function FullCalendarTimeline({
   const renderEventContent = useCallback((eventInfo: EventContentArg) => {
     const { extendedProps } = eventInfo.event;
     const isPreview = extendedProps.isPreview;
-    const isPastEvent = extendedProps.isPastEvent;
-    const isExternalSource = extendedProps.source !== 'miniorg';
     const isCompact = eventInfo.event.end && eventInfo.event.start
       ? differenceInMinutes(eventInfo.event.end, eventInfo.event.start) < COMPACT_EVENT_THRESHOLD_MINUTES
       : false;
@@ -359,12 +353,9 @@ export function FullCalendarTimeline({
     return (
       <div
         className={cn(
-          "fc-event-content h-full flex items-start gap-1.5 px-1.5 py-1 overflow-hidden"
+          "fc-event-content h-full flex items-start px-1.5 py-1 overflow-hidden"
         )}
       >
-        {isExternalSource && (
-          <Calendar className="h-3 w-3 flex-shrink-0 text-white" />
-        )}
         <span
           className={cn(
             "font-medium leading-tight truncate text-white",
@@ -459,7 +450,8 @@ export function FullCalendarTimeline({
               minute: '2-digit',
               hour12: false,
             }}
-            allDaySlot={false}
+            allDaySlot={true}
+            allDayText=""
             nowIndicator={true}
             editable={true}
             eventStartEditable={true}
