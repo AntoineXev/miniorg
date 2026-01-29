@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { OtpInput } from "@/components/ui/otp-input";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, KeyRound, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Loader2, ArrowLeft, KeyRound, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 type Step = "code" | "password";
@@ -190,13 +190,12 @@ function ResetPasswordContent() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Retour à la connexion
       </Link>
 
       {/* Header */}
       <div className="text-center space-y-4">
-        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-          <KeyRound className="h-8 w-8 text-primary" />
+        <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center">
+          <KeyRound strokeWidth={1} className="h-8 w-8 text-primary" />
         </div>
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
@@ -212,11 +211,22 @@ function ResetPasswordContent() {
       </div>
 
       {/* Error Message */}
-      {error && (
-        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-destructive/5 border-l-2 border-destructive">
+              <AlertCircle strokeWidth={1.5} className="h-5 w-5 text-destructive shrink-0" />
+              <p className="text-sm text-destructive/90">{error}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {step === "code" ? (

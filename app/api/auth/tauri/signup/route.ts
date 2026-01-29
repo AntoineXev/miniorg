@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, name } = body;
 
     // Validate email format
     if (!email || !validateEmail(email)) {
@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
           data: {
             email: normalizedEmail,
             password: hashedPassword,
+            name: name?.trim() || null,
             emailVerified: null,
           },
         });

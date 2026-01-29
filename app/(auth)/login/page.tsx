@@ -3,12 +3,12 @@
 import { signIn } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { isTauri } from "@/lib/platform";
 import { useTauriSession } from "@/providers/tauri-session";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -20,6 +20,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
 
   const [mode, setMode] = useState<AuthMode>("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -72,6 +73,12 @@ function LoginContent() {
     setError(null);
 
     if (mode === "signup") {
+      // Validate name
+      if (!name.trim()) {
+        setError("Le nom est requis");
+        return;
+      }
+
       // Validate password
       const passwordErrors = validatePassword(password);
       if (passwordErrors.length > 0) {
@@ -91,7 +98,7 @@ function LoginContent() {
       if (mode === "signup") {
         // Signup flow
         if (isTauri()) {
-          const result = await signup(email, password);
+          const result = await signup(email, password, name);
           if (!result.success) {
             setError(result.error || "Une erreur est survenue");
           } else {
@@ -101,7 +108,7 @@ function LoginContent() {
           const res = await fetch("/api/auth/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, name }),
           });
 
           const data = await res.json();
@@ -208,14 +215,39 @@ function LoginContent() {
       </div>
 
       {/* Error Message */}
-      {error && (
-        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-destructive/5 border-destructive">
+              <AlertCircle strokeWidth={1.5} className="h-5 w-5 text-destructive shrink-0" />
+              <p className="text-sm text-destructive/90">{error}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Credentials Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name (signup only) */}
+        {mode === "signup" && (
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Nom complet"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+        )}
+
         <div className="space-y-2">
           <Input
             type="email"

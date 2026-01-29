@@ -45,7 +45,7 @@ interface TauriSessionContextType {
   status: "loading" | "authenticated" | "unauthenticated";
   login: () => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<CredentialsResult>;
-  signup: (email: string, password: string) => Promise<CredentialsResult>;
+  signup: (email: string, password: string, name: string) => Promise<CredentialsResult>;
   logout: () => Promise<void>;
 }
 
@@ -295,7 +295,8 @@ export function TauriSessionProvider({
   // Signup handler (Tauri desktop)
   const signup = async (
     email: string,
-    password: string
+    password: string,
+    name: string
   ): Promise<CredentialsResult> => {
     if (!isDesktop) {
       return { success: false, error: "Not in Tauri environment" };
@@ -308,7 +309,7 @@ export function TauriSessionProvider({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name }),
       });
 
       const data = await response.json();

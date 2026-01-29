@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { OtpInput } from "@/components/ui/otp-input";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 function VerifyEmailContent() {
@@ -146,11 +146,22 @@ function VerifyEmailContent() {
       </div>
 
       {/* Error Message */}
-      {error && (
-        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-destructive/5 border-l-2 border-destructive">
+              <AlertCircle strokeWidth={1.5} className="h-5 w-5 text-destructive shrink-0" />
+              <p className="text-sm text-destructive/90">{error}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* OTP Input */}
       <div className="space-y-4">
