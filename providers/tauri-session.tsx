@@ -34,10 +34,18 @@ interface UnifiedSession {
   user: UnifiedUser;
 }
 
+interface CredentialsResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+}
+
 interface TauriSessionContextType {
   session: UnifiedSession | null;
   status: "loading" | "authenticated" | "unauthenticated";
   login: () => Promise<void>;
+  loginWithCredentials: (email: string, password: string) => Promise<CredentialsResult>;
+  signup: (email: string, password: string, name: string) => Promise<CredentialsResult>;
   logout: () => Promise<void>;
 }
 
@@ -192,23 +200,24 @@ export function TauriSessionProvider({
     }
   }, [isDesktop, tauriStatus]);
 
-  // Redirect to backlog after successful Tauri auth (only when inside auth flow)
+  // Redirect to onboarding after successful Tauri auth (only when on login page)
   useEffect(() => {
     if (!isDesktop) return;
     if (tauriStatus !== "authenticated") return;
-    // Avoid running if already on dashboard
-    const isOnDashboard =
-      typeof window !== "undefined" &&
-      (window.location.pathname !== "/login")
 
-    if (!isOnDashboard) {
+    // Only redirect if we're on the login page
+    const isOnLoginPage =
+      typeof window !== "undefined" &&
+      window.location.pathname === "/login";
+
+    if (isOnLoginPage) {
       if (shouldLog) {
-        console.log(LOG_PREFIX, "redirecting to calendar after auth", {
+        console.log(LOG_PREFIX, "redirecting to onboarding after auth", {
           pathname:
             typeof window !== "undefined" ? window.location.pathname : "no-window",
         });
       }
-      router.push("/calendar");
+      router.push("/onboarding");
     }
   }, [isDesktop, tauriStatus, router, shouldLog]);
 
@@ -229,6 +238,94 @@ export function TauriSessionProvider({
     } else {
       // For web, redirect to NextAuth login
       router.push("/login");
+    }
+  };
+
+  // Login with credentials handler (Tauri desktop)
+  const loginWithCredentials = async (
+    email: string,
+    password: string
+  ): Promise<CredentialsResult> => {
+    if (!isDesktop) {
+      return { success: false, error: "Not in Tauri environment" };
+    }
+
+    try {
+      setTauriStatus("loading");
+      const { getApiUrl } = await import("@/lib/platform");
+
+      const response = await fetch(getApiUrl("/api/auth/tauri/credentials"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setTauriStatus("unauthenticated");
+        return {
+          success: false,
+          error: data.error || "Login failed",
+          code: data.code,
+        };
+      }
+
+      // Save session
+      const session: TauriSession = {
+        user: data.user,
+        token: data.token,
+        expiresAt: data.expires_at,
+      };
+      await saveTauriSession(session);
+      setTauriSession(session);
+      setTauriStatus("authenticated");
+      toast.success("Connexion réussie !");
+      router.push("/onboarding");
+
+      return { success: true };
+    } catch (error: any) {
+      console.error("Credentials login error:", error);
+      setTauriStatus("unauthenticated");
+      return { success: false, error: error.message || "Login failed" };
+    }
+  };
+
+  // Signup handler (Tauri desktop)
+  const signup = async (
+    email: string,
+    password: string,
+    name: string
+  ): Promise<CredentialsResult> => {
+    if (!isDesktop) {
+      return { success: false, error: "Not in Tauri environment" };
+    }
+
+    try {
+      const { getApiUrl } = await import("@/lib/platform");
+
+      const response = await fetch(getApiUrl("/api/auth/tauri/signup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error || "Signup failed",
+          code: data.code,
+        };
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      return { success: false, error: error.message || "Signup failed" };
     }
   };
 
@@ -276,7 +373,7 @@ export function TauriSessionProvider({
   }, [status, session, shouldLog]);
 
   return (
-    <TauriSessionContext.Provider value={{ session, status, login, logout }}>
+    <TauriSessionContext.Provider value={{ session, status, login, loginWithCredentials, signup, logout }}>
       {children}
     </TauriSessionContext.Provider>
   );

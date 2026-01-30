@@ -1,16 +1,55 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
 import { NavButton } from "@/components/ui/nav-button";
-import { ArrowLeft, User } from "lucide-react";
+import { ArrowLeft, User, Mail } from "lucide-react";
 import { useTauriSession } from "@/providers/tauri-session";
+import { isTauri, getApiUrl } from "@/lib/platform";
+import { getTauriSession } from "@/lib/auth-tauri";
+
+interface ProfileData {
+  authMethod: "google" | "credentials" | "unknown";
+  hasGoogleAccount: boolean;
+  hasPassword: boolean;
+}
 
 export default function ProfilePage() {
   const { session } = useTauriSession();
   const router = useRouter();
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const url = isTauri() ? getApiUrl("/api/user/profile") : "/api/user/profile";
+        const headers: HeadersInit = {};
+
+        // Add auth token for Tauri
+        if (isTauri()) {
+          const tauriSession = await getTauriSession();
+          if (tauriSession?.token) {
+            headers["Authorization"] = `Bearer ${tauriSession.token}`;
+          }
+        }
+
+        const res = await fetch(url, {
+          credentials: "include",
+          headers,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProfileData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const getUserInitials = () => {
     if (!session?.user?.name) {
@@ -85,21 +124,29 @@ export default function ProfilePage() {
           </Card>
 
           {/* Info Card */}
-          <Card className="p-6 bg-muted/30">
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <User className="h-5 w-5 text-muted-foreground" strokeWidth={1} />
+          {profileData && (
+            <Card className="p-6 bg-muted/30">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  {profileData.authMethod === "google" ? (
+                    <User className="h-5 w-5 text-muted-foreground" strokeWidth={1} />
+                  ) : (
+                    <Mail className="h-5 w-5 text-muted-foreground" strokeWidth={1} />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    {profileData.authMethod === "google" ? "Compte Google" : "Compte email"}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {profileData.authMethod === "google"
+                      ? "Les données de votre profil proviennent de votre compte Google et ne peuvent pas être modifiées ici."
+                      : "Votre compte a été créé avec une adresse email et un mot de passe."}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-1">
-                  Compte Google
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Les données de votre profil proviennent de votre compte Google et ne peuvent pas être modifiées ici.
-                </p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          )}
         </div>
       </div>
     </div>

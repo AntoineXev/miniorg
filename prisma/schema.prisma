@@ -15,6 +15,7 @@ model User {
   email               String               @unique
   emailVerified       DateTime?
   image               String?
+  password            String?              // Hashed password (null for OAuth-only users)
   ritualMode          String               @default("separate") // "separate" | "morning" | "evening"
   accounts            Account[]
   sessions            Session[]
@@ -58,6 +59,7 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+  type       String   @default("email") // "email" | "password_reset"
 
   @@unique([identifier, token])
 }
