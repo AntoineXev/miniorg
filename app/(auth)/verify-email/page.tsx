@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { OtpInput } from "@/components/ui/otp-input";
@@ -211,5 +211,9 @@ function VerifyEmailContent() {
 }
 
 export default function VerifyEmailPage() {
-  return <VerifyEmailContent />;
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
+  );
 }

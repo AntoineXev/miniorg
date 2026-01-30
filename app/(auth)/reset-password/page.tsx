@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { OtpInput } from "@/components/ui/otp-input";
@@ -382,5 +382,9 @@ function ResetPasswordContent() {
 }
 
 export default function ResetPasswordPage() {
-  return <ResetPasswordContent />;
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
 }
