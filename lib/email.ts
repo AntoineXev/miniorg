@@ -1,8 +1,46 @@
-import { Resend } from "resend";
+/**
+ * Email service using Resend API directly
+ * This avoids the heavy resend package (which includes svix at 4.4MB)
+ */
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+const RESEND_API_URL = "https://api.resend.com/emails";
 const FROM_EMAIL = "MiniOrg <noreply@donotreply.aher.vet>";
+
+interface SendEmailOptions {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}
+
+/**
+ * Send email via Resend API
+ */
+async function sendEmail(options: SendEmailOptions): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+
+  const response = await fetch(RESEND_API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: options.from,
+      to: [options.to],
+      subject: options.subject,
+      html: options.html,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to send email: ${error}`);
+  }
+}
 
 /**
  * Generate styled email HTML template
@@ -82,7 +120,7 @@ export async function sendVerificationEmail(
     code
   );
 
-  await resend.emails.send({
+  await sendEmail({
     from: FROM_EMAIL,
     to: email,
     subject: "Votre code de vérification - MiniOrg",
@@ -103,7 +141,7 @@ export async function sendPasswordResetEmail(
     code
   );
 
-  await resend.emails.send({
+  await sendEmail({
     from: FROM_EMAIL,
     to: email,
     subject: "Votre code de réinitialisation - MiniOrg",

@@ -1,12 +1,68 @@
-import bcrypt from "bcryptjs";
+/**
+ * Password hashing using Web Crypto API (PBKDF2)
+ * This is edge-runtime compatible and doesn't require external dependencies
+ */
 
-const BCRYPT_COST = 12;
+const PBKDF2_ITERATIONS = 100000;
+const SALT_LENGTH = 16;
+const KEY_LENGTH = 32;
+const ALGORITHM = "PBKDF2";
 
 /**
- * Hash a password using bcrypt
+ * Convert ArrayBuffer to base64 string
+ */
+function bufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Convert base64 string to ArrayBuffer
+ */
+function base64ToBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+/**
+ * Hash a password using PBKDF2
+ * Format: pbkdf2$iterations$salt$hash
  */
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, BCRYPT_COST);
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+
+  const encoder = new TextEncoder();
+  const passwordKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    ALGORITHM,
+    false,
+    ["deriveBits"]
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: ALGORITHM,
+      salt: salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: "SHA-256",
+    },
+    passwordKey,
+    KEY_LENGTH * 8
+  );
+
+  const saltBase64 = bufferToBase64(salt.buffer);
+  const hashBase64 = bufferToBase64(derivedBits);
+
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${saltBase64}$${hashBase64}`;
 }
 
 /**
@@ -14,9 +70,59 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function verifyPassword(
   password: string,
-  hash: string
+  storedHash: string
 ): Promise<boolean> {
-  return bcrypt.compare(password, hash);
+  // Handle legacy bcrypt hashes (start with $2a$ or $2b$)
+  if (storedHash.startsWith("$2")) {
+    // For bcrypt hashes, we need to re-hash with PBKDF2
+    // This should not happen in production after migration
+    console.warn("Legacy bcrypt hash detected - please migrate user password");
+    return false;
+  }
+
+  const parts = storedHash.split("$");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2") {
+    return false;
+  }
+
+  const iterations = parseInt(parts[1], 10);
+  const salt = base64ToBuffer(parts[2]);
+  const storedHashBuffer = base64ToBuffer(parts[3]);
+
+  const encoder = new TextEncoder();
+  const passwordKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    ALGORITHM,
+    false,
+    ["deriveBits"]
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: ALGORITHM,
+      salt: salt,
+      iterations: iterations,
+      hash: "SHA-256",
+    },
+    passwordKey,
+    KEY_LENGTH * 8
+  );
+
+  // Constant-time comparison
+  const derivedArray = new Uint8Array(derivedBits);
+  const storedArray = new Uint8Array(storedHashBuffer);
+
+  if (derivedArray.length !== storedArray.length) {
+    return false;
+  }
+
+  let diff = 0;
+  for (let i = 0; i < derivedArray.length; i++) {
+    diff |= derivedArray[i] ^ storedArray[i];
+  }
+
+  return diff === 0;
 }
 
 /**
