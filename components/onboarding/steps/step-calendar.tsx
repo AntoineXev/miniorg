@@ -30,7 +30,7 @@ export function StepCalendar({ onNext, onSkip }: StepCalendarProps) {
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="flex flex-col gap-6">
-            <ProgressIndicator current={5} total={6} />
+            <ProgressIndicator current={5} total={7} />
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}

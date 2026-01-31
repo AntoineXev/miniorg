@@ -13,7 +13,7 @@ export function StepCreateTask({ onNext }: StepCreateTaskProps) {
   return (
     <OnboardingStep
       step={2}
-      totalSteps={6}
+      totalSteps={7}
       title="Everything starts with a task"
       description="Create a task instantly with the + button or the ⌘K shortcut. Set when you want to complete it: in 3 days, next week, or a specific date."
       leftContent={

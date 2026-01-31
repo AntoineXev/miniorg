@@ -13,7 +13,7 @@ export function StepWelcome({ onNext }: StepWelcomeProps) {
   return (
     <OnboardingStep
       step={1}
-      totalSteps={6}
+      totalSteps={7}
       title="Welcome to MiniOrg"
       description="Organize your day and find balance between work and personal life. Plan your tasks every morning and focus on what really matters."
       leftContent={

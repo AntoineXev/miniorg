@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
-import { User, Calendar, Hash, LogOut, ChevronRight, GraduationCap, Sparkles } from "lucide-react";
+import { User, Calendar, Hash, LogOut, ChevronRight, GraduationCap, Sparkles, Settings2 } from "lucide-react";
 import { useTauriSession } from "@/providers/tauri-session";
 import { useOnboarding } from "@/lib/hooks/use-onboarding";
 import type { ReactNode } from "react";
@@ -113,6 +113,12 @@ export default function SettingsPage() {
               title="Daily Rituals"
               subtitle="Planning and wrap-up preferences"
               onClick={() => router.push("/settings/daily-rituals")}
+            />
+            <SettingsSection
+              icon={<Settings2 className="h-5 w-5 text-muted-foreground" strokeWidth={1} />}
+              title="Behavior"
+              subtitle="Task completion and automation"
+              onClick={() => router.push("/settings/behavior")}
             />
           </Card>
 

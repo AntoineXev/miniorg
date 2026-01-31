@@ -27,7 +27,7 @@ export function StepDailyPlanning({ onNext }: StepDailyPlanningProps) {
   return (
     <OnboardingStep
       step={4}
-      totalSteps={6}
+      totalSteps={7}
       title="Plan your day"
       description="Every day, the Daily Ritual guides you through planning and reflection. Choose when you prefer to do it:"
       leftContent={

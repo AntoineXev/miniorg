@@ -11,6 +11,7 @@ import { StepBacklog } from "./steps/step-backlog";
 import { StepDailyPlanning } from "./steps/step-daily-planning";
 import { StepCalendar } from "./steps/step-calendar";
 import { StepContexts } from "./steps/step-contexts";
+import { StepBehavior } from "./steps/step-behavior";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +34,7 @@ export function Onboarding({ initialStep = 1 }: OnboardingProps) {
   const { completeOnboarding } = useOnboarding();
 
   const handleNext = () => {
-    if (currentStep < 6) {
+    if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -90,7 +91,14 @@ export function Onboarding({ initialStep = 1 }: OnboardingProps) {
         {currentStep === 6 && (
           <StepContexts
             key="step-6"
-            onComplete={handleComplete}
+            onNext={handleNext}
+            onSkip={handleSkip}
+          />
+        )}
+        {currentStep === 7 && (
+          <StepBehavior
+            key="step-7"
+            onNext={handleComplete}
             onSkip={handleSkipToEnd}
           />
         )}

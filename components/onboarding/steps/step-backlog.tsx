@@ -13,7 +13,7 @@ export function StepBacklog({ onNext }: StepBacklogProps) {
   return (
     <OnboardingStep
       step={3}
-      totalSteps={6}
+      totalSteps={7}
       title="Your Backlog"
       description="Find all your planned and overdue tasks in one place. They are automatically organized by due date: next few days, week, month..."
       leftContent={

@@ -243,45 +243,53 @@ export async function PATCH(request: NextRequest) {
       updateData.completedAt = null;
     }
 
-    // When task is being marked as done, update the last miniorg event for today
+    // When task is being marked as done, update the last miniorg event for today (if setting enabled)
     if (isBeingMarkedAsDone) {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(todayStart);
-      todayEnd.setDate(todayEnd.getDate() + 1);
-
-      // Get all miniorg events for this task scheduled for today
-      const todayMiniorgEvents = await prisma.calendarEvent.findMany({
-        where: {
-          taskId: id,
-          userId,
-          source: "miniorg",
-          startTime: {
-            gte: todayStart,
-            lt: todayEnd,
-          },
-        },
-        orderBy: { endTime: "desc" },
+      // Fetch user settings to check if auto-move is enabled
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { autoMoveEventsOnComplete: true },
       });
 
-      if (todayMiniorgEvents.length > 0) {
-        const lastEvent = todayMiniorgEvents[0];
-        const originalDuration = new Date(lastEvent.endTime).getTime() - new Date(lastEvent.startTime).getTime();
+      if (user?.autoMoveEventsOnComplete) {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(todayStart);
+        todayEnd.setDate(todayEnd.getDate() + 1);
 
-        // Round current time to nearest 5 minutes
-        const roundedNow = new Date(Math.round(now.getTime() / (5 * 60 * 1000)) * (5 * 60 * 1000));
-
-        // Calculate new start time to keep the same duration
-        const newStartTime = new Date(roundedNow.getTime() - originalDuration);
-
-        // Update the event
-        await prisma.calendarEvent.update({
-          where: { id: lastEvent.id },
-          data: {
-            startTime: newStartTime,
-            endTime: roundedNow,
+        // Get all miniorg events for this task scheduled for today
+        const todayMiniorgEvents = await prisma.calendarEvent.findMany({
+          where: {
+            taskId: id,
+            userId,
+            source: "miniorg",
+            startTime: {
+              gte: todayStart,
+              lt: todayEnd,
+            },
           },
+          orderBy: { endTime: "desc" },
         });
+
+        if (todayMiniorgEvents.length > 0) {
+          const lastEvent = todayMiniorgEvents[0];
+          const originalDuration = new Date(lastEvent.endTime).getTime() - new Date(lastEvent.startTime).getTime();
+
+          // Round current time to nearest 5 minutes
+          const roundedNow = new Date(Math.round(now.getTime() / (5 * 60 * 1000)) * (5 * 60 * 1000));
+
+          // Calculate new start time to keep the same duration
+          const newStartTime = new Date(roundedNow.getTime() - originalDuration);
+
+          // Update the event
+          await prisma.calendarEvent.update({
+            where: { id: lastEvent.id },
+            data: {
+              startTime: newStartTime,
+              endTime: roundedNow,
+            },
+          });
+        }
       }
     }
 

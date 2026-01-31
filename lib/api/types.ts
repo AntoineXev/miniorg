@@ -4,6 +4,7 @@ export type RitualMode = "separate" | "morning" | "evening";
 
 export type UserSettings = {
   ritualMode: RitualMode;
+  autoMoveEventsOnComplete: boolean;
 };
 
 export type Task = {

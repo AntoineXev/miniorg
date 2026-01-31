@@ -7,6 +7,7 @@ import type { UserSettings, RitualMode } from "../types";
 
 type UpdateSettingsInput = {
   ritualMode?: RitualMode;
+  autoMoveEventsOnComplete?: boolean;
 };
 
 export function useUpdateUserSettingsMutation() {

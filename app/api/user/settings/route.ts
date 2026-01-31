@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const updateSettingsSchema = z.object({
   ritualMode: z.enum(["separate", "morning", "evening"]).optional(),
+  autoMoveEventsOnComplete: z.boolean().optional(),
 });
 
 // GET /api/user/settings
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
       where: { id: userId },
       select: {
         ritualMode: true,
+        autoMoveEventsOnComplete: true,
       },
     });
 
@@ -53,6 +55,7 @@ export async function PATCH(request: NextRequest) {
       data: body,
       select: {
         ritualMode: true,
+        autoMoveEventsOnComplete: true,
       },
     });
 

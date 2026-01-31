@@ -10,14 +10,15 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  name                String?
-  email               String               @unique
-  emailVerified       DateTime?
-  image               String?
-  password            String?              // Hashed password (null for OAuth-only users)
-  ritualMode          String               @default("separate") // "separate" | "morning" | "evening"
-  accounts            Account[]
+  id                       String               @id @default(cuid())
+  name                     String?
+  email                    String               @unique
+  emailVerified            DateTime?
+  image                    String?
+  password                 String?              // Hashed password (null for OAuth-only users)
+  ritualMode               String               @default("separate") // "separate" | "morning" | "evening"
+  autoMoveEventsOnComplete Boolean              @default(true) // Move events to current time when task is completed
+  accounts                 Account[]
   sessions            Session[]
   tasks               Task[]
   tags                Tag[]
