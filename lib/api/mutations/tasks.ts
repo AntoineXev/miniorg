@@ -1,10 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { useCallback } from "react";
+import { format, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import { ApiClient } from "../client";
 import { taskKeys, dailyRitualKeys } from "../queries/tasks";
 import { calendarEventKeys } from "../queries/calendar-events";
 import { emitInvalidateQueries } from "@/lib/tauri/events";
+import { useAlert } from "@/providers/alert-provider";
+import { getTodayEvents, needsRescheduleConfirmation } from "@/lib/utils/task";
 import type { Task, TaskInput, DailyRitual } from "../types";
 
 // Hook to create a task
@@ -91,6 +94,13 @@ export function useUpdateTaskMutation() {
               merged.completedAt = null;
             }
 
+            // Optimistically remove deleted calendar events
+            if (updatedTask.deleteEventIds && updatedTask.deleteEventIds.length > 0 && merged.calendarEvents) {
+              merged.calendarEvents = merged.calendarEvents.filter(
+                (event) => !updatedTask.deleteEventIds!.includes(event.id)
+              );
+            }
+
             return merged;
           })
         );
@@ -115,6 +125,73 @@ export function useUpdateTaskMutation() {
       console.error(error);
     },
   });
+}
+
+// Hook to update a task with automatic confirmation for rescheduling events
+// This wraps useUpdateTaskMutation and adds confirmation dialog when needed
+export function useUpdateTaskWithConfirmation() {
+  const queryClient = useQueryClient();
+  const mutation = useUpdateTaskMutation();
+  const { confirmRescheduleEvents } = useAlert();
+
+  const mutateWithConfirmation = useCallback(
+    async (
+      data: TaskInput & { id: string },
+      options?: Parameters<typeof mutation.mutate>[1]
+    ) => {
+      // Only check if scheduledDate is being changed
+      if (data.scheduledDate === undefined) {
+        mutation.mutate(data, options);
+        return;
+      }
+
+      // Get the current task from cache to check for events
+      const tasks = queryClient.getQueryData<Task[]>(taskKeys.all);
+      const task = tasks?.find((t) => t.id === data.id);
+
+      if (!task) {
+        mutation.mutate(data, options);
+        return;
+      }
+
+      // Check if we need confirmation (rescheduling to future with today's events)
+      const newDate = data.scheduledDate ? new Date(data.scheduledDate) : null;
+
+      if (newDate && needsRescheduleConfirmation(task, newDate)) {
+        const todayEvents = getTodayEvents(task);
+
+        const result = await confirmRescheduleEvents({
+          taskTitle: task.title,
+          events: todayEvents,
+        });
+
+        if (!result.confirmed) {
+          // User cancelled, don't proceed
+          return;
+        }
+
+        // Proceed with or without deleting events
+        mutation.mutate(
+          {
+            ...data,
+            deleteEventIds: result.deleteEvents
+              ? todayEvents.map((e) => e.id)
+              : undefined,
+          },
+          options
+        );
+      } else {
+        // No confirmation needed
+        mutation.mutate(data, options);
+      }
+    },
+    [mutation, queryClient, confirmRescheduleEvents]
+  );
+
+  return {
+    ...mutation,
+    mutate: mutateWithConfirmation,
+  };
 }
 
 // Hook to delete a task

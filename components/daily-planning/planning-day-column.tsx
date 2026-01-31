@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { format, isSameDay, parseISO, startOfDay, isToday } from "date-fns";
 import { DayColumn, type DayColumnData } from "@/components/calendar/day-column";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
-import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
+import { useUpdateTaskWithConfirmation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { useQuickAddTask } from "@/providers/quick-add-task";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import type { Task } from "@/lib/api/types";
@@ -17,7 +17,7 @@ type PlanningDayColumnProps = {
 
 export function PlanningDayColumn({ date, title, subtitle }: PlanningDayColumnProps) {
   const { data: tasks = [] } = useTasksQuery();
-  const updateTask = useUpdateTaskMutation();
+  const updateTask = useUpdateTaskWithConfirmation();
   const deleteTask = useDeleteTaskMutation();
   const { openQuickAdd } = useQuickAddTask();
   const [editingTask, setEditingTask] = useState<Task | null>(null);

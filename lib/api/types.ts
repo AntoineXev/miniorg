@@ -26,6 +26,7 @@ export type Task = {
 
 export type TaskInput = Omit<Partial<Task>, 'tag' | 'calendarEvents' | 'createdAt' | 'updatedAt'> & {
   tagId?: string | null;
+  deleteEventIds?: string[]; // Events to delete when rescheduling task
 };
 
 export type CalendarEvent = {

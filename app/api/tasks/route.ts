@@ -171,7 +171,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const json = await request.json();
-    const { id, ...updates } = json;
+    const { id, deleteEventIds, ...updates } = json;
 
     if (!id) {
       return NextResponse.json({ error: "Task ID required" }, { status: 400 });
@@ -300,6 +300,22 @@ export async function PATCH(request: NextRequest) {
         },
       },
     });
+
+    // Delete calendar events if requested (when rescheduling task)
+    if (deleteEventIds && Array.isArray(deleteEventIds) && deleteEventIds.length > 0) {
+      await prisma.calendarEvent.deleteMany({
+        where: {
+          id: { in: deleteEventIds },
+          source: "miniorg", // Safety: only delete user-created events, not external ones
+          userId,
+        },
+      });
+
+      // Filter out deleted events from the response
+      task.calendarEvents = task.calendarEvents.filter(
+        (event) => !deleteEventIds.includes(event.id)
+      );
+    }
 
     return NextResponse.json(task);
   } catch (error) {

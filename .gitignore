@@ -54,3 +54,4 @@ dev.db
 
 .env.tauri
 .env.backup
+/**/node_modules/

@@ -6,7 +6,7 @@ import { AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { DraggableTaskCard } from "@/components/tasks/draggable-task-card";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
-import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
+import { useUpdateTaskWithConfirmation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/lib/api/types";
@@ -18,7 +18,7 @@ type WrapupIncompleteColumnProps = {
 
 export function WrapupIncompleteColumn({ date }: WrapupIncompleteColumnProps) {
   const { data: tasks = [] } = useTasksQuery();
-  const updateTask = useUpdateTaskMutation();
+  const updateTask = useUpdateTaskWithConfirmation();
   const deleteTask = useDeleteTaskMutation();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);

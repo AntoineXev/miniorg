@@ -10,6 +10,7 @@ import { PlatformProvider, usePlatform } from "@/providers/platform-provider";
 import { SessionProvider } from "next-auth/react";
 import { TauriSessionProvider } from "@/providers/tauri-session";
 import { QuickAddTaskProvider } from "@/providers/quick-add-task";
+import { AlertProvider } from "@/providers/alert-provider";
 import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,12 +27,14 @@ export default function RootLayout({
             <QuickAddTaskProvider>
               <PlatformProvider>
                 <QueryProvider>
-                  <TooltipProvider delayDuration={200}>
-                    <PopoverProvider>
-                      {children}
-                    </PopoverProvider>
-                  </TooltipProvider>
-                  <Toaster position="bottom-center" />
+                  <AlertProvider>
+                    <TooltipProvider delayDuration={200}>
+                      <PopoverProvider>
+                        {children}
+                      </PopoverProvider>
+                    </TooltipProvider>
+                    <Toaster position="bottom-center" />
+                  </AlertProvider>
                 </QueryProvider>
               </PlatformProvider>
             </QuickAddTaskProvider>

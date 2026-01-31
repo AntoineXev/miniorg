@@ -1,4 +1,4 @@
-import { differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
+import { differenceInDays, differenceInMonths, differenceInYears, startOfDay, addDays } from 'date-fns';
 
 export type Task = {
   id: string;
@@ -83,3 +83,48 @@ export const deadlineTypeLabels: Record<string, string> = {
   next_year: 'Next Year',
   no_date: 'No Date',
 };
+
+// Types for reschedule confirmation
+type CalendarEventRef = {
+  id: string;
+  startTime: Date | string;
+  endTime: Date | string;
+  source?: string;
+};
+
+type TaskWithEvents = {
+  calendarEvents?: CalendarEventRef[];
+};
+
+/**
+ * Get calendar events for today from a task (only miniorg events)
+ */
+export function getTodayEvents(task: TaskWithEvents): CalendarEventRef[] {
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+
+  return (task.calendarEvents || []).filter((event) => {
+    // Only consider miniorg events (user-created, not external)
+    if (event.source && event.source !== "miniorg") return false;
+
+    const eventDate = new Date(event.startTime);
+    return eventDate >= today && eventDate < tomorrow;
+  });
+}
+
+/**
+ * Check if rescheduling a task requires confirmation (has events today and moving to future)
+ */
+export function needsRescheduleConfirmation(
+  task: TaskWithEvents,
+  newDate: Date
+): boolean {
+  const today = startOfDay(new Date());
+  const newDateStart = startOfDay(newDate);
+
+  // Only ask if rescheduling to a future date (not today)
+  const isReschedulingToFuture = newDateStart > today;
+  const todayEvents = getTodayEvents(task);
+
+  return isReschedulingToFuture && todayEvents.length > 0;
+}

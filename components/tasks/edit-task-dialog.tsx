@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DatePicker } from "@/components/ui/date-picker";
 import { Clock, Trash2, Loader2 } from "lucide-react";
 import { deadlineTypeLabels } from "@/lib/utils/task";
-import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
+import { useUpdateTaskWithConfirmation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import { TagAutocomplete } from "@/components/tags/tag-autocomplete";
 import { TagSelector } from "@/components/tags/tag-selector";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
@@ -41,7 +41,7 @@ export function EditTaskDialog({
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const updateTask = useUpdateTaskMutation();
+  const updateTask = useUpdateTaskWithConfirmation();
   const deleteTask = useDeleteTaskMutation();
   const { isTauri } = usePlatform();
   const isSubmitting = updateTask.isPending;

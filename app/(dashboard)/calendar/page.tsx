@@ -8,7 +8,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Header } from "@/components/layout/header";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { useTasksQuery } from "@/lib/api/queries/tasks";
-import { useUpdateTaskMutation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
+import { useUpdateTaskWithConfirmation, useDeleteTaskMutation } from "@/lib/api/mutations/tasks";
 import type { Task } from "@/lib/api/types";
 import { useQuickAddTask } from "@/providers/quick-add-task";
 import { Loader } from "@/components/ui/loader";
@@ -24,7 +24,7 @@ export default function CalendarPage() {
 
   // Use React Query hooks
   const { data: tasks = [], isLoading } = useTasksQuery();
-  const updateTask = useUpdateTaskMutation();
+  const updateTask = useUpdateTaskWithConfirmation();
   const deleteTask = useDeleteTaskMutation();
 
   // Scroll vers aujourd'hui au chargement
