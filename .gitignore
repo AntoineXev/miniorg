@@ -54,3 +54,10 @@ dev.db
 
 .env.tauri
 .env.backup
+
+# Landing site (www/)
+/www/.next/
+/www/.open-next/
+/www/.wrangler/
+/www/node_modules/
+/www/out/

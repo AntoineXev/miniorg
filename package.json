@@ -25,7 +25,11 @@
     "db:migrate:d1:apply": "wrangler d1 migrations apply DB",
     "db:migrate:d1:apply:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:d1:apply:remote": "wrangler d1 migrations apply DB --remote",
-    "db:types": "wrangler types --env-interface CloudflareEnv"
+    "db:types": "wrangler types --env-interface CloudflareEnv",
+    "www:dev": "npm --prefix www run dev",
+    "www:build": "npm --prefix www run build",
+    "www:deploy": "npm --prefix www run deploy",
+    "deploy:all": "npm run deploy:cloudflare && npm run www:deploy"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.1.0",
